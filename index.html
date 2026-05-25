@@ -1,8 +1,9 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Dhaftar Entry</title>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Dhaftar 2026</title>
 
 <style>
 body {
@@ -14,7 +15,7 @@ body {
 }
 
 .container {
-  max-width: 600px;
+  max-width: 700px;
   margin: auto;
   background: white;
   padding: 24px;
@@ -27,19 +28,12 @@ h2 {
   color: #1d4ed8;
 }
 
-.section {
-  margin-top: 28px;
-  padding-top: 22px;
-  border-top: 1px solid #e2e8f0;
-}
-
 label {
   font-weight: 600;
   display: block;
   margin: 14px 0 6px;
 }
 
-input,
 select,
 button {
   width: 100%;
@@ -59,152 +53,123 @@ button {
   cursor: pointer;
 }
 
-.secondary-btn {
-  background: #475569;
+.admin-btn {
+  background: #111827;
 }
 
-.danger-btn {
-  background: #dc2626;
-}
-
-button:disabled {
-  opacity: 0.7;
-  cursor: not-allowed;
-}
-
-#entryApp,
-#otpBox {
+.result-section {
+  margin-top: 28px;
+  padding: 18px;
+  background: #f8fafc;
+  border-radius: 14px;
+  border: 1px solid #e2e8f0;
   display: none;
 }
 
-#message,
-#loginMessage {
+.result-row {
+  display: flex;
+  justify-content: space-between;
+  padding: 14px 0;
+  border-bottom: 1px solid #e2e8f0;
+}
+
+.result-row:last-child {
+  border-bottom: none;
+}
+
+.amount {
+  font-weight: 800;
+  color: #1d4ed8;
+}
+
+.negative {
+  color: #dc2626;
+}
+
+.bill-item {
+  display: flex;
+  justify-content: space-between;
+  padding: 12px 0;
+  border-bottom: 1px dashed #e2e8f0;
+}
+
+#error {
   margin-top: 20px;
   text-align: center;
   font-weight: 700;
+  color: #dc2626;
 }
 
-.current-box {
-  background: #f8fafc;
-  border: 1px solid #e2e8f0;
-  padding: 14px;
-  border-radius: 12px;
-  font-size: 1.1rem;
+#loading {
+  display: none;
+  margin-top: 20px;
+  text-align: center;
   font-weight: 700;
-  color: #1d4ed8;
 }
 </style>
 </head>
 
 <body>
 
-<div class="container" id="loginBox">
-  <h2>Entry Login</h2>
+<div class="container">
+  <h2>Dhaftar 2026</h2>
 
-  <label>Username</label>
-  <input type="text" id="username" autocomplete="username">
-
-  <label>Password</label>
-  <input type="password" id="password" autocomplete="current-password">
-
-  <button type="button" onclick="login()">Login</button>
-
-  <button type="button" class="secondary-btn" onclick="showOtpBox()">
-    Forgot Password / Email OTP
+  <button class="admin-btn" onclick="window.location.href='admin.html'">
+    Admin Access
   </button>
 
-  <div id="otpBox">
-    <div class="section">
-      <h3>Email OTP Login</h3>
+  <label>Select Month</label>
+  <select id="monthSelector">
+    <option value="" selected disabled>Select a month</option>
+    <option>January</option>
+    <option>February</option>
+    <option>March</option>
+    <option>April</option>
+    <option>May</option>
+    <option>June</option>
+    <option>July</option>
+    <option>August</option>
+    <option>September</option>
+    <option>October</option>
+    <option>November</option>
+    <option>December</option>
+  </select>
 
-      <label>Admin Email</label>
-      <input type="email" id="otpEmail" placeholder="Enter admin email">
+  <button onclick="getBalance()">Calculate Balance</button>
 
-      <button type="button" onclick="sendOtp()">Send OTP</button>
+  <div id="loading">Calculating...</div>
+  <div id="error"></div>
 
-      <label>OTP Code</label>
-      <input type="text" id="otpCode" placeholder="Enter 6-digit OTP">
+  <div id="result" class="result-section">
+    <div class="result-row">
+      <strong>Total Amount Due</strong>
+      <span class="amount" id="totalDue">MVR 0</span>
+    </div>
 
-      <button type="button" onclick="verifyOtp()">Verify OTP Login</button>
+    <div class="result-row">
+      <strong>Amount Paid</strong>
+      <span class="amount" id="totalPaid">MVR 0</span>
+    </div>
+
+    <div class="result-row">
+      <strong>Remaining Amount</strong>
+      <span class="amount" id="remaining">MVR 0</span>
+    </div>
+
+    <div class="result-row">
+      <strong>Dad Borrowing</strong>
+      <span class="amount" id="dadBorrowing">MVR 0</span>
     </div>
   </div>
 
-  <div id="loginMessage"></div>
-</div>
-
-<div class="container" id="entryApp">
-  <h2>Dhaftar Data Entry</h2>
-
-  <div class="section">
-    <h3>Add Payment</h3>
-
-    <label>Person</label>
-    <select id="person">
-      <option value="Dhaftar">Dhaftar</option>
-      <option value="Dad">Dad</option>
-      <option value="You">You</option>
-    </select>
-
-    <label>Amount</label>
-    <input type="number" id="paymentAmount">
-
-    <label>Month</label>
-    <select id="paymentMonth"></select>
-
-    <label>Note</label>
-    <input type="text" id="paymentNote">
-
-    <button type="button" onclick="submitPayment()">Add Payment</button>
+  <div id="bills" class="result-section">
+    <h3>Bills Summary — <span id="selectedMonth"></span></h3>
+    <div id="billsList"></div>
   </div>
-
-  <div class="section">
-    <h3>Update Bill</h3>
-
-    <label>Bill Type</label>
-    <select id="billType">
-      <option value="Rent">Rent</option>
-      <option value="Water">Water</option>
-      <option value="Electricity">Electricity</option>
-      <option value="WiFi">WiFi</option>
-      <option value="TV">TV</option>
-    </select>
-
-    <label>Month</label>
-    <select id="billMonth"></select>
-
-    <label>Amount</label>
-    <input type="number" id="billAmount">
-
-    <button type="button" onclick="submitBill()">Update Bill</button>
-  </div>
-
-  <div class="section">
-    <h3>Update Dad Borrowing</h3>
-
-    <div class="current-box">
-      Current Borrowing: <span id="currentDadBorrowing">MVR —</span>
-    </div>
-
-    <label>New Remaining Borrowing</label>
-    <input type="number" id="dadBorrowing">
-
-    <button type="button" onclick="submitBorrowing()">Update Borrowing</button>
-  </div>
-
-  <button type="button" class="danger-btn" onclick="logout()">Logout</button>
-
-  <div id="message"></div>
 </div>
 
 <script>
 const API_URL = "https://script.google.com/macros/s/AKfycbxPrt1iDtxFtobHuJy_0k0QDMB-CSMCN5simJ3VDQpBd-4_4FlgJBCd-0NFzkBDEqpCcA/exec";
-
-let authToken = localStorage.getItem('dhaftarEntryToken') || '';
-
-const months = [
-  "January", "February", "March", "April", "May", "June",
-  "July", "August", "September", "October", "November", "December"
-];
 
 async function api(action, data = {}) {
   const response = await fetch(API_URL, {
@@ -215,214 +180,84 @@ async function api(action, data = {}) {
   return await response.json();
 }
 
-function loadMonths() {
-  ['paymentMonth', 'billMonth'].forEach(id => {
-    const select = document.getElementById(id);
-    select.innerHTML = '';
-
-    months.forEach(month => {
-      const option = document.createElement('option');
-      option.value = month;
-      option.textContent = month;
-      select.appendChild(option);
-    });
-  });
-}
-
 function formatMVR(num) {
   const value = Number(num);
 
-  if (!Number.isFinite(value)) return 'MVR —';
+  if (!Number.isFinite(value)) return "MVR —";
 
-  return 'MVR ' + value.toLocaleString('en-IN', {
+  return "MVR " + value.toLocaleString("en-IN", {
     minimumFractionDigits: 0,
     maximumFractionDigits: 0
   });
 }
 
-function showLoginMessage(text, isError = false) {
-  const msg = document.getElementById('loginMessage');
-  msg.textContent = text;
-  msg.style.color = isError ? '#dc2626' : '#16a34a';
-}
+async function getBalance() {
+  const month = document.getElementById("monthSelector").value;
 
-function showMessage(text, isError = false) {
-  const msg = document.getElementById('message');
-  msg.textContent = text;
-  msg.style.color = isError ? '#dc2626' : '#16a34a';
-}
-
-function showEntryApp() {
-  document.getElementById('loginBox').style.display = 'none';
-  document.getElementById('entryApp').style.display = 'block';
-  loadDadBorrowing();
-}
-
-function showLoginBox() {
-  document.getElementById('loginBox').style.display = 'block';
-  document.getElementById('entryApp').style.display = 'none';
-}
-
-function showOtpBox() {
-  const box = document.getElementById('otpBox');
-  box.style.display = box.style.display === 'none' || box.style.display === '' ? 'block' : 'none';
-}
-
-async function login() {
-  const username = document.getElementById('username').value.trim();
-  const password = document.getElementById('password').value.trim();
-
-  if (!username || !password) {
-    showLoginMessage('Please enter username and password.', true);
+  if (!month) {
+    showError("Please select a month first.");
     return;
   }
 
-  showLoginMessage('Checking login...');
+  document.getElementById("loading").style.display = "block";
+  document.getElementById("error").textContent = "";
+  document.getElementById("result").style.display = "none";
+  document.getElementById("bills").style.display = "none";
 
   try {
-    const result = await api("login", { username, password });
+    const data = await api("summary", { month });
 
-    if (result.success) {
-      authToken = result.token;
-      localStorage.setItem('dhaftarEntryToken', authToken);
-      showEntryApp();
-    } else {
-      showLoginMessage(result.message, true);
-    }
-  } catch (err) {
-    showLoginMessage(err.message, true);
-  }
-}
-
-async function sendOtp() {
-  const email = document.getElementById('otpEmail').value.trim();
-
-  if (!email) {
-    showLoginMessage('Please enter admin email.', true);
-    return;
-  }
-
-  showLoginMessage('Sending OTP...');
-
-  try {
-    const result = await api("sendAdminOtp", { email });
-
-    if (result.success) {
-      showLoginMessage(result.message);
-    } else {
-      showLoginMessage(result.message, true);
-    }
-  } catch (err) {
-    showLoginMessage(err.message, true);
-  }
-}
-
-async function verifyOtp() {
-  const email = document.getElementById('otpEmail').value.trim();
-  const otp = document.getElementById('otpCode').value.trim();
-
-  if (!email || !otp) {
-    showLoginMessage('Please enter email and OTP.', true);
-    return;
-  }
-
-  showLoginMessage('Verifying OTP...');
-
-  try {
-    const result = await api("verifyAdminOtp", { email, otp });
-
-    if (result.success) {
-      authToken = result.token;
-      localStorage.setItem('dhaftarEntryToken', authToken);
-      showEntryApp();
-    } else {
-      showLoginMessage(result.message, true);
-    }
-  } catch (err) {
-    showLoginMessage(err.message, true);
-  }
-}
-
-function logout() {
-  authToken = '';
-  localStorage.removeItem('dhaftarEntryToken');
-  showLoginBox();
-}
-
-async function loadDadBorrowing() {
-  try {
-    const result = await api("getDadBorrowing", {
-      token: authToken
-    });
-
-    if (result.success === false) {
-      showMessage(result.message, true);
-      logout();
+    if (data.success === false) {
+      showError(data.message);
       return;
     }
 
-    document.getElementById('currentDadBorrowing').textContent = formatMVR(result.amount);
+    displayResult(data);
   } catch (err) {
-    showMessage(err.message, true);
-    logout();
+    showError(err.message);
+  } finally {
+    document.getElementById("loading").style.display = "none";
   }
 }
 
-async function submitPayment() {
-  const result = await api("addPayment", {
-    token: authToken,
-    person: document.getElementById('person').value,
-    amount: document.getElementById('paymentAmount').value,
-    month: document.getElementById('paymentMonth').value,
-    note: document.getElementById('paymentNote').value
-  });
+function displayResult(data) {
+  document.getElementById("totalDue").textContent = formatMVR(data.totalAmountDue);
+  document.getElementById("totalPaid").textContent = formatMVR(data.totalPaid);
+  document.getElementById("remaining").textContent = formatMVR(data.remainingBalance);
+  document.getElementById("dadBorrowing").textContent = formatMVR(data.dadsBorrowing);
 
-  showMessage(result.message, result.success === false);
-
-  if (result.success !== false) {
-    document.getElementById('paymentAmount').value = '';
-    document.getElementById('paymentNote').value = '';
-  }
-}
-
-async function submitBill() {
-  const result = await api("addBill", {
-    token: authToken,
-    billType: document.getElementById('billType').value,
-    month: document.getElementById('billMonth').value,
-    amount: document.getElementById('billAmount').value
-  });
-
-  showMessage(result.message, result.success === false);
-
-  if (result.success !== false) {
-    document.getElementById('billAmount').value = '';
-  }
-}
-
-async function submitBorrowing() {
-  const result = await api("updateDadBorrowing", {
-    token: authToken,
-    amount: document.getElementById('dadBorrowing').value
-  });
-
-  showMessage(result.message, result.success === false);
-
-  if (result.success !== false) {
-    document.getElementById('dadBorrowing').value = '';
-    loadDadBorrowing();
-  }
-}
-
-window.addEventListener('load', () => {
-  loadMonths();
-
-  if (authToken) {
-    showEntryApp();
+  if (Number(data.remainingBalance) > 0) {
+    document.getElementById("remaining").classList.add("negative");
   } else {
-    showLoginBox();
+    document.getElementById("remaining").classList.remove("negative");
   }
-});
+
+  document.getElementById("result").style.display = "block";
+
+  const list = document.getElementById("billsList");
+  list.innerHTML = "";
+
+  if (Array.isArray(data.billBreakdown)) {
+    data.billBreakdown.forEach(bill => {
+      const item = document.createElement("div");
+      item.className = "bill-item";
+
+      item.innerHTML = `
+        <span>${bill.type}</span>
+        <strong>${formatMVR(bill.amount)}</strong>
+      `;
+
+      list.appendChild(item);
+    });
+
+    document.getElementById("selectedMonth").textContent = data.month;
+    document.getElementById("bills").style.display = "block";
+  }
+}
+
+function showError(message) {
+  document.getElementById("error").textContent = message || "Something went wrong.";
+}
 </script>
 
 </body>

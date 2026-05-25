@@ -1,0 +1,357 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Dhaftar Entry</title>
+
+<style>
+body {
+  font-family: system-ui, sans-serif;
+  background: #eff6ff;
+  margin: 0;
+  padding: 20px;
+  color: #1e293b;
+}
+
+.container {
+  max-width: 600px;
+  margin: auto;
+  background: white;
+  padding: 24px;
+  border-radius: 18px;
+  box-shadow: 0 10px 30px rgba(0,0,0,0.08);
+}
+
+h2 {
+  text-align: center;
+  color: #1d4ed8;
+}
+
+.section {
+  margin-top: 28px;
+  padding-top: 22px;
+  border-top: 1px solid #e2e8f0;
+}
+
+label {
+  font-weight: 600;
+  display: block;
+  margin: 14px 0 6px;
+}
+
+input,
+select,
+button {
+  width: 100%;
+  padding: 15px;
+  font-size: 1rem;
+  border-radius: 12px;
+  border: 1px solid #cbd5e1;
+  box-sizing: border-box;
+}
+
+button {
+  margin-top: 18px;
+  background: #2563eb;
+  color: white;
+  border: none;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.back-btn {
+  background: #111827;
+}
+
+.logout-btn {
+  background: #dc2626;
+}
+
+#entryApp {
+  display: none;
+}
+
+#message,
+#loginMessage {
+  margin-top: 20px;
+  text-align: center;
+  font-weight: 700;
+}
+
+.current-box {
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  padding: 14px;
+  border-radius: 12px;
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: #1d4ed8;
+}
+</style>
+</head>
+
+<body>
+
+<div class="container" id="loginBox">
+  <h2>Admin Login</h2>
+
+  <button class="back-btn" onclick="window.location.href='index.html'">
+    Back to Public Page
+  </button>
+
+  <label>Username</label>
+  <input type="text" id="username" autocomplete="username">
+
+  <label>Password</label>
+  <input type="password" id="password" autocomplete="current-password">
+
+  <button type="button" onclick="login()">Login</button>
+
+  <div id="loginMessage"></div>
+</div>
+
+<div class="container" id="entryApp">
+  <h2>Dhaftar Data Entry</h2>
+
+  <button class="back-btn" onclick="window.location.href='index.html'">
+    Back to Public Page
+  </button>
+
+  <div class="section">
+    <h3>Add Payment</h3>
+
+    <label>Person</label>
+    <select id="person">
+      <option value="Dhaftar">Dhaftar</option>
+      <option value="Dad">Dad</option>
+      <option value="You">You</option>
+    </select>
+
+    <label>Amount</label>
+    <input type="number" id="paymentAmount">
+
+    <label>Month</label>
+    <select id="paymentMonth"></select>
+
+    <label>Note</label>
+    <input type="text" id="paymentNote">
+
+    <button type="button" onclick="submitPayment()">Add Payment</button>
+  </div>
+
+  <div class="section">
+    <h3>Update Bill</h3>
+
+    <label>Bill Type</label>
+    <select id="billType">
+      <option value="Rent">Rent</option>
+      <option value="Water">Water</option>
+      <option value="Electricity">Electricity</option>
+      <option value="WiFi">WiFi</option>
+      <option value="TV">TV</option>
+    </select>
+
+    <label>Month</label>
+    <select id="billMonth"></select>
+
+    <label>Amount</label>
+    <input type="number" id="billAmount">
+
+    <button type="button" onclick="submitBill()">Update Bill</button>
+  </div>
+
+  <div class="section">
+    <h3>Update Dad Borrowing</h3>
+
+    <div class="current-box">
+      Current Borrowing: <span id="currentDadBorrowing">MVR —</span>
+    </div>
+
+    <label>New Remaining Borrowing</label>
+    <input type="number" id="dadBorrowing">
+
+    <button type="button" onclick="submitBorrowing()">Update Borrowing</button>
+  </div>
+
+  <button type="button" class="logout-btn" onclick="logout()">Logout</button>
+
+  <div id="message"></div>
+</div>
+
+<script>
+const API_URL = "https://script.google.com/macros/s/AKfycbxPrt1iDtxFtobHuJy_0k0QDMB-CSMCN5simJ3VDQpBd-4_4FlgJBCd-0NFzkBDEqpCcA/exec";
+
+let authToken = localStorage.getItem("dhaftarEntryToken") || "";
+
+const months = [
+  "January", "February", "March", "April", "May", "June",
+  "July", "August", "September", "October", "November", "December"
+];
+
+async function api(action, data = {}) {
+  const response = await fetch(API_URL, {
+    method: "POST",
+    body: JSON.stringify({ action, data })
+  });
+
+  return await response.json();
+}
+
+function loadMonths() {
+  ["paymentMonth", "billMonth"].forEach(id => {
+    const select = document.getElementById(id);
+    select.innerHTML = "";
+
+    months.forEach(month => {
+      const option = document.createElement("option");
+      option.value = month;
+      option.textContent = month;
+      select.appendChild(option);
+    });
+  });
+}
+
+function formatMVR(num) {
+  const value = Number(num);
+
+  if (!Number.isFinite(value)) return "MVR —";
+
+  return "MVR " + value.toLocaleString("en-IN", {
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 0
+  });
+}
+
+function showLoginMessage(text, isError = false) {
+  const msg = document.getElementById("loginMessage");
+  msg.textContent = text;
+  msg.style.color = isError ? "#dc2626" : "#16a34a";
+}
+
+function showMessage(text, isError = false) {
+  const msg = document.getElementById("message");
+  msg.textContent = text;
+  msg.style.color = isError ? "#dc2626" : "#16a34a";
+}
+
+function showEntryApp() {
+  document.getElementById("loginBox").style.display = "none";
+  document.getElementById("entryApp").style.display = "block";
+  loadDadBorrowing();
+}
+
+function showLoginBox() {
+  document.getElementById("loginBox").style.display = "block";
+  document.getElementById("entryApp").style.display = "none";
+}
+
+async function login() {
+  const username = document.getElementById("username").value.trim();
+  const password = document.getElementById("password").value.trim();
+
+  if (!username || !password) {
+    showLoginMessage("Please enter username and password.", true);
+    return;
+  }
+
+  showLoginMessage("Checking login...");
+
+  try {
+    const result = await api("login", { username, password });
+
+    if (result.success) {
+      authToken = result.token;
+      localStorage.setItem("dhaftarEntryToken", authToken);
+      showEntryApp();
+    } else {
+      showLoginMessage(result.message, true);
+    }
+  } catch (err) {
+    showLoginMessage(err.message, true);
+  }
+}
+
+function logout() {
+  authToken = "";
+  localStorage.removeItem("dhaftarEntryToken");
+  showLoginBox();
+}
+
+async function loadDadBorrowing() {
+  try {
+    const result = await api("getDadBorrowing", {
+      token: authToken
+    });
+
+    if (result.success === false) {
+      showMessage(result.message, true);
+      logout();
+      return;
+    }
+
+    document.getElementById("currentDadBorrowing").textContent = formatMVR(result.amount);
+  } catch (err) {
+    showMessage(err.message, true);
+    logout();
+  }
+}
+
+async function submitPayment() {
+  const result = await api("addPayment", {
+    token: authToken,
+    person: document.getElementById("person").value,
+    amount: document.getElementById("paymentAmount").value,
+    month: document.getElementById("paymentMonth").value,
+    note: document.getElementById("paymentNote").value
+  });
+
+  showMessage(result.message, result.success === false);
+
+  if (result.success !== false) {
+    document.getElementById("paymentAmount").value = "";
+    document.getElementById("paymentNote").value = "";
+  }
+}
+
+async function submitBill() {
+  const result = await api("addBill", {
+    token: authToken,
+    billType: document.getElementById("billType").value,
+    month: document.getElementById("billMonth").value,
+    amount: document.getElementById("billAmount").value
+  });
+
+  showMessage(result.message, result.success === false);
+
+  if (result.success !== false) {
+    document.getElementById("billAmount").value = "";
+  }
+}
+
+async function submitBorrowing() {
+  const result = await api("updateDadBorrowing", {
+    token: authToken,
+    amount: document.getElementById("dadBorrowing").value
+  });
+
+  showMessage(result.message, result.success === false);
+
+  if (result.success !== false) {
+    document.getElementById("dadBorrowing").value = "";
+    loadDadBorrowing();
+  }
+}
+
+window.addEventListener("load", () => {
+  loadMonths();
+
+  if (authToken) {
+    showEntryApp();
+  } else {
+    showLoginBox();
+  }
+});
+</script>
+
+</body>
+</html>

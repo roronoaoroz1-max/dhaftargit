@@ -1,228 +1,543 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <title>Dhaftar 2026</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1">
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Dhaftar 2026</title>
 
-  <style>
-    body {
-      font-family: Arial, sans-serif;
-      background: #f4f6f8;
-      margin: 0;
-      padding: 20px;
-    }
+<style>
+:root {
+  --padding-side: clamp(16px, 5vw, 24px);
+  --card-padding: clamp(20px, 6vw, 32px);
+  --font-base: 1.125rem;
+}
 
-    .card {
-      max-width: 430px;
-      margin: auto;
-      background: white;
-      padding: 20px;
-      border-radius: 14px;
-      box-shadow: 0 4px 12px rgba(0,0,0,0.08);
-    }
+* {
+  box-sizing: border-box;
+}
 
-    input, select, button {
-      width: 100%;
-      padding: 12px;
-      margin: 8px 0;
-      border-radius: 8px;
-      border: 1px solid #ccc;
-      box-sizing: border-box;
-    }
+body {
+  font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+  background: linear-gradient(135deg, #e0f2fe 0%, #f0f9ff 100%);
+  padding: var(--padding-side) 0;
+  color: #1e293b;
+  margin: 0;
+  min-height: 100vh;
+  line-height: 1.55;
+  font-size: var(--font-base);
+}
 
-    button {
-      background: #111827;
-      color: white;
-      border: none;
-      font-weight: bold;
-      cursor: pointer;
-    }
+.container {
+  width: 100%;
+  max-width: 900px;
+  margin: 0 auto;
+  background: white;
+  padding: var(--card-padding);
+  border-radius: 20px;
+  box-shadow: 0 10px 35px rgba(0,0,0,0.09);
+  position: relative;
+  overflow: hidden;
+}
 
-    .hidden {
-      display: none;
-    }
+.container::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 8px;
+  background: linear-gradient(to right, #3b82f6, #60a5fa);
+}
 
-    .box {
-      background: #f9fafb;
-      padding: 12px;
-      border-radius: 10px;
-      margin-top: 12px;
-    }
+h2 {
+  text-align: center;
+  color: #1d4ed8;
+  font-size: clamp(2rem, 7vw, 2.6rem);
+  margin: 0 0 24px;
+}
 
-    .success {
-      color: green;
-      font-weight: bold;
-    }
+.top-actions {
+  display: flex;
+  gap: 12px;
+  margin-bottom: 24px;
+}
 
-    .error {
-      color: red;
-      font-weight: bold;
-    }
-  </style>
+.admin-btn {
+  background: linear-gradient(to right, #111827, #374151);
+}
+
+.logout-btn {
+  background: linear-gradient(to right, #dc2626, #ef4444);
+  display: none;
+}
+
+.borrowing-corner {
+  background: #fef3c7;
+  border: 1px solid #fbbf24;
+  border-radius: 12px;
+  padding: 12px 16px;
+  color: #92400e;
+  box-shadow: 0 2px 10px rgba(251,191,36,0.25);
+  display: none;
+  text-align: center;
+  margin-bottom: 24px;
+}
+
+.borrowing-corner strong {
+  display: block;
+  color: #b45309;
+}
+
+label {
+  font-size: clamp(1.15rem, 4vw, 1.3rem);
+  font-weight: 600;
+  margin-bottom: 10px;
+  display: block;
+  color: #334155;
+}
+
+input,
+select,
+button,
+textarea {
+  padding: clamp(15px, 4vw, 18px);
+  font-size: clamp(1rem, 4vw, 1.15rem);
+  border-radius: 14px;
+  border: 1px solid #cbd5e1;
+  width: 100%;
+  margin-bottom: 18px;
+}
+
+button {
+  background: linear-gradient(to right, #3b82f6, #60a5fa);
+  color: white;
+  font-weight: 700;
+  border: none;
+  cursor: pointer;
+}
+
+button:disabled {
+  opacity: 0.65;
+}
+
+.result-section,
+.admin-panel {
+  background: #f8fafc;
+  padding: clamp(20px, 5vw, 28px);
+  border-radius: 16px;
+  margin: 28px 0;
+  border: 1px solid #e2e8f0;
+}
+
+.result-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 18px 0;
+  border-bottom: 1px solid #f1f5f9;
+  gap: 12px;
+}
+
+.result-row:last-child {
+  border-bottom: none;
+}
+
+.result-amount {
+  font-size: clamp(1.4rem, 5vw, 1.8rem);
+  font-weight: 800;
+  padding: 10px 18px;
+  border-radius: 14px;
+  background: #eff6ff;
+  color: #1d4ed8;
+  white-space: nowrap;
+}
+
+.negative .result-amount {
+  background: #fee2e2;
+  color: #b91c1c;
+}
+
+#billsBreakdown {
+  margin-top: 28px;
+  padding: clamp(20px, 5vw, 28px);
+  background: white;
+  border-radius: 16px;
+  border: 1px solid #e2e8f0;
+  display: none;
+}
+
+.bill-item {
+  display: flex;
+  justify-content: space-between;
+  padding: 14px 0;
+  border-bottom: 1px dashed #e2e8f0;
+  gap: 16px;
+}
+
+.bill-amount {
+  font-weight: 700;
+  color: #1e40af;
+  white-space: nowrap;
+}
+
+#error,
+#adminMsg {
+  display: none;
+  padding: 14px;
+  border-radius: 12px;
+  margin: 18px 0;
+  font-weight: 600;
+}
+
+.error {
+  color: #dc2626;
+  background: #fef2f2;
+  border: 1px solid #fecaca;
+}
+
+.success {
+  color: #15803d;
+  background: #f0fdf4;
+  border: 1px solid #bbf7d0;
+}
+
+.hidden {
+  display: none;
+}
+
+.admin-panel h3 {
+  margin-top: 0;
+  color: #1e40af;
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 18px;
+}
+
+@media (max-width: 600px) {
+  body {
+    padding: 0;
+  }
+
+  .container {
+    border-radius: 0;
+    min-height: 100vh;
+  }
+
+  .top-actions,
+  .grid,
+  .result-row,
+  .bill-item {
+    flex-direction: column;
+    display: flex;
+    align-items: stretch;
+  }
+
+  .result-amount {
+    text-align: center;
+  }
+}
+</style>
 </head>
 
 <body>
-  <div class="card">
-    <div id="loginView">
-      <h2>Dhaftar Login</h2>
-      <input id="username" placeholder="Username">
-      <input id="password" type="password" placeholder="Password">
-      <button onclick="login()">Login</button>
-      <p id="loginMsg"></p>
+
+<div class="container">
+  <h2>Dhaftar 2026 (Dhonbe)</h2>
+
+  <div class="top-actions">
+    <button class="admin-btn" id="adminOpenBtn" onclick="toggleAdminLogin()">Admin Access</button>
+    <button class="logout-btn" id="logoutBtn" onclick="logoutAdmin()">Logout Admin</button>
+  </div>
+
+  <div class="borrowing-corner" id="borrowingCorner">
+    <strong>Dad's Borrowing</strong>
+    <span id="dadsBorrowSmall">MVR 0</span>
+  </div>
+
+  <label for="monthSelector">Select Month</label>
+  <select id="monthSelector">
+    <option value="" selected disabled>Select a month</option>
+    <option>January</option>
+    <option>February</option>
+    <option>March</option>
+    <option>April</option>
+    <option>May</option>
+    <option>June</option>
+    <option>July</option>
+    <option>August</option>
+    <option>September</option>
+    <option>October</option>
+    <option>November</option>
+    <option>December</option>
+  </select>
+
+  <button type="button" onclick="getBalance()">Calculate Balance</button>
+
+  <div id="loading" class="hidden">Calculating...</div>
+  <div id="error"></div>
+
+  <div id="result" class="result-section hidden">
+    <div class="result-row">
+      <strong>Total Amount Due</strong>
+      <span class="result-amount" id="totalDue">MVR 0</span>
     </div>
 
-    <div id="appView" class="hidden">
-      <h2>Dhaftar 2026</h2>
+    <div class="result-row">
+      <strong>Amount Paid</strong>
+      <span class="result-amount" id="totalPaid">MVR 0</span>
+    </div>
 
-      <select id="month">
-        <option>January</option>
-        <option>February</option>
-        <option>March</option>
-        <option>April</option>
-        <option>May</option>
-        <option>June</option>
-        <option>July</option>
-        <option>August</option>
-        <option>September</option>
-        <option>October</option>
-        <option>November</option>
-        <option>December</option>
-      </select>
-
-      <button onclick="loadSummary()">Load Summary</button>
-
-      <div id="summary" class="box"></div>
-
-      <h3>Add Payment</h3>
-      <input id="person" placeholder="Person, example: Dhaftar">
-      <input id="amount" type="number" placeholder="Payment amount">
-      <input id="note" placeholder="Note optional">
-      <button onclick="addPayment()">Add Payment</button>
-
-      <h3>Update Bill</h3>
-      <input id="billType" placeholder="Bill type, example: Electricity">
-      <input id="billAmount" type="number" placeholder="Bill amount">
-      <button onclick="addBill()">Update Bill</button>
-
-      <h3>Dad Borrowing</h3>
-      <input id="dadAmount" type="number" placeholder="Borrowing amount">
-      <button onclick="updateDadBorrowing()">Update Borrowing</button>
-
-      <p id="msg"></p>
+    <div class="result-row">
+      <strong>Remaining Amount</strong>
+      <span class="result-amount" id="remaining">MVR 0</span>
     </div>
   </div>
 
-  <script>
-    const API_URL = "https://script.google.com/macros/s/AKfycbxPrt1iDtxFtobHuJy_0k0QDMB-CSMCN5simJ3VDQpBd-4_4FlgJBCd-0NFzkBDEqpCcA/exec";
+  <div id="billsBreakdown">
+    <h3>Bills Summary — <span id="selectedMonth"></span></h3>
+    <div id="billsList"></div>
+  </div>
 
-    let token = localStorage.getItem("entryToken") || "";
+  <div id="adminLogin" class="admin-panel hidden">
+    <h3>Admin Login</h3>
+    <input id="adminUsername" placeholder="Username">
+    <input id="adminPassword" type="password" placeholder="Password">
+    <button onclick="loginAdmin()">Login</button>
+  </div>
 
-    async function api(action, data = {}) {
-      const response = await fetch(API_URL, {
-        method: "POST",
-        body: JSON.stringify({ action, data })
-      });
+  <div id="adminPanel" class="admin-panel hidden">
+    <h3>Admin Entry</h3>
 
-      return await response.json();
+    <div id="adminMsg"></div>
+
+    <h4>Add Payment</h4>
+    <input id="paymentPerson" placeholder="Person, example: Dhaftar">
+    <input id="paymentAmount" type="number" placeholder="Payment amount">
+    <input id="paymentNote" placeholder="Note optional">
+    <button onclick="addPayment()">Add Payment</button>
+
+    <h4>Edit Bill Amount</h4>
+    <input id="billType" placeholder="Bill type, example: Electricity">
+    <input id="billAmount" type="number" placeholder="Bill amount">
+    <button onclick="addBill()">Update Bill</button>
+
+    <h4>Edit Dad Borrowing</h4>
+    <input id="dadAmount" type="number" placeholder="Dad borrowing amount">
+    <button onclick="updateDadBorrowing()">Update Borrowing</button>
+  </div>
+</div>
+
+<script>
+const API_URL = "https://script.google.com/macros/s/AKfycbxPrt1iDtxFtobHuJy_0k0QDMB-CSMCN5simJ3VDQpBd-4_4FlgJBCd-0NFzkBDEqpCcA/exec";
+
+let token = localStorage.getItem("entryToken") || "";
+
+async function api(action, data = {}) {
+  const response = await fetch(API_URL, {
+    method: "POST",
+    body: JSON.stringify({ action, data })
+  });
+
+  return await response.json();
+}
+
+function formatMVR(num) {
+  const value = Number(num);
+  if (!Number.isFinite(value)) return "MVR —";
+
+  return "MVR " + value.toLocaleString("en-IN", {
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 0
+  });
+}
+
+function showError(msg) {
+  const err = document.getElementById("error");
+  err.textContent = "Error: " + (msg?.message || msg || "Unknown error");
+  err.className = "error";
+  err.style.display = "block";
+}
+
+function hideError() {
+  document.getElementById("error").style.display = "none";
+}
+
+function showAdminMsg(message, ok = true) {
+  const box = document.getElementById("adminMsg");
+  box.textContent = message;
+  box.className = ok ? "success" : "error";
+  box.style.display = "block";
+}
+
+function setLoading(isLoading) {
+  document.getElementById("loading").classList.toggle("hidden", !isLoading);
+}
+
+async function getBalance() {
+  const month = document.getElementById("monthSelector").value;
+
+  if (!month) {
+    showError("Please select a month first");
+    return;
+  }
+
+  hideError();
+  setLoading(true);
+
+  document.getElementById("result").classList.add("hidden");
+  document.getElementById("billsBreakdown").style.display = "none";
+
+  try {
+    const data = await api("summary", { month });
+
+    if (data.success === false) {
+      showError(data.message);
+      return;
     }
 
-    async function login() {
-      const result = await api("login", {
-        username: document.getElementById("username").value,
-        password: document.getElementById("password").value
-      });
+    displayResult(data);
+  } catch (err) {
+    showError(err.message);
+  } finally {
+    setLoading(false);
+  }
+}
 
-      if (result.success) {
-        token = result.token;
-        localStorage.setItem("entryToken", token);
-        showApp();
-        loadSummary();
-      } else {
-        showLoginMsg(result.message, false);
-      }
-    }
+function displayResult(data) {
+  document.getElementById("totalDue").textContent = formatMVR(data.totalAmountDue);
+  document.getElementById("totalPaid").textContent = formatMVR(data.totalPaid);
 
-    function showApp() {
-      document.getElementById("loginView").classList.add("hidden");
-      document.getElementById("appView").classList.remove("hidden");
-    }
+  const remaining = Number(data.remainingBalance || 0);
+  const remEl = document.getElementById("remaining");
 
-    async function loadSummary() {
-      const month = document.getElementById("month").value;
-      const result = await api("summary", { month });
+  remEl.textContent = formatMVR(remaining);
+  remEl.parentElement.className = remaining > 0 ? "result-row negative" : "result-row";
 
-      if (result.success === false) {
-        showMsg(result.message, false);
-        return;
-      }
+  const dadsBorrowing = Number(data.dadsBorrowing || 0);
+  document.getElementById("dadsBorrowSmall").textContent = formatMVR(dadsBorrowing);
+  document.getElementById("borrowingCorner").style.display = dadsBorrowing > 0 ? "block" : "none";
 
-      document.getElementById("summary").innerHTML = `
-        <strong>Month:</strong> ${result.month}<br>
-        <strong>Total Due:</strong> ${result.totalAmountDue}<br>
-        <strong>Total Paid:</strong> ${result.totalPaid}<br>
-        <strong>Remaining Balance:</strong> ${result.remainingBalance}<br>
-        <strong>Dad Borrowing:</strong> ${result.dadsBorrowing}<br><br>
-        <strong>Bills:</strong><br>
-        ${result.billBreakdown.map(b => `${b.type}: ${b.amount}`).join("<br>")}
-      `;
-    }
+  document.getElementById("result").classList.remove("hidden");
 
-    async function addPayment() {
-      const month = document.getElementById("month").value;
+  const list = document.getElementById("billsList");
+  list.innerHTML = "";
 
-      const result = await api("addPayment", {
-        token,
-        person: document.getElementById("person").value,
-        amount: document.getElementById("amount").value,
-        month,
-        note: document.getElementById("note").value
-      });
+  if (Array.isArray(data.billBreakdown) && data.billBreakdown.length > 0) {
+    data.billBreakdown.forEach(bill => {
+      const item = document.createElement("div");
+      item.className = "bill-item";
 
-      showMsg(result.message, result.success !== false);
-      loadSummary();
-    }
+      const type = document.createElement("span");
+      type.textContent = bill.type || "Unnamed Bill";
 
-    async function addBill() {
-      const month = document.getElementById("month").value;
+      const amount = document.createElement("span");
+      amount.className = "bill-amount";
+      amount.textContent = formatMVR(bill.amount);
 
-      const result = await api("addBill", {
-        token,
-        billType: document.getElementById("billType").value,
-        amount: document.getElementById("billAmount").value,
-        month
-      });
+      item.appendChild(type);
+      item.appendChild(amount);
+      list.appendChild(item);
+    });
 
-      showMsg(result.message, result.success !== false);
-      loadSummary();
-    }
+    document.getElementById("selectedMonth").textContent = data.month;
+    document.getElementById("billsBreakdown").style.display = "block";
+  }
+}
 
-    async function updateDadBorrowing() {
-      const result = await api("updateDadBorrowing", {
-        token,
-        amount: document.getElementById("dadAmount").value
-      });
+function toggleAdminLogin() {
+  document.getElementById("adminLogin").classList.toggle("hidden");
+}
 
-      showMsg(result.message, result.success !== false);
-      loadSummary();
-    }
+async function loginAdmin() {
+  const username = document.getElementById("adminUsername").value;
+  const password = document.getElementById("adminPassword").value;
 
-    function showMsg(message, ok) {
-      const el = document.getElementById("msg");
-      el.textContent = message || "";
-      el.className = ok ? "success" : "error";
-    }
+  const result = await api("login", { username, password });
 
-    function showLoginMsg(message, ok) {
-      const el = document.getElementById("loginMsg");
-      el.textContent = message || "";
-      el.className = ok ? "success" : "error";
-    }
+  if (result.success) {
+    token = result.token;
+    localStorage.setItem("entryToken", token);
+    showAdminPanel();
+  } else {
+    showError(result.message);
+  }
+}
 
-    if (token) {
-      showApp();
-      loadSummary();
-    }
-  </script>
+function showAdminPanel() {
+  document.getElementById("adminLogin").classList.add("hidden");
+  document.getElementById("adminPanel").classList.remove("hidden");
+  document.getElementById("adminOpenBtn").style.display = "none";
+  document.getElementById("logoutBtn").style.display = "block";
+}
+
+function logoutAdmin() {
+  token = "";
+  localStorage.removeItem("entryToken");
+  document.getElementById("adminPanel").classList.add("hidden");
+  document.getElementById("adminOpenBtn").style.display = "block";
+  document.getElementById("logoutBtn").style.display = "none";
+}
+
+async function addPayment() {
+  const month = document.getElementById("monthSelector").value;
+
+  if (!month) {
+    showAdminMsg("Please select a month first.", false);
+    return;
+  }
+
+  const result = await api("addPayment", {
+    token,
+    person: document.getElementById("paymentPerson").value,
+    amount: document.getElementById("paymentAmount").value,
+    month,
+    note: document.getElementById("paymentNote").value
+  });
+
+  showAdminMsg(result.message, result.success !== false);
+  if (result.success !== false) getBalance();
+}
+
+async function addBill() {
+  const month = document.getElementById("monthSelector").value;
+
+  if (!month) {
+    showAdminMsg("Please select a month first.", false);
+    return;
+  }
+
+  const result = await api("addBill", {
+    token,
+    billType: document.getElementById("billType").value,
+    amount: document.getElementById("billAmount").value,
+    month
+  });
+
+  showAdminMsg(result.message, result.success !== false);
+  if (result.success !== false) getBalance();
+}
+
+async function updateDadBorrowing() {
+  const result = await api("updateDadBorrowing", {
+    token,
+    amount: document.getElementById("dadAmount").value
+  });
+
+  showAdminMsg(result.message, result.success !== false);
+  if (result.success !== false) getBalance();
+}
+
+window.addEventListener("load", () => {
+  document.getElementById("monthSelector").value = "";
+
+  if (token) {
+    showAdminPanel();
+  }
+});
+</script>
+
 </body>
 </html>

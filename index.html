@@ -72,6 +72,7 @@ button {
 
 .admin-btn {
   background: #111827;
+  margin-bottom: 22px;
 }
 
 .dad-box {
@@ -82,7 +83,7 @@ button {
   border-radius: 14px;
   font-weight: 800;
   text-align: center;
-  margin-bottom: 20px;
+  margin: 0 0 24px 0;
 }
 
 .result-section {
@@ -151,7 +152,7 @@ button {
   </button>
 
   <div class="dad-box">
-    Dad Borrowing: <span id="dadBorrowingTop">MVR 0</span>
+    Dad Borrowing: <span id="dadBorrowingTop">Loading...</span>
   </div>
 
   <label>Select Month</label>
@@ -220,6 +221,20 @@ function formatMVR(num) {
     minimumFractionDigits: 0,
     maximumFractionDigits: 0
   });
+}
+
+async function loadDadBorrowingTop() {
+  try {
+    const data = await api("summary", { month: "January" });
+
+    if (data.success !== false) {
+      document.getElementById("dadBorrowingTop").textContent = formatMVR(data.dadsBorrowing);
+    } else {
+      document.getElementById("dadBorrowingTop").textContent = "MVR —";
+    }
+  } catch (err) {
+    document.getElementById("dadBorrowingTop").textContent = "MVR —";
+  }
 }
 
 async function getBalance() {
@@ -292,6 +307,8 @@ function showError(message) {
 }
 
 window.addEventListener("load", () => {
+  loadDadBorrowingTop();
+
   setTimeout(() => {
     document.getElementById("splash").style.display = "none";
   }, 1000);

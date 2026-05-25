@@ -1,0 +1,228 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>Dhaftar 2026</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: #f4f6f8;
+      margin: 0;
+      padding: 20px;
+    }
+
+    .card {
+      max-width: 430px;
+      margin: auto;
+      background: white;
+      padding: 20px;
+      border-radius: 14px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+    }
+
+    input, select, button {
+      width: 100%;
+      padding: 12px;
+      margin: 8px 0;
+      border-radius: 8px;
+      border: 1px solid #ccc;
+      box-sizing: border-box;
+    }
+
+    button {
+      background: #111827;
+      color: white;
+      border: none;
+      font-weight: bold;
+      cursor: pointer;
+    }
+
+    .hidden {
+      display: none;
+    }
+
+    .box {
+      background: #f9fafb;
+      padding: 12px;
+      border-radius: 10px;
+      margin-top: 12px;
+    }
+
+    .success {
+      color: green;
+      font-weight: bold;
+    }
+
+    .error {
+      color: red;
+      font-weight: bold;
+    }
+  </style>
+</head>
+
+<body>
+  <div class="card">
+    <div id="loginView">
+      <h2>Dhaftar Login</h2>
+      <input id="username" placeholder="Username">
+      <input id="password" type="password" placeholder="Password">
+      <button onclick="login()">Login</button>
+      <p id="loginMsg"></p>
+    </div>
+
+    <div id="appView" class="hidden">
+      <h2>Dhaftar 2026</h2>
+
+      <select id="month">
+        <option>January</option>
+        <option>February</option>
+        <option>March</option>
+        <option>April</option>
+        <option>May</option>
+        <option>June</option>
+        <option>July</option>
+        <option>August</option>
+        <option>September</option>
+        <option>October</option>
+        <option>November</option>
+        <option>December</option>
+      </select>
+
+      <button onclick="loadSummary()">Load Summary</button>
+
+      <div id="summary" class="box"></div>
+
+      <h3>Add Payment</h3>
+      <input id="person" placeholder="Person, example: Dhaftar">
+      <input id="amount" type="number" placeholder="Payment amount">
+      <input id="note" placeholder="Note optional">
+      <button onclick="addPayment()">Add Payment</button>
+
+      <h3>Update Bill</h3>
+      <input id="billType" placeholder="Bill type, example: Electricity">
+      <input id="billAmount" type="number" placeholder="Bill amount">
+      <button onclick="addBill()">Update Bill</button>
+
+      <h3>Dad Borrowing</h3>
+      <input id="dadAmount" type="number" placeholder="Borrowing amount">
+      <button onclick="updateDadBorrowing()">Update Borrowing</button>
+
+      <p id="msg"></p>
+    </div>
+  </div>
+
+  <script>
+    const API_URL = "https://script.google.com/macros/s/AKfycbxPrt1iDtxFtobHuJy_0k0QDMB-CSMCN5simJ3VDQpBd-4_4FlgJBCd-0NFzkBDEqpCcA/exec";
+
+    let token = localStorage.getItem("entryToken") || "";
+
+    async function api(action, data = {}) {
+      const response = await fetch(API_URL, {
+        method: "POST",
+        body: JSON.stringify({ action, data })
+      });
+
+      return await response.json();
+    }
+
+    async function login() {
+      const result = await api("login", {
+        username: document.getElementById("username").value,
+        password: document.getElementById("password").value
+      });
+
+      if (result.success) {
+        token = result.token;
+        localStorage.setItem("entryToken", token);
+        showApp();
+        loadSummary();
+      } else {
+        showLoginMsg(result.message, false);
+      }
+    }
+
+    function showApp() {
+      document.getElementById("loginView").classList.add("hidden");
+      document.getElementById("appView").classList.remove("hidden");
+    }
+
+    async function loadSummary() {
+      const month = document.getElementById("month").value;
+      const result = await api("summary", { month });
+
+      if (result.success === false) {
+        showMsg(result.message, false);
+        return;
+      }
+
+      document.getElementById("summary").innerHTML = `
+        <strong>Month:</strong> ${result.month}<br>
+        <strong>Total Due:</strong> ${result.totalAmountDue}<br>
+        <strong>Total Paid:</strong> ${result.totalPaid}<br>
+        <strong>Remaining Balance:</strong> ${result.remainingBalance}<br>
+        <strong>Dad Borrowing:</strong> ${result.dadsBorrowing}<br><br>
+        <strong>Bills:</strong><br>
+        ${result.billBreakdown.map(b => `${b.type}: ${b.amount}`).join("<br>")}
+      `;
+    }
+
+    async function addPayment() {
+      const month = document.getElementById("month").value;
+
+      const result = await api("addPayment", {
+        token,
+        person: document.getElementById("person").value,
+        amount: document.getElementById("amount").value,
+        month,
+        note: document.getElementById("note").value
+      });
+
+      showMsg(result.message, result.success !== false);
+      loadSummary();
+    }
+
+    async function addBill() {
+      const month = document.getElementById("month").value;
+
+      const result = await api("addBill", {
+        token,
+        billType: document.getElementById("billType").value,
+        amount: document.getElementById("billAmount").value,
+        month
+      });
+
+      showMsg(result.message, result.success !== false);
+      loadSummary();
+    }
+
+    async function updateDadBorrowing() {
+      const result = await api("updateDadBorrowing", {
+        token,
+        amount: document.getElementById("dadAmount").value
+      });
+
+      showMsg(result.message, result.success !== false);
+      loadSummary();
+    }
+
+    function showMsg(message, ok) {
+      const el = document.getElementById("msg");
+      el.textContent = message || "";
+      el.className = ok ? "success" : "error";
+    }
+
+    function showLoginMsg(message, ok) {
+      const el = document.getElementById("loginMsg");
+      el.textContent = message || "";
+      el.className = ok ? "success" : "error";
+    }
+
+    if (token) {
+      showApp();
+      loadSummary();
+    }
+  </script>
+</body>
+</html>

@@ -14,6 +14,21 @@ body {
   color: #1e293b;
 }
 
+#splash {
+  position: fixed;
+  inset: 0;
+  background: #eff6ff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 9999;
+}
+
+#splash img {
+  width: 170px;
+  max-width: 65%;
+}
+
 .container {
   max-width: 700px;
   margin: auto;
@@ -23,9 +38,11 @@ body {
   box-shadow: 0 10px 30px rgba(0,0,0,0.08);
 }
 
-h2 {
-  text-align: center;
-  color: #1d4ed8;
+.logo {
+  display: block;
+  width: 160px;
+  max-width: 70%;
+  margin: 0 auto 24px;
 }
 
 label {
@@ -55,6 +72,17 @@ button {
 
 .admin-btn {
   background: #111827;
+}
+
+.dad-box {
+  background: #fef3c7;
+  border: 1px solid #f59e0b;
+  color: #92400e;
+  padding: 16px;
+  border-radius: 14px;
+  font-weight: 800;
+  text-align: center;
+  margin-bottom: 20px;
 }
 
 .result-section {
@@ -111,12 +139,20 @@ button {
 
 <body>
 
+<div id="splash">
+  <img src="assets/logo.png" alt="Dhaftar Logo">
+</div>
+
 <div class="container">
-  <h2>Dhaftar 2026</h2>
+  <img src="assets/logo.png" class="logo" alt="Dhaftar Logo">
 
   <button class="admin-btn" onclick="window.location.href='admin.html'">
     Admin Access
   </button>
+
+  <div class="dad-box">
+    Dad Borrowing: <span id="dadBorrowingTop">MVR 0</span>
+  </div>
 
   <label>Select Month</label>
   <select id="monthSelector">
@@ -154,11 +190,6 @@ button {
     <div class="result-row">
       <strong>Remaining Amount</strong>
       <span class="amount" id="remaining">MVR 0</span>
-    </div>
-
-    <div class="result-row">
-      <strong>Dad Borrowing</strong>
-      <span class="amount" id="dadBorrowing">MVR 0</span>
     </div>
   </div>
 
@@ -221,10 +252,11 @@ async function getBalance() {
 }
 
 function displayResult(data) {
+  document.getElementById("dadBorrowingTop").textContent = formatMVR(data.dadsBorrowing);
+
   document.getElementById("totalDue").textContent = formatMVR(data.totalAmountDue);
   document.getElementById("totalPaid").textContent = formatMVR(data.totalPaid);
   document.getElementById("remaining").textContent = formatMVR(data.remainingBalance);
-  document.getElementById("dadBorrowing").textContent = formatMVR(data.dadsBorrowing);
 
   if (Number(data.remainingBalance) > 0) {
     document.getElementById("remaining").classList.add("negative");
@@ -258,6 +290,12 @@ function displayResult(data) {
 function showError(message) {
   document.getElementById("error").textContent = message || "Something went wrong.";
 }
+
+window.addEventListener("load", () => {
+  setTimeout(() => {
+    document.getElementById("splash").style.display = "none";
+  }, 1000);
+});
 </script>
 
 </body>

@@ -11,6 +11,17 @@
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-title" content="Dhaftar">
   <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <script>
+    (() => {
+      try {
+        const savedTheme = localStorage.getItem("dhaftar-theme");
+        const prefersDark = window.matchMedia("(prefers-color-scheme: dark)").matches;
+        document.documentElement.dataset.theme = savedTheme || (prefersDark ? "dark" : "light");
+      } catch (_) {
+        document.documentElement.dataset.theme = "light";
+      }
+    })();
+  </script>
 
   <style>
     :root {
@@ -31,6 +42,23 @@
       --radius: 24px;
     }
 
+    :root[data-theme="dark"] {
+      color-scheme: dark;
+      --ink: #e8f3ef;
+      --muted: #9eb5ae;
+      --brand: #4dd4c4;
+      --brand-dark: #35b9aa;
+      --brand-soft: #133d38;
+      --surface: #142320;
+      --canvas: #0b1513;
+      --line: #29413c;
+      --warning: #f2c66f;
+      --warning-soft: #3b3019;
+      --danger: #ff8f87;
+      --danger-soft: #3f211f;
+      --shadow: 0 20px 50px rgba(0, 0, 0, .28);
+    }
+
     * { box-sizing: border-box; }
 
     body {
@@ -41,6 +69,7 @@
       background:
         radial-gradient(circle at 10% 0%, rgba(15, 118, 110, .12), transparent 34rem),
         var(--canvas);
+      transition: color .25s ease, background-color .25s ease;
     }
 
     button, select { font: inherit; }
@@ -90,6 +119,31 @@
 
     .admin-link:hover { background: white; border-color: #b9cec7; transform: translateY(-1px); }
 
+    .topbar-actions { display: flex; align-items: center; gap: 9px; }
+
+    .theme-toggle {
+      display: inline-grid;
+      place-items: center;
+      width: 44px;
+      height: 44px;
+      padding: 0;
+      border: 1px solid var(--line);
+      border-radius: 50%;
+      color: var(--ink);
+      background: rgba(255,255,255,.78);
+      cursor: pointer;
+      font-size: 1.05rem;
+      transition: border-color .2s, background .2s, transform .2s;
+    }
+
+    .theme-toggle:hover { background: white; border-color: #b9cec7; transform: translateY(-1px); }
+
+    :root[data-theme="dark"] .admin-link,
+    :root[data-theme="dark"] .theme-toggle { background: rgba(20,35,32,.88); }
+
+    :root[data-theme="dark"] .admin-link:hover,
+    :root[data-theme="dark"] .theme-toggle:hover { background: #1c302c; border-color: #45645d; }
+
     .hero {
       margin-bottom: 24px;
     }
@@ -116,11 +170,14 @@
     .layout { display: grid; grid-template-columns: minmax(0, 1fr) 280px; gap: 20px; align-items: start; }
 
     .card {
-      background: rgba(255,255,255,.94);
+      background: var(--surface);
       border: 1px solid rgba(223,233,229,.9);
       border-radius: var(--radius);
       box-shadow: var(--shadow);
+      transition: background-color .25s ease, border-color .25s ease;
     }
+
+    :root[data-theme="dark"] .card { border-color: var(--line); }
 
     .main-card { padding: clamp(22px, 5vw, 38px); }
 
@@ -152,6 +209,8 @@
       color: var(--ink);
       cursor: pointer;
     }
+
+    :root[data-theme="dark"] select { background: #172824; border-color: #38534d; }
 
     .primary-btn {
       width: 100%;
@@ -193,6 +252,7 @@
 
     .summary-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
     .metric { padding: 17px; border: 1px solid var(--line); border-radius: 16px; background: #fbfdfc; }
+    :root[data-theme="dark"] .metric { background: #172824; }
     .metric-label { display: block; min-height: 2.5em; color: var(--muted); font-size: .78rem; font-weight: 700; line-height: 1.3; }
     .amount { display: block; margin-top: 9px; color: var(--brand); font-size: clamp(1.05rem, 3vw, 1.35rem); font-weight: 850; letter-spacing: -.025em; }
     .amount.negative { color: var(--danger); }
@@ -229,6 +289,7 @@
       .topbar { margin-bottom: 34px; }
       .logo { width: 120px; }
       .admin-link { padding: 9px 13px; font-size: .82rem; }
+      .topbar-actions { gap: 7px; }
       .layout { grid-template-columns: 1fr; }
       .borrowing-card { position: static; grid-row: 1; }
       .borrowing-body { display: grid; grid-template-columns: 44px 1fr; column-gap: 14px; padding: 20px; }
@@ -257,12 +318,17 @@
   <main class="app-shell">
     <header class="topbar">
       <img src="assets/logo.png" class="logo" alt="Dhaftar">
-      <a class="admin-link" href="admin.html" aria-label="Open admin access">Admin access <span aria-hidden="true">→</span></a>
+      <div class="topbar-actions">
+        <button class="theme-toggle" id="themeToggle" type="button" aria-label="Switch to dark mode" title="Switch to dark mode">
+          <span id="themeIcon" aria-hidden="true">☾</span>
+        </button>
+        <a class="admin-link" href="admin.html" aria-label="Open admin access">Admin access <span aria-hidden="true">→</span></a>
+      </div>
     </header>
 
     <section class="hero" aria-labelledby="page-title">
-      <p class="eyebrow">Household overview · 2026 .v.02</p>
-      <h1 id="page-title">Welcome to Dhaftar.</h1>
+      <p class="eyebrow">Household overview · 2026 . v.02</p>
+      <h1 id="page-title">WELCOME TO DHAFTAR.</h1>
       <p class="intro">Choose a month to see payments, remaining balance, and a clear bill breakdown.</p>
     </section>
 
@@ -328,6 +394,27 @@
       result: document.getElementById("result"), bills: document.getElementById("bills"),
       dad: document.getElementById("dadBorrowingTop"), remaining: document.getElementById("remaining")
     };
+
+    function setTheme(theme, remember = true) {
+      document.documentElement.dataset.theme = theme;
+      const isDark = theme === "dark";
+      const toggle = document.getElementById("themeToggle");
+      const icon = document.getElementById("themeIcon");
+      const label = isDark ? "Switch to light mode" : "Switch to dark mode";
+      toggle.setAttribute("aria-label", label);
+      toggle.title = label;
+      toggle.setAttribute("aria-pressed", String(isDark));
+      icon.textContent = isDark ? "☀" : "☾";
+      document.querySelector('meta[name="theme-color"]').content = isDark ? "#0b1513" : "#0f766e";
+      if (remember) {
+        try { localStorage.setItem("dhaftar-theme", theme); } catch (_) {}
+      }
+    }
+
+    setTheme(document.documentElement.dataset.theme || "light", false);
+    document.getElementById("themeToggle").addEventListener("click", () => {
+      setTheme(document.documentElement.dataset.theme === "dark" ? "light" : "dark");
+    });
 
     async function api(action, data = {}) {
       const response = await fetch(API_URL, { method: "POST", body: JSON.stringify({ action, data }) });
@@ -409,3 +496,4 @@
   </script>
 </body>
 </html>
+F

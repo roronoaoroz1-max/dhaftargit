@@ -2,18 +2,45 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+
+  <meta
+    name="viewport"
+    content="width=device-width, initial-scale=1, viewport-fit=cover"
+  >
+
   <title>Dhaftar Admin</title>
-  <meta name="description" content="Manage Dhaftar payments, bills, and borrowing.">
+
+  <meta
+    name="description"
+    content="Manage Dhaftar payments, bills, and borrowing."
+  >
+
   <meta name="theme-color" content="#0f766e">
-  <link rel="icon" type="image/png" href="assets/app-icon.png">
-  <link rel="apple-touch-icon" sizes="180x180" href="assets/app-icon.png">
+
+  <link
+    rel="icon"
+    type="image/png"
+    href="assets/app-icon.png"
+  >
+
+  <link
+    rel="apple-touch-icon"
+    sizes="180x180"
+    href="assets/app-icon.png"
+  >
+
   <script>
     (() => {
       try {
         const savedTheme = localStorage.getItem("dhaftar-theme");
-        const prefersDark = window.matchMedia("(prefers-color-scheme: dark)").matches;
-        document.documentElement.dataset.theme = savedTheme || (prefersDark ? "dark" : "light");
+
+        const prefersDark = window.matchMedia(
+          "(prefers-color-scheme: dark)"
+        ).matches;
+
+        document.documentElement.dataset.theme =
+          savedTheme || (prefersDark ? "dark" : "light");
+
       } catch (_) {
         document.documentElement.dataset.theme = "light";
       }
@@ -23,62 +50,104 @@
   <style>
     :root {
       color-scheme: light;
+
       --ink: #16302d;
       --muted: #647773;
+
       --brand: #0f766e;
       --brand-dark: #0b5d57;
       --brand-soft: #e7f7f3;
+
       --surface: #ffffff;
       --surface-soft: #f8fbfa;
       --canvas: #f3f7f5;
+
       --line: #dfe9e5;
+
       --danger: #b42318;
       --danger-soft: #fff1f0;
+
       --success: #16794d;
       --success-soft: #eaf8f0;
+
       --warning: #9a5b12;
       --warning-soft: #fff6dd;
-      --shadow: 0 20px 50px rgba(17, 66, 59, .10);
+
+      --shadow: 0 20px 50px rgba(17, 66, 59, 0.10);
       --radius: 24px;
     }
 
     :root[data-theme="dark"] {
       color-scheme: dark;
+
       --ink: #e8f3ef;
       --muted: #9eb5ae;
+
       --brand: #4dd4c4;
       --brand-dark: #35b9aa;
       --brand-soft: #133d38;
+
       --surface: #142320;
       --surface-soft: #172824;
       --canvas: #0b1513;
+
       --line: #29413c;
+
       --danger: #ff8f87;
       --danger-soft: #3f211f;
+
       --success: #75d8a6;
       --success-soft: #17392a;
+
       --warning: #f2c66f;
       --warning-soft: #3b3019;
-      --shadow: 0 20px 50px rgba(0, 0, 0, .28);
+
+      --shadow: 0 20px 50px rgba(0, 0, 0, 0.28);
     }
 
-    * { box-sizing: border-box; }
+    * {
+      box-sizing: border-box;
+    }
 
     body {
       margin: 0;
       min-height: 100vh;
-      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+
+      font-family:
+        Inter,
+        ui-sans-serif,
+        system-ui,
+        -apple-system,
+        BlinkMacSystemFont,
+        "Segoe UI",
+        sans-serif;
+
       color: var(--ink);
+
       background:
-        radial-gradient(circle at 10% 0%, rgba(15, 118, 110, .12), transparent 34rem),
+        radial-gradient(
+          circle at 10% 0%,
+          rgba(15, 118, 110, 0.12),
+          transparent 34rem
+        ),
         var(--canvas);
-      transition: color .25s ease, background-color .25s ease;
+
+      transition:
+        color 0.25s ease,
+        background-color 0.25s ease;
     }
 
-    button, input, select { font: inherit; }
+    button,
+    input,
+    select {
+      font: inherit;
+    }
 
-    button:focus-visible, input:focus-visible, select:focus-visible, a:focus-visible {
-      outline: 3px solid rgba(15, 118, 110, .28);
+    button:focus-visible,
+    input:focus-visible,
+    select:focus-visible,
+    a:focus-visible {
+      outline: 3px solid rgba(15, 118, 110, 0.28);
       outline-offset: 3px;
     }
 
@@ -104,23 +173,42 @@
       object-position: left center;
     }
 
-    .topbar-actions { display: flex; align-items: center; gap: 9px; }
+    .topbar-actions {
+      display: flex;
+      align-items: center;
+      gap: 9px;
+    }
 
-    .icon-button, .back-link {
+    .icon-button,
+    .back-link {
       display: inline-flex;
       align-items: center;
       justify-content: center;
+
       min-height: 44px;
+
       border: 1px solid var(--line);
+
       color: var(--ink);
-      background: color-mix(in srgb, var(--surface) 88%, transparent);
-      transition: border-color .2s, background .2s, transform .2s;
+
+      background:
+        color-mix(
+          in srgb,
+          var(--surface) 88%,
+          transparent
+        );
+
+      transition:
+        border-color 0.2s,
+        background 0.2s,
+        transform 0.2s;
     }
 
     .icon-button {
       width: 44px;
       padding: 0;
       border-radius: 50%;
+
       cursor: pointer;
       font-size: 1.05rem;
     }
@@ -128,14 +216,23 @@
     .back-link {
       gap: 7px;
       padding: 10px 15px;
+
       border-radius: 999px;
+
       text-decoration: none;
-      font-size: .88rem;
+      font-size: 0.88rem;
       font-weight: 750;
     }
 
-    .icon-button:hover, .back-link:hover {
-      border-color: color-mix(in srgb, var(--brand) 45%, var(--line));
+    .icon-button:hover,
+    .back-link:hover {
+      border-color:
+        color-mix(
+          in srgb,
+          var(--brand) 45%,
+          var(--line)
+        );
+
       background: var(--surface);
       transform: translateY(-1px);
     }
@@ -156,552 +253,1779 @@
     .login-mark {
       display: grid;
       place-items: center;
+
       width: 50px;
       height: 50px;
+
       margin-bottom: 22px;
+
       border-radius: 16px;
+
       background: var(--brand-soft);
       color: var(--brand);
+
       font-size: 1.3rem;
       font-weight: 850;
     }
 
     .eyebrow {
       margin: 0 0 7px;
+
       color: var(--brand);
-      font-size: .76rem;
+
+      font-size: 0.76rem;
       font-weight: 850;
-      letter-spacing: .11em;
+
+      letter-spacing: 0.11em;
       text-transform: uppercase;
     }
 
-    h1 { margin: 0; font-size: clamp(1.9rem, 5vw, 2.75rem); line-height: 1.07; letter-spacing: -.04em; }
-    .login-title { font-size: 2rem; }
-    .intro { margin: 12px 0 28px; color: var(--muted); line-height: 1.55; }
+    h1 {
+      margin: 0;
+
+      font-size: clamp(1.9rem, 5vw, 2.75rem);
+      line-height: 1.07;
+      letter-spacing: -0.04em;
+    }
+
+    .login-title {
+      font-size: 2rem;
+    }
+
+    .intro {
+      margin: 12px 0 28px;
+
+      color: var(--muted);
+
+      line-height: 1.55;
+    }
 
     label {
       display: block;
       margin-bottom: 8px;
+
       color: var(--ink);
-      font-size: .88rem;
+
+      font-size: 0.88rem;
       font-weight: 750;
     }
 
-    .field + .field { margin-top: 17px; }
-
-    input, select {
-      width: 100%;
-      min-height: 52px;
-      padding: 0 15px;
-      border: 1px solid color-mix(in srgb, var(--line) 82%, var(--muted));
-      border-radius: 13px;
-      color: var(--ink);
-      background: var(--surface-soft);
-      transition: border-color .2s, box-shadow .2s, background .2s;
+    .field + .field {
+      margin-top: 17px;
     }
 
-    input::placeholder { color: color-mix(in srgb, var(--muted) 72%, transparent); }
-    input:hover, select:hover { border-color: color-mix(in srgb, var(--brand) 35%, var(--line)); }
-    input:focus, select:focus { border-color: var(--brand); box-shadow: 0 0 0 4px color-mix(in srgb, var(--brand) 12%, transparent); background: var(--surface); outline: none; }
+    input,
+    select {
+      width: 100%;
+      min-height: 52px;
 
-    .password-wrap { position: relative; }
-    .password-wrap input { padding-right: 66px; }
+      padding: 0 15px;
+
+      border:
+        1px solid
+        color-mix(
+          in srgb,
+          var(--line) 82%,
+          var(--muted)
+        );
+
+      border-radius: 13px;
+
+      color: var(--ink);
+      background: var(--surface-soft);
+
+      transition:
+        border-color 0.2s,
+        box-shadow 0.2s,
+        background 0.2s;
+    }
+
+    input::placeholder {
+      color:
+        color-mix(
+          in srgb,
+          var(--muted) 72%,
+          transparent
+        );
+    }
+
+    input:hover,
+    select:hover {
+      border-color:
+        color-mix(
+          in srgb,
+          var(--brand) 35%,
+          var(--line)
+        );
+    }
+
+    input:focus,
+    select:focus {
+      border-color: var(--brand);
+
+      box-shadow:
+        0 0 0 4px
+        color-mix(
+          in srgb,
+          var(--brand) 12%,
+          transparent
+        );
+
+      background: var(--surface);
+      outline: none;
+    }
+
+    .password-wrap {
+      position: relative;
+    }
+
+    .password-wrap input {
+      padding-right: 66px;
+    }
+
     .password-toggle {
       position: absolute;
       top: 50%;
       right: 8px;
+
       transform: translateY(-50%);
+
       min-height: 36px;
       padding: 0 9px;
+
       border: 0;
       border-radius: 8px;
+
       color: var(--brand);
       background: transparent;
-      font-size: .78rem;
+
+      font-size: 0.78rem;
       font-weight: 800;
+
       cursor: pointer;
     }
 
-    .primary-button, .logout-button {
+    .primary-button,
+    .logout-button {
       display: inline-flex;
       align-items: center;
       justify-content: center;
       gap: 8px;
+
       width: 100%;
       min-height: 52px;
+
       border: 0;
       border-radius: 13px;
+
       font-weight: 800;
       cursor: pointer;
-      transition: background .2s, transform .2s, box-shadow .2s, opacity .2s;
+
+      transition:
+        background 0.2s,
+        transform 0.2s,
+        box-shadow 0.2s,
+        opacity 0.2s;
     }
 
     .primary-button {
       margin-top: 20px;
-      color: #fff;
+
+      color: #ffffff;
       background: #0f766e;
-      box-shadow: 0 8px 18px rgba(15,118,110,.22);
+
+      box-shadow:
+        0 8px 18px rgba(15, 118, 110, 0.22);
     }
 
-    .primary-button:hover:not(:disabled) { background: #0b5d57; transform: translateY(-1px); box-shadow: 0 11px 22px rgba(15,118,110,.27); }
-    .primary-button:disabled { opacity: .62; cursor: wait; }
+    .primary-button:hover:not(:disabled) {
+      background: #0b5d57;
+      transform: translateY(-1px);
+
+      box-shadow:
+        0 11px 22px rgba(15, 118, 110, 0.27);
+    }
+
+    .primary-button:disabled {
+      opacity: 0.62;
+      cursor: wait;
+    }
 
     .spinner {
       display: none;
+
       width: 15px;
       height: 15px;
-      border: 2px solid rgba(255,255,255,.38);
-      border-top-color: white;
+
+      border:
+        2px solid rgba(255, 255, 255, 0.38);
+
+      border-top-color: #ffffff;
       border-radius: 50%;
-      animation: spin .7s linear infinite;
+
+      animation: spin 0.7s linear infinite;
     }
-    button.is-loading .spinner { display: inline-block; }
-    @keyframes spin { to { transform: rotate(360deg); } }
+
+    button.is-loading .spinner {
+      display: inline-block;
+    }
+
+    @keyframes spin {
+      to {
+        transform: rotate(360deg);
+      }
+    }
 
     .message {
       display: none;
+
       margin-top: 16px;
       padding: 12px 14px;
+
       border: 1px solid;
       border-radius: 12px;
-      font-size: .88rem;
+
+      font-size: 0.88rem;
       font-weight: 700;
       line-height: 1.45;
     }
-    .message.is-visible { display: block; animation: rise .25s ease both; }
-    .message.success { color: var(--success); background: var(--success-soft); border-color: color-mix(in srgb, var(--success) 28%, transparent); }
-    .message.error { color: var(--danger); background: var(--danger-soft); border-color: color-mix(in srgb, var(--danger) 28%, transparent); }
-    @keyframes rise { from { opacity: 0; transform: translateY(5px); } }
 
-    #entryApp { display: none; }
-    #entryApp.is-visible { display: block; animation: rise .3s ease both; }
+    .message.is-visible {
+      display: block;
+      animation: rise 0.25s ease both;
+    }
+
+    .message.success {
+      color: var(--success);
+      background: var(--success-soft);
+
+      border-color:
+        color-mix(
+          in srgb,
+          var(--success) 28%,
+          transparent
+        );
+    }
+
+    .message.error {
+      color: var(--danger);
+      background: var(--danger-soft);
+
+      border-color:
+        color-mix(
+          in srgb,
+          var(--danger) 28%,
+          transparent
+        );
+    }
+
+    @keyframes rise {
+      from {
+        opacity: 0;
+        transform: translateY(5px);
+      }
+    }
+
+    #entryApp {
+      display: none;
+    }
+
+    #entryApp.is-visible {
+      display: block;
+      animation: rise 0.3s ease both;
+    }
 
     .workspace-header {
       display: flex;
       align-items: end;
       justify-content: space-between;
       gap: 28px;
+
       margin-bottom: 24px;
     }
-    .workspace-header .intro { margin: 10px 0 0; }
+
+    .workspace-header .intro {
+      margin: 10px 0 0;
+    }
 
     .logout-button {
       flex: 0 0 auto;
+
       width: auto;
       min-height: 44px;
+
       padding: 0 16px;
+
       color: var(--danger);
       background: var(--danger-soft);
-      border: 1px solid color-mix(in srgb, var(--danger) 24%, transparent);
+
+      border:
+        1px solid
+        color-mix(
+          in srgb,
+          var(--danger) 24%,
+          transparent
+        );
     }
-    .logout-button:hover { transform: translateY(-1px); filter: brightness(.98); }
 
-    .workspace-message { margin: 0 0 18px; }
-    .action-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 18px; }
-    .action-card { padding: clamp(21px, 4vw, 30px); box-shadow: 0 10px 30px rgba(17, 66, 59, .06); }
-    .action-card.borrowing { grid-column: 1 / -1; }
+    .logout-button:hover {
+      transform: translateY(-1px);
+      filter: brightness(0.98);
+    }
 
-    .card-heading { display: flex; align-items: flex-start; gap: 13px; margin-bottom: 24px; }
-    .card-icon { display: grid; place-items: center; flex: 0 0 auto; width: 40px; height: 40px; border-radius: 12px; color: var(--brand); background: var(--brand-soft); font-size: 1.05rem; font-weight: 850; }
-    .card-heading h2 { margin: 1px 0 4px; font-size: 1.15rem; letter-spacing: -.02em; }
-    .card-heading p { margin: 0; color: var(--muted); font-size: .83rem; line-height: 1.4; }
+    .workspace-message {
+      margin: 0 0 18px;
+    }
 
-    .form-row { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; }
-    .form-row + .field, .field + .form-row { margin-top: 17px; }
+    .action-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 18px;
+    }
+
+    .action-card {
+      padding: clamp(21px, 4vw, 30px);
+
+      box-shadow:
+        0 10px 30px rgba(17, 66, 59, 0.06);
+    }
+
+    .action-card.borrowing {
+      grid-column: 1 / -1;
+    }
+
+    .card-heading {
+      display: flex;
+      align-items: flex-start;
+      gap: 13px;
+
+      margin-bottom: 24px;
+    }
+
+    .card-icon {
+      display: grid;
+      place-items: center;
+
+      flex: 0 0 auto;
+
+      width: 40px;
+      height: 40px;
+
+      border-radius: 12px;
+
+      color: var(--brand);
+      background: var(--brand-soft);
+
+      font-size: 1.05rem;
+      font-weight: 850;
+    }
+
+    .card-heading h2 {
+      margin: 1px 0 4px;
+
+      font-size: 1.15rem;
+      letter-spacing: -0.02em;
+    }
+
+    .card-heading p {
+      margin: 0;
+
+      color: var(--muted);
+
+      font-size: 0.83rem;
+      line-height: 1.4;
+    }
+
+    .form-row {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 14px;
+    }
+
+    .form-row + .field,
+    .field + .form-row {
+      margin-top: 17px;
+    }
 
     .current-box {
       display: flex;
       align-items: center;
       justify-content: space-between;
       gap: 18px;
+
       margin-bottom: 20px;
       padding: 16px 18px;
-      border: 1px solid color-mix(in srgb, var(--warning) 28%, var(--line));
+
+      border:
+        1px solid
+        color-mix(
+          in srgb,
+          var(--warning) 28%,
+          var(--line)
+        );
+
       border-radius: 14px;
       background: var(--warning-soft);
     }
-    .current-box span:first-child { color: var(--muted); font-size: .86rem; font-weight: 700; }
-    #currentDadBorrowing { color: var(--warning); font-size: 1.2rem; font-weight: 850; white-space: nowrap; }
 
-    .borrowing-form { display: grid; grid-template-columns: minmax(0, 1fr) minmax(190px, .5fr); gap: 14px; align-items: end; }
-    .borrowing-form .primary-button { margin: 0; }
+    .current-box span:first-child {
+      color: var(--muted);
+
+      font-size: 0.86rem;
+      font-weight: 700;
+    }
+
+    #currentDadBorrowing {
+      color: var(--warning);
+
+      font-size: 1.2rem;
+      font-weight: 850;
+
+      white-space: nowrap;
+    }
+
+    .borrowing-form {
+      display: grid;
+
+      grid-template-columns:
+        minmax(0, 1fr)
+        minmax(190px, 0.5fr);
+
+      gap: 14px;
+      align-items: end;
+    }
+
+    .borrowing-form .primary-button {
+      margin: 0;
+    }
 
     @media (max-width: 740px) {
-      .app-shell { width: min(100% - 24px, 560px); padding-top: 18px; }
-      .topbar { margin-bottom: 32px; }
-      .logo { width: 120px; }
-      .back-link { padding: 9px 12px; font-size: .8rem; }
-      .action-grid { grid-template-columns: 1fr; }
-      .action-card.borrowing { grid-column: auto; }
-      .workspace-header { align-items: flex-start; }
-      .form-row, .borrowing-form { grid-template-columns: 1fr; }
-      .borrowing-form .primary-button { margin-top: 4px; }
+      .app-shell {
+        width: min(100% - 24px, 560px);
+        padding-top: 18px;
+      }
+
+      .topbar {
+        margin-bottom: 32px;
+      }
+
+      .logo {
+        width: 120px;
+      }
+
+      .back-link {
+        padding: 9px 12px;
+        font-size: 0.8rem;
+      }
+
+      .action-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .action-card.borrowing {
+        grid-column: auto;
+      }
+
+      .workspace-header {
+        align-items: flex-start;
+      }
+
+      .form-row,
+      .borrowing-form {
+        grid-template-columns: 1fr;
+      }
+
+      .borrowing-form .primary-button {
+        margin-top: 4px;
+      }
     }
 
     @media (max-width: 440px) {
-      .back-label { display: none; }
-      .back-link { width: 44px; padding: 0; border-radius: 50%; }
-      .workspace-header { display: block; }
-      .logout-button { width: 100%; margin-top: 18px; }
-      .current-box { align-items: flex-start; flex-direction: column; gap: 7px; }
+      .back-label {
+        display: none;
+      }
+
+      .back-link {
+        width: 44px;
+        padding: 0;
+        border-radius: 50%;
+      }
+
+      .workspace-header {
+        display: block;
+      }
+
+      .logout-button {
+        width: 100%;
+        margin-top: 18px;
+      }
+
+      .current-box {
+        align-items: flex-start;
+        flex-direction: column;
+        gap: 7px;
+      }
     }
 
     @media (prefers-reduced-motion: reduce) {
-      *, *::before, *::after { animation-duration: .01ms !important; transition-duration: .01ms !important; }
+      *,
+      *::before,
+      *::after {
+        animation-duration: 0.01ms !important;
+        transition-duration: 0.01ms !important;
+      }
     }
   </style>
 </head>
 
 <body>
   <main class="app-shell">
+
     <header class="topbar">
-      <img src="assets/logo.png" class="logo" alt="Dhaftar">
+
+      <img
+        src="assets/logo.png"
+        class="logo"
+        alt="Dhaftar"
+      >
+
       <div class="topbar-actions">
-        <button class="icon-button" id="themeToggle" type="button" aria-label="Switch to dark mode" title="Switch to dark mode">
+
+        <button
+          class="icon-button"
+          id="themeToggle"
+          type="button"
+          aria-label="Switch to dark mode"
+          title="Switch to dark mode"
+        >
           <span id="themeIcon" aria-hidden="true">☾</span>
         </button>
-        <a class="back-link" href="index.html" aria-label="Back to public page">
-          <span aria-hidden="true">←</span><span class="back-label">Public page</span>
+
+        <a
+          class="back-link"
+          href="index.html"
+          aria-label="Back to public page"
+        >
+          <span aria-hidden="true">←</span>
+          <span class="back-label">Public page</span>
         </a>
+
       </div>
     </header>
 
-    <section class="card" id="loginBox" aria-labelledby="loginTitle">
+    <section
+      class="card"
+      id="loginBox"
+      aria-labelledby="loginTitle"
+    >
+
       <div class="login-mark" aria-hidden="true">✓</div>
+
       <p class="eyebrow">Secure access</p>
-      <h1 class="login-title" id="loginTitle">Welcome back</h1>
-      <p class="intro">Sign in to manage household payments, bills, and borrowing.</p>
+
+      <h1
+        class="login-title"
+        id="loginTitle"
+      >
+        Welcome back
+      </h1>
+
+      <p class="intro">
+        Sign in to manage household payments, bills, and borrowing.
+      </p>
 
       <form id="loginForm">
+
         <div class="field">
-          <label for="username">Username</label>
-          <input type="text" id="username" autocomplete="username" autocapitalize="none" spellcheck="false" required>
+
+          <label for="username">
+            Username
+          </label>
+
+          <input
+            type="text"
+            id="username"
+            autocomplete="username"
+            autocapitalize="none"
+            spellcheck="false"
+            required
+          >
+
         </div>
 
         <div class="field">
-          <label for="password">Password</label>
+
+          <label for="password">
+            Password
+          </label>
+
           <div class="password-wrap">
-            <input type="password" id="password" autocomplete="current-password" required>
-            <button class="password-toggle" id="passwordToggle" type="button" aria-label="Show password">Show</button>
+
+            <input
+              type="password"
+              id="password"
+              autocomplete="current-password"
+              required
+            >
+
+            <button
+              class="password-toggle"
+              id="passwordToggle"
+              type="button"
+              aria-label="Show password"
+            >
+              Show
+            </button>
+
           </div>
         </div>
 
-        <button class="primary-button" id="loginButton" type="submit">
-          <span class="spinner" aria-hidden="true"></span><span class="button-label">Sign in</span>
+        <button
+          class="primary-button"
+          id="loginButton"
+          type="submit"
+        >
+          <span
+            class="spinner"
+            aria-hidden="true"
+          ></span>
+
+          <span class="button-label">
+            Sign in
+          </span>
         </button>
+
       </form>
 
-      <div id="loginMessage" class="message" role="alert" aria-live="polite"></div>
+      <div
+        id="loginMessage"
+        class="message"
+        role="alert"
+        aria-live="polite"
+      ></div>
+
     </section>
 
-    <section id="entryApp" aria-labelledby="workspaceTitle">
+    <section
+      id="entryApp"
+      aria-labelledby="workspaceTitle"
+    >
+
       <div class="workspace-header">
+
         <div>
-          <p class="eyebrow">Admin workspace</p>
-          <h1 id="workspaceTitle">Manage Dhaftar</h1>
-          <p class="intro">Add or update household records from one place.</p>
+
+          <p class="eyebrow">
+            Admin workspace
+          </p>
+
+          <h1 id="workspaceTitle">
+            Manage Dhaftar
+          </h1>
+
+          <p class="intro">
+            Add or update household records from one place.
+          </p>
+
         </div>
-        <button type="button" class="logout-button" id="logoutButton">Log out</button>
+
+        <button
+          type="button"
+          class="logout-button"
+          id="logoutButton"
+        >
+          Log out
+        </button>
+
       </div>
 
-      <div id="message" class="message workspace-message" role="status" aria-live="polite"></div>
+      <div
+        id="message"
+        class="message workspace-message"
+        role="status"
+        aria-live="polite"
+      ></div>
 
       <div class="action-grid">
-        <section class="card action-card" aria-labelledby="paymentTitle">
+
+        <!-- ADD PAYMENT -->
+        <section
+          class="card action-card"
+          aria-labelledby="paymentTitle"
+        >
+
           <div class="card-heading">
-            <div class="card-icon" aria-hidden="true">＋</div>
-            <div><h2 id="paymentTitle">Add payment</h2><p>Record a payment made during a month.</p></div>
+
+            <div
+              class="card-icon"
+              aria-hidden="true"
+            >
+              ＋
+            </div>
+
+            <div>
+              <h2 id="paymentTitle">
+                Add payment
+              </h2>
+
+              <p>
+                Record a payment made during a month.
+              </p>
+            </div>
+
           </div>
 
           <form id="paymentForm">
+
             <div class="form-row">
+
               <div class="field">
-                <label for="person">Person</label>
+
+                <label for="person">
+                  Person
+                </label>
+
                 <select id="person">
-                  <option value="Dhaftar">Dhaftar</option>
-                  <option value="Dad">Dad</option>
-                  <option value="You">You</option>
+
+                  <option value="Dhaftar">
+                    Dhaftar
+                  </option>
+
+                  <option value="Dad">
+                    Dad
+                  </option>
+
+                  <option value="You">
+                    You
+                  </option>
+
                 </select>
+
               </div>
+
               <div class="field">
-                <label for="paymentMonth">Month</label>
+
+                <label for="paymentMonth">
+                  Month
+                </label>
+
                 <select id="paymentMonth"></select>
+
               </div>
+
             </div>
 
             <div class="field">
-              <label for="paymentAmount">Amount (MVR)</label>
-              <input type="number" id="paymentAmount" min="0" step="1" inputmode="decimal" placeholder="0" required>
+
+              <label for="paymentAmount">
+                Amount (MVR)
+              </label>
+
+              <input
+                type="number"
+                id="paymentAmount"
+                min="0"
+                step="0.01"
+                inputmode="decimal"
+                placeholder="0.00"
+                required
+              >
+
             </div>
 
             <div class="field">
-              <label for="paymentNote">Note <span style="color:var(--muted);font-weight:500">(optional)</span></label>
-              <input type="text" id="paymentNote" maxlength="120" placeholder="What was this payment for?">
+
+              <label for="paymentNote">
+                Note
+
+                <span
+                  style="
+                    color: var(--muted);
+                    font-weight: 500;
+                  "
+                >
+                  (optional)
+                </span>
+              </label>
+
+              <input
+                type="text"
+                id="paymentNote"
+                maxlength="120"
+                placeholder="What was this payment for?"
+              >
+
             </div>
 
-            <button class="primary-button" id="paymentButton" type="submit">
-              <span class="spinner" aria-hidden="true"></span><span class="button-label">Add payment</span>
+            <button
+              class="primary-button"
+              id="paymentButton"
+              type="submit"
+            >
+
+              <span
+                class="spinner"
+                aria-hidden="true"
+              ></span>
+
+              <span class="button-label">
+                Add payment
+              </span>
+
             </button>
+
           </form>
+
         </section>
 
-        <section class="card action-card" aria-labelledby="billTitle">
+        <!-- UPDATE BILL -->
+        <section
+          class="card action-card"
+          aria-labelledby="billTitle"
+        >
+
           <div class="card-heading">
-            <div class="card-icon" aria-hidden="true">↻</div>
-            <div><h2 id="billTitle">Update bill</h2><p>Set the amount for a monthly household bill.</p></div>
+
+            <div
+              class="card-icon"
+              aria-hidden="true"
+            >
+              ↻
+            </div>
+
+            <div>
+
+              <h2 id="billTitle">
+                Update bill
+              </h2>
+
+              <p>
+                Set the amount for a monthly household bill.
+              </p>
+
+            </div>
+
           </div>
 
           <form id="billForm">
+
             <div class="form-row">
+
               <div class="field">
-                <label for="billType">Bill type</label>
+
+                <label for="billType">
+                  Bill type
+                </label>
+
                 <select id="billType">
-                  <option value="Rent">Rent</option>
-                  <option value="Water">Water</option>
-                  <option value="Electricity">Electricity</option>
-                  <option value="WiFi">WiFi</option>
-                  <option value="TV">TV</option>
+
+                  <option value="Rent">
+                    Rent
+                  </option>
+
+                  <option value="Water">
+                    Water
+                  </option>
+
+                  <option value="Electricity">
+                    Electricity
+                  </option>
+
+                  <option value="WiFi">
+                    WiFi
+                  </option>
+
+                  <option value="TV">
+                    TV
+                  </option>
+
                 </select>
+
               </div>
+
               <div class="field">
-                <label for="billMonth">Month</label>
+
+                <label for="billMonth">
+                  Month
+                </label>
+
                 <select id="billMonth"></select>
+
               </div>
+
             </div>
 
             <div class="field">
-              <label for="billAmount">Amount (MVR)</label>
-              <input type="number" id="billAmount" min="0" step="1" inputmode="decimal" placeholder="0" required>
+
+              <label for="billAmount">
+                Amount (MVR)
+              </label>
+
+              <input
+                type="number"
+                id="billAmount"
+                min="0"
+                step="0.01"
+                inputmode="decimal"
+                placeholder="0.00"
+                required
+              >
+
             </div>
 
-            <button class="primary-button" id="billButton" type="submit">
-              <span class="spinner" aria-hidden="true"></span><span class="button-label">Update bill</span>
+            <button
+              class="primary-button"
+              id="billButton"
+              type="submit"
+            >
+
+              <span
+                class="spinner"
+                aria-hidden="true"
+              ></span>
+
+              <span class="button-label">
+                Update bill
+              </span>
+
             </button>
+
           </form>
+
         </section>
 
-        <section class="card action-card borrowing" aria-labelledby="borrowingTitle">
+        <!-- DAD BORROWING -->
+        <section
+          class="card action-card borrowing"
+          aria-labelledby="borrowingTitle"
+        >
+
           <div class="card-heading">
-            <div class="card-icon" aria-hidden="true">↗</div>
-            <div><h2 id="borrowingTitle">Dad's borrowing</h2><p>Review and update the remaining borrowing amount.</p></div>
+
+            <div
+              class="card-icon"
+              aria-hidden="true"
+            >
+              ↗
+            </div>
+
+            <div>
+
+              <h2 id="borrowingTitle">
+                Dad's borrowing
+              </h2>
+
+              <p>
+                Review and update the remaining borrowing amount.
+              </p>
+
+            </div>
+
           </div>
 
           <div class="current-box">
-            <span>Current remaining borrowing</span>
-            <strong id="currentDadBorrowing">MVR —</strong>
+
+            <span>
+              Current remaining borrowing
+            </span>
+
+            <strong id="currentDadBorrowing">
+              MVR —
+            </strong>
+
           </div>
 
-          <form class="borrowing-form" id="borrowingForm">
+          <form
+            class="borrowing-form"
+            id="borrowingForm"
+          >
+
             <div class="field">
-              <label for="dadBorrowing">New remaining amount (MVR)</label>
-              <input type="number" id="dadBorrowing" min="0" step="1" inputmode="decimal" placeholder="0" required>
+
+              <label for="dadBorrowing">
+                New remaining amount (MVR)
+              </label>
+
+              <input
+                type="number"
+                id="dadBorrowing"
+                min="0"
+                step="0.01"
+                inputmode="decimal"
+                placeholder="0.00"
+                required
+              >
+
             </div>
-            <button class="primary-button" id="borrowingButton" type="submit">
-              <span class="spinner" aria-hidden="true"></span><span class="button-label">Update borrowing</span>
+
+            <button
+              class="primary-button"
+              id="borrowingButton"
+              type="submit"
+            >
+
+              <span
+                class="spinner"
+                aria-hidden="true"
+              ></span>
+
+              <span class="button-label">
+                Update borrowing
+              </span>
+
             </button>
+
           </form>
+
         </section>
+
       </div>
     </section>
+
   </main>
 
   <script>
-    const API_URL = "https://script.google.com/macros/s/AKfycbxPrt1iDtxFtobHuJy_0k0QDMB-CSMCN5simJ3VDQpBd-4_4FlgJBCd-0NFzkBDEqpCcA/exec";
-    let authToken = localStorage.getItem("dhaftarEntryToken") || "";
-    const months = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
+    const API_URL =
+      "https://script.google.com/macros/s/AKfycbxPrt1iDtxFtobHuJy_0k0QDMB-CSMCN5simJ3VDQpBd-4_4FlgJBCd-0NFzkBDEqpCcA/exec";
+
+    let authToken =
+      localStorage.getItem("dhaftarEntryToken") || "";
+
+    const months = [
+      "January",
+      "February",
+      "March",
+      "April",
+      "May",
+      "June",
+      "July",
+      "August",
+      "September",
+      "October",
+      "November",
+      "December"
+    ];
 
     function setTheme(theme, remember = true) {
       document.documentElement.dataset.theme = theme;
+
       const isDark = theme === "dark";
-      const toggle = document.getElementById("themeToggle");
-      const icon = document.getElementById("themeIcon");
-      const label = isDark ? "Switch to light mode" : "Switch to dark mode";
+
+      const toggle =
+        document.getElementById("themeToggle");
+
+      const icon =
+        document.getElementById("themeIcon");
+
+      const label = isDark
+        ? "Switch to light mode"
+        : "Switch to dark mode";
+
       toggle.setAttribute("aria-label", label);
       toggle.title = label;
-      toggle.setAttribute("aria-pressed", String(isDark));
+
+      toggle.setAttribute(
+        "aria-pressed",
+        String(isDark)
+      );
+
       icon.textContent = isDark ? "☀" : "☾";
-      document.querySelector('meta[name="theme-color"]').content = isDark ? "#0b1513" : "#0f766e";
+
+      document.querySelector(
+        'meta[name="theme-color"]'
+      ).content = isDark
+        ? "#0b1513"
+        : "#0f766e";
+
       if (remember) {
-        try { localStorage.setItem("dhaftar-theme", theme); } catch (_) {}
+        try {
+          localStorage.setItem(
+            "dhaftar-theme",
+            theme
+          );
+        } catch (_) {}
       }
     }
 
     async function api(action, data = {}) {
-      const response = await fetch(API_URL, { method: "POST", body: JSON.stringify({ action, data }) });
-      if (!response.ok) throw new Error("We couldn't reach the service. Please try again.");
+      const response = await fetch(API_URL, {
+        method: "POST",
+
+        body: JSON.stringify({
+          action,
+          data
+        })
+      });
+
+      if (!response.ok) {
+        throw new Error(
+          "We couldn't reach the service. Please try again."
+        );
+      }
+
       return response.json();
     }
 
     function loadMonths() {
-      const currentMonth = months[new Date().getMonth()];
-      ["paymentMonth", "billMonth"].forEach((id) => {
-        const select = document.getElementById(id);
-        select.replaceChildren();
-        months.forEach((month) => {
-          const option = document.createElement("option");
-          option.value = month;
-          option.textContent = month;
-          option.selected = month === currentMonth;
-          select.appendChild(option);
-        });
-      });
+      const currentMonth =
+        months[new Date().getMonth()];
+
+      ["paymentMonth", "billMonth"].forEach(
+        (id) => {
+          const select =
+            document.getElementById(id);
+
+          select.replaceChildren();
+
+          months.forEach((month) => {
+            const option =
+              document.createElement("option");
+
+            option.value = month;
+            option.textContent = month;
+
+            option.selected =
+              month === currentMonth;
+
+            select.appendChild(option);
+          });
+        }
+      );
     }
 
+    /*
+      Decimal display update:
+      Example: 100 becomes MVR 100.00
+      Example: 100.5 becomes MVR 100.50
+    */
     function formatMVR(num) {
       const value = Number(num);
-      if (!Number.isFinite(value)) return "MVR —";
-      return "MVR " + value.toLocaleString("en-IN", { maximumFractionDigits: 0 });
+
+      if (!Number.isFinite(value)) {
+        return "MVR —";
+      }
+
+      return (
+        "MVR " +
+        value.toLocaleString("en-US", {
+          minimumFractionDigits: 2,
+          maximumFractionDigits: 2
+        })
+      );
     }
 
-    function showStatus(element, text, isError = false) {
+    function showStatus(
+      element,
+      text,
+      isError = false
+    ) {
       element.textContent = text || "";
-      element.className = "message" + (element.id === "message" ? " workspace-message" : "");
-      if (text) element.classList.add("is-visible", isError ? "error" : "success");
+
+      element.className =
+        "message" +
+        (
+          element.id === "message"
+            ? " workspace-message"
+            : ""
+        );
+
+      if (text) {
+        element.classList.add(
+          "is-visible",
+          isError ? "error" : "success"
+        );
+      }
     }
 
-    function showLoginMessage(text, isError = false) { showStatus(document.getElementById("loginMessage"), text, isError); }
-    function showMessage(text, isError = false) {
-      const message = document.getElementById("message");
-      showStatus(message, text, isError);
-      if (text) message.scrollIntoView({ behavior: "smooth", block: "nearest" });
+    function showLoginMessage(
+      text,
+      isError = false
+    ) {
+      showStatus(
+        document.getElementById("loginMessage"),
+        text,
+        isError
+      );
     }
 
-    function setButtonLoading(button, loading, loadingLabel) {
+    function showMessage(
+      text,
+      isError = false
+    ) {
+      const message =
+        document.getElementById("message");
+
+      showStatus(
+        message,
+        text,
+        isError
+      );
+
+      if (text) {
+        message.scrollIntoView({
+          behavior: "smooth",
+          block: "nearest"
+        });
+      }
+    }
+
+    function setButtonLoading(
+      button,
+      loading,
+      loadingLabel
+    ) {
       button.disabled = loading;
-      button.classList.toggle("is-loading", loading);
-      const label = button.querySelector(".button-label");
-      if (!label.dataset.defaultLabel) label.dataset.defaultLabel = label.textContent;
-      label.textContent = loading ? loadingLabel : label.dataset.defaultLabel;
+
+      button.classList.toggle(
+        "is-loading",
+        loading
+      );
+
+      const label =
+        button.querySelector(".button-label");
+
+      if (!label.dataset.defaultLabel) {
+        label.dataset.defaultLabel =
+          label.textContent.trim();
+      }
+
+      label.textContent = loading
+        ? loadingLabel
+        : label.dataset.defaultLabel;
     }
 
     function showEntryApp() {
-      document.getElementById("loginBox").style.display = "none";
-      document.getElementById("entryApp").classList.add("is-visible");
+      document.getElementById(
+        "loginBox"
+      ).style.display = "none";
+
+      document.getElementById(
+        "entryApp"
+      ).classList.add("is-visible");
+
       showLoginMessage("");
+
       loadDadBorrowing();
     }
 
     function showLoginBox(message = "") {
-      document.getElementById("loginBox").style.display = "block";
-      document.getElementById("entryApp").classList.remove("is-visible");
-      showLoginMessage(message, Boolean(message));
+      document.getElementById(
+        "loginBox"
+      ).style.display = "block";
+
+      document.getElementById(
+        "entryApp"
+      ).classList.remove("is-visible");
+
+      showLoginMessage(
+        message,
+        Boolean(message)
+      );
     }
 
     async function login() {
-      const username = document.getElementById("username").value.trim();
-      const password = document.getElementById("password").value;
-      if (!username || !password) { showLoginMessage("Please enter your username and password.", true); return; }
+      const username =
+        document
+          .getElementById("username")
+          .value
+          .trim();
 
-      const button = document.getElementById("loginButton");
-      setButtonLoading(button, true, "Signing in…");
+      const password =
+        document.getElementById(
+          "password"
+        ).value;
+
+      if (!username || !password) {
+        showLoginMessage(
+          "Please enter your username and password.",
+          true
+        );
+
+        return;
+      }
+
+      const button =
+        document.getElementById(
+          "loginButton"
+        );
+
+      setButtonLoading(
+        button,
+        true,
+        "Signing in…"
+      );
+
       showLoginMessage("");
+
       try {
-        const result = await api("login", { username, password });
+        const result = await api(
+          "login",
+          {
+            username,
+            password
+          }
+        );
+
         if (result.success) {
           authToken = result.token;
-          localStorage.setItem("dhaftarEntryToken", authToken);
-          document.getElementById("password").value = "";
+
+          localStorage.setItem(
+            "dhaftarEntryToken",
+            authToken
+          );
+
+          document.getElementById(
+            "password"
+          ).value = "";
+
           showEntryApp();
+
         } else {
-          showLoginMessage(result.message || "The username or password is incorrect.", true);
+          showLoginMessage(
+            result.message ||
+              "The username or password is incorrect.",
+            true
+          );
         }
+
       } catch (err) {
-        showLoginMessage(err.message || "Unable to sign in. Please try again.", true);
-      } finally { setButtonLoading(button, false, "Signing in…"); }
+        showLoginMessage(
+          err.message ||
+            "Unable to sign in. Please try again.",
+          true
+        );
+
+      } finally {
+        setButtonLoading(
+          button,
+          false,
+          "Signing in…"
+        );
+      }
     }
 
     function logout(message = "") {
       authToken = "";
-      localStorage.removeItem("dhaftarEntryToken");
+
+      localStorage.removeItem(
+        "dhaftarEntryToken"
+      );
+
       showMessage("");
       showLoginBox(message);
     }
 
     async function loadDadBorrowing() {
-      const display = document.getElementById("currentDadBorrowing");
+      const display =
+        document.getElementById(
+          "currentDadBorrowing"
+        );
+
       display.textContent = "Loading…";
+
       try {
-        const result = await api("getDadBorrowing", { token: authToken });
-        if (result.success === false) { logout(result.message || "Your session has expired. Please sign in again."); return; }
-        display.textContent = formatMVR(result.amount);
+        const result = await api(
+          "getDadBorrowing",
+          {
+            token: authToken
+          }
+        );
+
+        if (result.success === false) {
+          logout(
+            result.message ||
+              "Your session has expired. Please sign in again."
+          );
+
+          return;
+        }
+
+        display.textContent =
+          formatMVR(result.amount);
+
       } catch (err) {
         display.textContent = "MVR —";
-        showMessage(err.message || "Unable to load the current borrowing amount.", true);
+
+        showMessage(
+          err.message ||
+            "Unable to load the current borrowing amount.",
+          true
+        );
       }
     }
 
     async function submitPayment() {
-      const amount = document.getElementById("paymentAmount");
-      if (amount.value === "" || Number(amount.value) < 0) { showMessage("Enter a valid payment amount.", true); amount.focus(); return; }
-      const button = document.getElementById("paymentButton");
-      setButtonLoading(button, true, "Adding…");
+      const amount =
+        document.getElementById(
+          "paymentAmount"
+        );
+
+      const numericAmount =
+        Number(amount.value);
+
+      if (
+        amount.value === "" ||
+        !Number.isFinite(numericAmount) ||
+        numericAmount < 0
+      ) {
+        showMessage(
+          "Enter a valid payment amount.",
+          true
+        );
+
+        amount.focus();
+        return;
+      }
+
+      const button =
+        document.getElementById(
+          "paymentButton"
+        );
+
+      setButtonLoading(
+        button,
+        true,
+        "Adding…"
+      );
+
       showMessage("");
+
       try {
-        const result = await api("addPayment", {
-          token: authToken,
-          person: document.getElementById("person").value,
-          amount: amount.value,
-          month: document.getElementById("paymentMonth").value,
-          note: document.getElementById("paymentNote").value
-        });
-        showMessage(result.message || (result.success === false ? "Payment could not be added." : "Payment added successfully."), result.success === false);
-        if (result.success !== false) { amount.value = ""; document.getElementById("paymentNote").value = ""; }
-      } catch (err) { showMessage(err.message || "Payment could not be added.", true); }
-      finally { setButtonLoading(button, false, "Adding…"); }
+        const result = await api(
+          "addPayment",
+          {
+            token: authToken,
+
+            person:
+              document.getElementById(
+                "person"
+              ).value,
+
+            amount:
+              numericAmount,
+
+            month:
+              document.getElementById(
+                "paymentMonth"
+              ).value,
+
+            note:
+              document.getElementById(
+                "paymentNote"
+              ).value.trim()
+          }
+        );
+
+        showMessage(
+          result.message ||
+            (
+              result.success === false
+                ? "Payment could not be added."
+                : "Payment added successfully."
+            ),
+
+          result.success === false
+        );
+
+        if (result.success !== false) {
+          amount.value = "";
+
+          document.getElementById(
+            "paymentNote"
+          ).value = "";
+        }
+
+      } catch (err) {
+        showMessage(
+          err.message ||
+            "Payment could not be added.",
+          true
+        );
+
+      } finally {
+        setButtonLoading(
+          button,
+          false,
+          "Adding…"
+        );
+      }
     }
 
     async function submitBill() {
-      const amount = document.getElementById("billAmount");
-      if (amount.value === "" || Number(amount.value) < 0) { showMessage("Enter a valid bill amount.", true); amount.focus(); return; }
-      const button = document.getElementById("billButton");
-      setButtonLoading(button, true, "Updating…");
+      const amount =
+        document.getElementById(
+          "billAmount"
+        );
+
+      const numericAmount =
+        Number(amount.value);
+
+      if (
+        amount.value === "" ||
+        !Number.isFinite(numericAmount) ||
+        numericAmount < 0
+      ) {
+        showMessage(
+          "Enter a valid bill amount.",
+          true
+        );
+
+        amount.focus();
+        return;
+      }
+
+      const button =
+        document.getElementById(
+          "billButton"
+        );
+
+      setButtonLoading(
+        button,
+        true,
+        "Updating…"
+      );
+
       showMessage("");
+
       try {
-        const result = await api("addBill", {
-          token: authToken,
-          billType: document.getElementById("billType").value,
-          month: document.getElementById("billMonth").value,
-          amount: amount.value
-        });
-        showMessage(result.message || (result.success === false ? "Bill could not be updated." : "Bill updated successfully."), result.success === false);
-        if (result.success !== false) amount.value = "";
-      } catch (err) { showMessage(err.message || "Bill could not be updated.", true); }
-      finally { setButtonLoading(button, false, "Updating…"); }
+        const result = await api(
+          "addBill",
+          {
+            token: authToken,
+
+            billType:
+              document.getElementById(
+                "billType"
+              ).value,
+
+            month:
+              document.getElementById(
+                "billMonth"
+              ).value,
+
+            amount:
+              numericAmount
+          }
+        );
+
+        showMessage(
+          result.message ||
+            (
+              result.success === false
+                ? "Bill could not be updated."
+                : "Bill updated successfully."
+            ),
+
+          result.success === false
+        );
+
+        if (result.success !== false) {
+          amount.value = "";
+        }
+
+      } catch (err) {
+        showMessage(
+          err.message ||
+            "Bill could not be updated.",
+          true
+        );
+
+      } finally {
+        setButtonLoading(
+          button,
+          false,
+          "Updating…"
+        );
+      }
     }
 
     async function submitBorrowing() {
-      const amount = document.getElementById("dadBorrowing");
-      if (amount.value === "" || Number(amount.value) < 0) { showMessage("Enter a valid borrowing amount.", true); amount.focus(); return; }
-      const button = document.getElementById("borrowingButton");
-      setButtonLoading(button, true, "Updating…");
+      const amount =
+        document.getElementById(
+          "dadBorrowing"
+        );
+
+      const numericAmount =
+        Number(amount.value);
+
+      if (
+        amount.value === "" ||
+        !Number.isFinite(numericAmount) ||
+        numericAmount < 0
+      ) {
+        showMessage(
+          "Enter a valid borrowing amount.",
+          true
+        );
+
+        amount.focus();
+        return;
+      }
+
+      const button =
+        document.getElementById(
+          "borrowingButton"
+        );
+
+      setButtonLoading(
+        button,
+        true,
+        "Updating…"
+      );
+
       showMessage("");
+
       try {
-        const result = await api("updateDadBorrowing", { token: authToken, amount: amount.value });
-        showMessage(result.message || (result.success === false ? "Borrowing could not be updated." : "Borrowing updated successfully."), result.success === false);
-        if (result.success !== false) { amount.value = ""; await loadDadBorrowing(); }
-      } catch (err) { showMessage(err.message || "Borrowing could not be updated.", true); }
-      finally { setButtonLoading(button, false, "Updating…"); }
+        const result = await api(
+          "updateDadBorrowing",
+          {
+            token: authToken,
+            amount: numericAmount
+          }
+        );
+
+        showMessage(
+          result.message ||
+            (
+              result.success === false
+                ? "Borrowing could not be updated."
+                : "Borrowing updated successfully."
+            ),
+
+          result.success === false
+        );
+
+        if (result.success !== false) {
+          amount.value = "";
+          await loadDadBorrowing();
+        }
+
+      } catch (err) {
+        showMessage(
+          err.message ||
+            "Borrowing could not be updated.",
+          true
+        );
+
+      } finally {
+        setButtonLoading(
+          button,
+          false,
+          "Updating…"
+        );
+      }
     }
 
-    setTheme(document.documentElement.dataset.theme || "light", false);
-    document.getElementById("themeToggle").addEventListener("click", () => setTheme(document.documentElement.dataset.theme === "dark" ? "light" : "dark"));
-    document.getElementById("passwordToggle").addEventListener("click", () => {
-      const password = document.getElementById("password");
-      const isVisible = password.type === "text";
-      password.type = isVisible ? "password" : "text";
-      document.getElementById("passwordToggle").textContent = isVisible ? "Show" : "Hide";
-      document.getElementById("passwordToggle").setAttribute("aria-label", isVisible ? "Show password" : "Hide password");
-    });
-    document.getElementById("loginForm").addEventListener("submit", (event) => { event.preventDefault(); login(); });
-    document.getElementById("paymentForm").addEventListener("submit", (event) => { event.preventDefault(); submitPayment(); });
-    document.getElementById("billForm").addEventListener("submit", (event) => { event.preventDefault(); submitBill(); });
-    document.getElementById("borrowingForm").addEventListener("submit", (event) => { event.preventDefault(); submitBorrowing(); });
-    document.getElementById("logoutButton").addEventListener("click", () => logout());
+    setTheme(
+      document.documentElement.dataset.theme ||
+        "light",
+      false
+    );
 
-    window.addEventListener("load", () => {
-      loadMonths();
-      if (authToken) showEntryApp(); else showLoginBox();
-    });
+    document
+      .getElementById("themeToggle")
+      .addEventListener("click", () => {
+        setTheme(
+          document.documentElement.dataset.theme ===
+            "dark"
+            ? "light"
+            : "dark"
+        );
+      });
+
+    document
+      .getElementById("passwordToggle")
+      .addEventListener("click", () => {
+        const password =
+          document.getElementById(
+            "password"
+          );
+
+        const isVisible =
+          password.type === "text";
+
+        password.type =
+          isVisible
+            ? "password"
+            : "text";
+
+        const passwordToggle =
+          document.getElementById(
+            "passwordToggle"
+          );
+
+        passwordToggle.textContent =
+          isVisible
+            ? "Show"
+            : "Hide";
+
+        passwordToggle.setAttribute(
+          "aria-label",
+          isVisible
+            ? "Show password"
+            : "Hide password"
+        );
+      });
+
+    document
+      .getElementById("loginForm")
+      .addEventListener(
+        "submit",
+        (event) => {
+          event.preventDefault();
+          login();
+        }
+      );
+
+    document
+      .getElementById("paymentForm")
+      .addEventListener(
+        "submit",
+        (event) => {
+          event.preventDefault();
+          submitPayment();
+        }
+      );
+
+    document
+      .getElementById("billForm")
+      .addEventListener(
+        "submit",
+        (event) => {
+          event.preventDefault();
+          submitBill();
+        }
+      );
+
+    document
+      .getElementById("borrowingForm")
+      .addEventListener(
+        "submit",
+        (event) => {
+          event.preventDefault();
+          submitBorrowing();
+        }
+      );
+
+    document
+      .getElementById("logoutButton")
+      .addEventListener(
+        "click",
+        () => logout()
+      );
+
+    window.addEventListener(
+      "load",
+      () => {
+        loadMonths();
+
+        if (authToken) {
+          showEntryApp();
+        } else {
+          showLoginBox();
+        }
+      }
+    );
   </script>
 </body>
 </html>

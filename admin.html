@@ -375,6 +375,51 @@
 
       cursor: pointer;
     }
+    .password-toggle {
+  position: absolute;
+  top: 50%;
+  right: 8px;
+
+  transform: translateY(-50%);
+
+  min-height: 36px;
+  padding: 0 9px;
+
+  border: 0;
+  border-radius: 8px;
+
+  color: var(--brand);
+  background: transparent;
+
+  font-size: 0.78rem;
+  font-weight: 800;
+
+  cursor: pointer;
+}
+
+/* PASTE HERE */
+.forgot-password-row {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 10px;
+}
+
+.forgot-password-button {
+  padding: 4px 0;
+  border: 0;
+  color: var(--brand);
+  background: transparent;
+  font-size: 0.82rem;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.forgot-password-button:hover {
+  text-decoration: underline;
+}
+
+.primary-button,
+.logout-button {
 
     .primary-button,
     .secondary-button,
@@ -857,6 +902,16 @@
             </button>
           </div>
         </div>
+
+        <div class="forgot-password-row">
+  <button
+    type="button"
+    class="forgot-password-button"
+    id="forgotPasswordButton"
+  >
+    Forgot password?
+  </button>
+</div>
 
         <button
           class="primary-button"
@@ -1736,7 +1791,72 @@
       }
     }
 
+    async function sendPasswordReset() {
+  const emailInput =
+    document.getElementById("email");
 
+  const email =
+    emailInput.value.trim();
+
+  if (!email) {
+    showLoginMessage(
+      "Enter your email address first.",
+      true
+    );
+
+    emailInput.focus();
+    return;
+  }
+
+  const button =
+    document.getElementById(
+      "forgotPasswordButton"
+    );
+
+  const originalText =
+    button.textContent;
+
+  button.disabled = true;
+  button.textContent = "Sending…";
+
+  showLoginMessage("");
+
+  try {
+    const redirectUrl =
+      new URL(
+        "reset-password.html",
+        window.location.href
+      ).href;
+
+    const { error } =
+      await supabaseClient.auth
+        .resetPasswordForEmail(
+          email,
+          {
+            redirectTo: redirectUrl
+          }
+        );
+
+    if (error) {
+      throw error;
+    }
+
+    showLoginMessage(
+      "Password reset email sent. Check your inbox and spam folder."
+    );
+
+  } catch (error) {
+    showLoginMessage(
+      error.message ||
+      "Unable to send the password reset email.",
+      true
+    );
+
+  } finally {
+    button.disabled = false;
+    button.textContent = originalText;
+  }
+}
     async function logout() {
       await supabaseClient.auth
         .signOut();
@@ -2365,6 +2485,13 @@
             : "Hide";
       }
     );
+
+    document
+  .getElementById("forgotPasswordButton")
+  .addEventListener(
+    "click",
+    sendPasswordReset
+  );
 
 
     document.getElementById(

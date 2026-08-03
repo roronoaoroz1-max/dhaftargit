@@ -60,8 +60,7 @@
           (prefersDark ? "dark" : "light");
 
       } catch (_) {
-        document.documentElement.dataset.theme =
-          "light";
+        document.documentElement.dataset.theme = "light";
       }
     })();
   </script>
@@ -508,7 +507,7 @@
       display: grid;
 
       grid-template-columns:
-        repeat(2, minmax(0, 1fr));
+        repeat(3, minmax(0, 1fr));
 
       gap: 10px;
     }
@@ -560,7 +559,7 @@
       justify-content: space-between;
       gap: 12px;
 
-      margin-bottom: 5px;
+      margin-bottom: 3px;
     }
 
     .bills-head h2 {
@@ -575,10 +574,19 @@
       font-weight: 800;
     }
 
+    .bills-explanation {
+      margin: 0 0 10px;
+
+      color: var(--muted);
+
+      font-size: 0.77rem;
+      line-height: 1.45;
+    }
+
     .bill-item {
       display: flex;
-      justify-content: space-between;
       align-items: center;
+      justify-content: space-between;
       gap: 20px;
 
       padding: 14px 2px;
@@ -591,7 +599,30 @@
       border-bottom: 0;
     }
 
-    .bill-item span {
+    .bill-item > span {
+      color: var(--muted);
+    }
+
+    .bill-values {
+      color: var(--brand);
+
+      font-size: 0.9rem;
+      font-weight: 850;
+
+      text-align: right;
+      white-space: nowrap;
+    }
+
+    .bill-values small {
+      color: var(--muted);
+      font-size: 0.7rem;
+      font-weight: 700;
+    }
+
+    .split-arrow {
+      display: inline-block;
+      margin: 0 6px;
+
       color: var(--muted);
     }
 
@@ -857,7 +888,7 @@
       }
     }
 
-    @media (max-width: 520px) {
+    @media (max-width: 600px) {
       .summary-grid {
         grid-template-columns: 1fr;
       }
@@ -879,7 +910,9 @@
         text-align: right;
         white-space: nowrap;
       }
+    }
 
+    @media (max-width: 520px) {
       .debt-list {
         grid-template-columns: 1fr;
       }
@@ -904,6 +937,23 @@
         margin-top: 0;
 
         text-align: right;
+      }
+    }
+
+    @media (max-width: 440px) {
+      .bill-item {
+        align-items: flex-start;
+        flex-direction: column;
+        gap: 6px;
+      }
+
+      .bill-values {
+        text-align: left;
+        white-space: normal;
+      }
+
+      .split-arrow {
+        margin: 0 4px;
       }
     }
 
@@ -1067,6 +1117,7 @@
 
         </div>
 
+        <!-- BALANCE SUMMARY -->
         <section
           id="result"
           class="result-section"
@@ -1121,23 +1172,11 @@
               </strong>
             </div>
 
-            <div class="metric">
-              <span class="metric-label">
-                Fixed rent share used
-              </span>
-
-              <strong
-                class="amount"
-                id="fixedRentShare"
-              >
-                MVR 0.00
-              </strong>
-            </div>
-
           </div>
 
         </section>
 
+        <!-- BILLS SUMMARY -->
         <section
           id="bills"
           class="result-section"
@@ -1154,12 +1193,17 @@
 
           </div>
 
+          <p class="bills-explanation">
+            Full bill amount → Dhaftar split amount
+          </p>
+
           <div id="billsList"></div>
 
         </section>
 
       </section>
 
+      <!-- AMANAH DAD BALANCES -->
       <aside
         class="card debt-card"
         aria-labelledby="dad-debts-title"
@@ -1218,10 +1262,10 @@
     </div>
   </main>
 
-  <!-- Supabase JavaScript library -->
+  <!-- SUPABASE LIBRARY -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
-  <!-- Your Supabase project connection -->
+  <!-- SUPABASE CONNECTION -->
   <script src="supabase-client.js"></script>
 
   <script>
@@ -1497,9 +1541,7 @@
     }
 
 
-    function displayDadDebts(
-      debts
-    ) {
+    function displayDadDebts(debts) {
       elements.debtList.replaceChildren();
 
       const expectedNames = [
@@ -1585,35 +1627,6 @@
     function displayBills(data) {
       elements.billsList.replaceChildren();
 
-      const rentItem =
-        document.createElement("div");
-
-      rentItem.className =
-        "bill-item rent-item";
-
-      const rentLabel =
-        document.createElement("span");
-
-      rentLabel.textContent =
-        "Fixed rent share";
-
-      const rentAmount =
-        document.createElement("strong");
-
-      rentAmount.textContent =
-        formatMVR(
-          data.fixedRentShare
-        );
-
-      rentItem.append(
-        rentLabel,
-        rentAmount
-      );
-
-      elements.billsList.appendChild(
-        rentItem
-      );
-
       const breakdown =
         Array.isArray(
           data.billBreakdown
@@ -1621,18 +1634,7 @@
           ? data.billBreakdown
           : [];
 
-      const nonRentBills =
-        breakdown.filter(
-          (bill) =>
-            String(
-              bill?.type || ""
-            )
-              .trim()
-              .toLowerCase() !==
-            "rent"
-        );
-
-      if (!nonRentBills.length) {
+      if (!breakdown.length) {
         const empty =
           document.createElement("p");
 
@@ -1640,7 +1642,7 @@
           "empty-state";
 
         empty.textContent =
-          "No other bills have been entered for this month.";
+          "No bills have been entered for this month.";
 
         elements.billsList.appendChild(
           empty
@@ -1649,38 +1651,88 @@
         return;
       }
 
-      nonRentBills.forEach(
-        (bill) => {
-          const item =
-            document.createElement("div");
+      breakdown.forEach((bill) => {
+        const item =
+          document.createElement("div");
 
-          item.className =
-            "bill-item";
+        item.className =
+          "bill-item";
 
-          const label =
-            document.createElement("span");
+        const billType =
+          String(
+            bill?.type || "Bill"
+          ).trim();
 
-          label.textContent =
-            bill.type || "Bill";
-
-          const amount =
-            document.createElement("strong");
-
-          amount.textContent =
-            formatMVR(
-              bill.amount
-            );
-
-          item.append(
-            label,
-            amount
-          );
-
-          elements.billsList.appendChild(
-            item
+        if (
+          billType.toLowerCase() ===
+          "rent"
+        ) {
+          item.classList.add(
+            "rent-item"
           );
         }
-      );
+
+        const label =
+          document.createElement("span");
+
+        label.textContent =
+          billType;
+
+        const values =
+          document.createElement("strong");
+
+        values.className =
+          "bill-values";
+
+        const fullAmount =
+          Number(
+            bill?.fullAmount ??
+            bill?.amount ??
+            0
+          );
+
+        const shareAmount =
+          Number(
+            bill?.shareAmount ??
+            bill?.amount ??
+            0
+          );
+
+        const fullValue =
+          document.createElement("span");
+
+        fullValue.textContent =
+          formatMVR(fullAmount);
+
+        const arrow =
+          document.createElement("span");
+
+        arrow.className =
+          "split-arrow";
+
+        arrow.textContent = "→";
+
+        const shareValue =
+          document.createElement("span");
+
+        shareValue.textContent =
+          formatMVR(shareAmount);
+
+        values.append(
+          fullValue,
+          arrow,
+          shareValue
+        );
+
+        item.append(
+          label,
+          values
+        );
+
+        elements.billsList.appendChild(
+          item
+        );
+      });
     }
 
 
@@ -1697,13 +1749,6 @@
       ).textContent =
         formatMVR(
           data.totalPaid
-        );
-
-      document.getElementById(
-        "fixedRentShare"
-      ).textContent =
-        formatMVR(
-          data.fixedRentShare
         );
 
       const remainingAmount =

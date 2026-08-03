@@ -12,7 +12,7 @@
 
   <meta
     name="description"
-    content="Manage Dhaftar household payments and bills."
+    content="Manage Dhaftar household payments, bills, rent rates and Amanah balances."
   >
 
   <meta name="theme-color" content="#0f766e">
@@ -45,7 +45,8 @@
           (prefersDark ? "dark" : "light");
 
       } catch (_) {
-        document.documentElement.dataset.theme = "light";
+        document.documentElement.dataset.theme =
+          "light";
       }
     })();
   </script>
@@ -137,6 +138,10 @@
           transparent 34rem
         ),
         var(--canvas);
+
+      transition:
+        color 0.25s ease,
+        background-color 0.25s ease;
     }
 
     button,
@@ -151,7 +156,9 @@
     select:focus-visible,
     textarea:focus-visible,
     a:focus-visible {
-      outline: 3px solid rgba(15, 118, 110, 0.28);
+      outline:
+        3px solid rgba(15, 118, 110, 0.28);
+
       outline-offset: 3px;
     }
 
@@ -205,7 +212,8 @@
 
       transition:
         border-color 0.2s,
-        transform 0.2s;
+        transform 0.2s,
+        background 0.2s;
     }
 
     .icon-button {
@@ -214,6 +222,7 @@
       border-radius: 50%;
 
       cursor: pointer;
+      font-size: 1.05rem;
     }
 
     .back-link {
@@ -230,6 +239,7 @@
     .icon-button:hover,
     .back-link:hover {
       border-color: var(--brand);
+      background: var(--surface-soft);
       transform: translateY(-1px);
     }
 
@@ -319,6 +329,11 @@
 
       color: var(--ink);
       background: var(--surface-soft);
+
+      transition:
+        border-color 0.2s,
+        box-shadow 0.2s,
+        background 0.2s;
     }
 
     input,
@@ -330,8 +345,13 @@
     textarea {
       min-height: 92px;
       padding: 13px 15px;
-
       resize: vertical;
+    }
+
+    input::placeholder,
+    textarea::placeholder {
+      color: var(--muted);
+      opacity: 0.72;
     }
 
     input:focus,
@@ -375,51 +395,36 @@
 
       cursor: pointer;
     }
-    .password-toggle {
-  position: absolute;
-  top: 50%;
-  right: 8px;
 
-  transform: translateY(-50%);
+    .forgot-password-row {
+      display: flex;
+      justify-content: flex-end;
+      margin-top: 10px;
+    }
 
-  min-height: 36px;
-  padding: 0 9px;
+    .forgot-password-button {
+      padding: 4px 0;
 
-  border: 0;
-  border-radius: 8px;
+      border: 0;
 
-  color: var(--brand);
-  background: transparent;
+      color: var(--brand);
+      background: transparent;
 
-  font-size: 0.78rem;
-  font-weight: 800;
+      font-size: 0.82rem;
+      font-weight: 800;
 
-  cursor: pointer;
-}
+      cursor: pointer;
+    }
 
-/* PASTE HERE */
-.forgot-password-row {
-  display: flex;
-  justify-content: flex-end;
-  margin-top: 10px;
-}
+    .forgot-password-button:hover {
+      text-decoration: underline;
+    }
 
-.forgot-password-button {
-  padding: 4px 0;
-  border: 0;
-  color: var(--brand);
-  background: transparent;
-  font-size: 0.82rem;
-  font-weight: 800;
-  cursor: pointer;
-}
-
-.forgot-password-button:hover {
-  text-decoration: underline;
-}
-
-.primary-button,
-.logout-button {
+    .forgot-password-button:disabled {
+      opacity: 0.62;
+      cursor: wait;
+      text-decoration: none;
+    }
 
     .primary-button,
     .secondary-button,
@@ -438,7 +443,8 @@
 
       transition:
         transform 0.2s,
-        opacity 0.2s;
+        opacity 0.2s,
+        background 0.2s;
     }
 
     .primary-button {
@@ -454,9 +460,8 @@
         0 8px 18px rgba(15, 118, 110, 0.22);
     }
 
-    .primary-button:hover:not(:disabled),
-    .secondary-button:hover,
-    .logout-button:hover {
+    .primary-button:hover:not(:disabled) {
+      background: #0b5d57;
       transform: translateY(-1px);
     }
 
@@ -477,18 +482,16 @@
       text-decoration: none;
     }
 
+    .secondary-button:hover,
+    .logout-button:hover {
+      transform: translateY(-1px);
+    }
+
     .logout-button {
       flex: 0 0 auto;
-
       padding: 0 16px;
 
-      border:
-        1px solid
-        color-mix(
-          in srgb,
-          var(--danger) 24%,
-          transparent
-        );
+      border: 1px solid var(--danger);
 
       color: var(--danger);
       background: var(--danger-soft);
@@ -535,6 +538,7 @@
 
     .message.is-visible {
       display: block;
+      animation: rise 0.25s ease both;
     }
 
     .message.success {
@@ -549,12 +553,20 @@
       border-color: var(--danger);
     }
 
+    @keyframes rise {
+      from {
+        opacity: 0;
+        transform: translateY(5px);
+      }
+    }
+
     #adminApp {
       display: none;
     }
 
     #adminApp.is-visible {
       display: block;
+      animation: rise 0.3s ease both;
     }
 
     .workspace-header {
@@ -763,6 +775,10 @@
         padding-top: 18px;
       }
 
+      .topbar {
+        margin-bottom: 32px;
+      }
+
       .logo {
         width: 120px;
       }
@@ -813,6 +829,15 @@
         grid-template-columns: 1fr 1fr;
       }
     }
+
+    @media (prefers-reduced-motion: reduce) {
+      *,
+      *::before,
+      *::after {
+        animation-duration: 0.01ms !important;
+        transition-duration: 0.01ms !important;
+      }
+    }
   </style>
 </head>
 
@@ -831,9 +856,15 @@
           class="icon-button"
           id="themeToggle"
           type="button"
-          aria-label="Switch theme"
+          aria-label="Switch to dark mode"
+          title="Switch to dark mode"
         >
-          <span id="themeIcon">☾</span>
+          <span
+            id="themeIcon"
+            aria-hidden="true"
+          >
+            ☾
+          </span>
         </button>
 
         <a
@@ -841,7 +872,7 @@
           href="index.html"
           aria-label="Back to Dhaftar dashboard"
         >
-          <span>←</span>
+          <span aria-hidden="true">←</span>
           <span class="back-label">Dashboard</span>
         </a>
       </div>
@@ -853,9 +884,16 @@
       id="loginBox"
       aria-labelledby="loginTitle"
     >
-      <div class="login-mark">✓</div>
+      <div
+        class="login-mark"
+        aria-hidden="true"
+      >
+        ✓
+      </div>
 
-      <p class="eyebrow">Private administrator</p>
+      <p class="eyebrow">
+        Private administrator
+      </p>
 
       <h1
         class="login-title"
@@ -871,19 +909,25 @@
       <form id="loginForm">
 
         <div class="field">
-          <label for="email">Email</label>
+          <label for="email">
+            Email
+          </label>
 
           <input
             type="email"
             id="email"
-            value="roronoaoroz1@gmail.com"
             autocomplete="username"
+            autocapitalize="none"
+            spellcheck="false"
+            placeholder="Enter your admin email"
             required
           >
         </div>
 
         <div class="field">
-          <label for="password">Password</label>
+          <label for="password">
+            Password
+          </label>
 
           <div class="password-wrap">
             <input
@@ -897,6 +941,7 @@
               class="password-toggle"
               id="passwordToggle"
               type="button"
+              aria-label="Show password"
             >
               Show
             </button>
@@ -904,22 +949,28 @@
         </div>
 
         <div class="forgot-password-row">
-  <button
-    type="button"
-    class="forgot-password-button"
-    id="forgotPasswordButton"
-  >
-    Forgot password?
-  </button>
-</div>
+          <button
+            type="button"
+            class="forgot-password-button"
+            id="forgotPasswordButton"
+          >
+            Forgot password?
+          </button>
+        </div>
 
         <button
           class="primary-button"
           id="loginButton"
           type="submit"
         >
-          <span class="spinner"></span>
-          <span class="button-label">Sign in</span>
+          <span
+            class="spinner"
+            aria-hidden="true"
+          ></span>
+
+          <span class="button-label">
+            Sign in
+          </span>
         </button>
       </form>
 
@@ -932,15 +983,25 @@
     </section>
 
     <!-- ADMIN APP -->
-    <section id="adminApp">
+    <section
+      id="adminApp"
+      aria-labelledby="workspaceTitle"
+    >
 
       <div class="workspace-header">
         <div>
-          <p class="eyebrow">Administrator workspace</p>
+          <p class="eyebrow">
+            Administrator workspace
+          </p>
 
-          <h1>Manage Dhaftar</h1>
+          <h1 id="workspaceTitle">
+            Manage Dhaftar
+          </h1>
 
-          <p class="intro" id="signedInText">
+          <p
+            class="intro"
+            id="signedInText"
+          >
             Add payments, bills and rent changes.
           </p>
         </div>
@@ -954,10 +1015,14 @@
         </button>
       </div>
 
-      <nav class="admin-tabs">
+      <nav
+        class="admin-tabs"
+        aria-label="Administrator sections"
+      >
         <a
           href="admin.html"
           class="admin-tab active"
+          aria-current="page"
         >
           Dhaftar
         </a>
@@ -980,13 +1045,22 @@
       <div class="action-grid">
 
         <!-- ADD PAYMENT -->
-        <section class="card action-card">
-
+        <section
+          class="card action-card"
+          aria-labelledby="paymentTitle"
+        >
           <div class="card-heading">
-            <div class="card-icon">＋</div>
+            <div
+              class="card-icon"
+              aria-hidden="true"
+            >
+              ＋
+            </div>
 
             <div>
-              <h2>Add payment</h2>
+              <h2 id="paymentTitle">
+                Add payment
+              </h2>
 
               <p>
                 Record a household payment for a selected month.
@@ -1079,21 +1153,36 @@
               id="paymentButton"
               type="submit"
             >
-              <span class="spinner"></span>
-              <span class="button-label">Add payment</span>
+              <span
+                class="spinner"
+                aria-hidden="true"
+              ></span>
+
+              <span class="button-label">
+                Add payment
+              </span>
             </button>
 
           </form>
         </section>
 
         <!-- UPDATE BILL -->
-        <section class="card action-card">
-
+        <section
+          class="card action-card"
+          aria-labelledby="billTitle"
+        >
           <div class="card-heading">
-            <div class="card-icon">↻</div>
+            <div
+              class="card-icon"
+              aria-hidden="true"
+            >
+              ↻
+            </div>
 
             <div>
-              <h2>Update bill</h2>
+              <h2 id="billTitle">
+                Update bill
+              </h2>
 
               <p>
                 Add or replace a bill amount for a month.
@@ -1141,7 +1230,7 @@
 
               <div class="field">
                 <label for="billAmount">
-                  Amount (MVR)
+                  Full bill amount (MVR)
                 </label>
 
                 <input
@@ -1174,24 +1263,39 @@
               id="billButton"
               type="submit"
             >
-              <span class="spinner"></span>
-              <span class="button-label">Save bill</span>
+              <span
+                class="spinner"
+                aria-hidden="true"
+              ></span>
+
+              <span class="button-label">
+                Save bill
+              </span>
             </button>
 
           </form>
         </section>
 
         <!-- RENT RATE -->
-        <section class="card action-card">
-
+        <section
+          class="card action-card"
+          aria-labelledby="rentTitle"
+        >
           <div class="card-heading">
-            <div class="card-icon">⌂</div>
+            <div
+              class="card-icon"
+              aria-hidden="true"
+            >
+              ⌂
+            </div>
 
             <div>
-              <h2>Rent rate</h2>
+              <h2 id="rentTitle">
+                Rent rate
+              </h2>
 
               <p>
-                Set the fixed rent share from a selected month onward.
+                Set the full rent and Dhaftar share from a selected month onward.
               </p>
             </div>
           </div>
@@ -1218,20 +1322,40 @@
 
             </div>
 
-            <div class="field">
-              <label for="rentAmount">
-                Fixed rent share (MVR)
-              </label>
+            <div class="form-row">
 
-              <input
-                type="number"
-                id="rentAmount"
-                min="0"
-                step="0.01"
-                inputmode="decimal"
-                placeholder="0.00"
-                required
-              >
+              <div class="field">
+                <label for="fullRentAmount">
+                  Full rent amount (MVR)
+                </label>
+
+                <input
+                  type="number"
+                  id="fullRentAmount"
+                  min="0"
+                  step="0.01"
+                  inputmode="decimal"
+                  placeholder="0.00"
+                  required
+                >
+              </div>
+
+              <div class="field">
+                <label for="rentAmount">
+                  Dhaftar rent share (MVR)
+                </label>
+
+                <input
+                  type="number"
+                  id="rentAmount"
+                  min="0"
+                  step="0.01"
+                  inputmode="decimal"
+                  placeholder="0.00"
+                  required
+                >
+              </div>
+
             </div>
 
             <div class="field">
@@ -1251,8 +1375,14 @@
               id="rentButton"
               type="submit"
             >
-              <span class="spinner"></span>
-              <span class="button-label">Save rent rate</span>
+              <span
+                class="spinner"
+                aria-hidden="true"
+              ></span>
+
+              <span class="button-label">
+                Save rent rate
+              </span>
             </button>
 
           </form>
@@ -1260,17 +1390,27 @@
           <div
             class="rate-list"
             id="rentRateList"
+            aria-live="polite"
           ></div>
         </section>
 
         <!-- AMANAH OVERVIEW -->
-        <section class="card action-card">
-
+        <section
+          class="card action-card"
+          aria-labelledby="amanahTitle"
+        >
           <div class="card-heading">
-            <div class="card-icon">↗</div>
+            <div
+              class="card-icon"
+              aria-hidden="true"
+            >
+              ↗
+            </div>
 
             <div>
-              <h2>Amanah balances</h2>
+              <h2 id="amanahTitle">
+                Amanah balances
+              </h2>
 
               <p>
                 Current amounts owed to Dad.
@@ -1314,8 +1454,8 @@
           </a>
 
           <p class="small-note">
-           Open Amanah to manage people, accounts, loans,
-           repayments and account transactions.
+            Open Amanah to manage people, accounts, loans,
+            repayments and account transactions.
           </p>
         </section>
 
@@ -1323,7 +1463,10 @@
     </section>
   </main>
 
+  <!-- Supabase browser library -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+  <!-- Your project URL and publishable key -->
   <script src="supabase-client.js"></script>
 
   <script>
@@ -1347,7 +1490,8 @@
 
 
     function localToday() {
-      const now = new Date();
+      const now =
+        new Date();
 
       const local =
         new Date(
@@ -1371,9 +1515,35 @@
       const isDark =
         theme === "dark";
 
-      document.getElementById(
-        "themeIcon"
-      ).textContent =
+      const toggle =
+        document.getElementById(
+          "themeToggle"
+        );
+
+      const icon =
+        document.getElementById(
+          "themeIcon"
+        );
+
+      const label =
+        isDark
+          ? "Switch to light mode"
+          : "Switch to dark mode";
+
+      toggle.setAttribute(
+        "aria-label",
+        label
+      );
+
+      toggle.title =
+        label;
+
+      toggle.setAttribute(
+        "aria-pressed",
+        String(isDark)
+      );
+
+      icon.textContent =
         isDark ? "☀" : "☾";
 
       document.querySelector(
@@ -1419,10 +1589,12 @@
       monthName,
       year
     ) {
-      const index =
-        MONTHS.indexOf(monthName);
+      const monthIndex =
+        MONTHS.indexOf(
+          monthName
+        );
 
-      if (index === -1) {
+      if (monthIndex === -1) {
         throw new Error(
           "Invalid month selected."
         );
@@ -1431,7 +1603,7 @@
       return (
         String(year) +
         "-" +
-        String(index + 1)
+        String(monthIndex + 1)
           .padStart(2, "0") +
         "-01"
       );
@@ -1440,7 +1612,10 @@
 
     function displayMonth(dateText) {
       const date =
-        new Date(dateText + "T00:00:00");
+        new Date(
+          dateText +
+          "T00:00:00"
+        );
 
       return date.toLocaleDateString(
         "en-US",
@@ -1454,40 +1629,54 @@
 
     function loadSelectors() {
       const currentMonth =
-        MONTHS[new Date().getMonth()];
+        MONTHS[
+          new Date().getMonth()
+        ];
 
-      const monthSelectors = [
+      [
         "paymentMonth",
         "billMonth",
         "rentMonth"
-      ];
-
-      monthSelectors.forEach((id) => {
+      ].forEach((id) => {
         const select =
-          document.getElementById(id);
+          document.getElementById(
+            id
+          );
 
         select.replaceChildren();
 
         MONTHS.forEach((month) => {
           const option =
-            document.createElement("option");
+            document.createElement(
+              "option"
+            );
 
-          option.value = month;
-          option.textContent = month;
+          option.value =
+            month;
+
+          option.textContent =
+            month;
 
           option.selected =
             month === currentMonth;
 
-          select.appendChild(option);
+          select.appendChild(
+            option
+          );
         });
       });
 
       const currentYear =
         new Date().getFullYear();
 
-      const startYear = 2026;
+      const startYear =
+        2026;
+
       const endYear =
-        Math.max(currentYear + 2, 2028);
+        Math.max(
+          currentYear + 2,
+          2028
+        );
 
       [
         "paymentYear",
@@ -1495,7 +1684,9 @@
         "rentYear"
       ].forEach((id) => {
         const select =
-          document.getElementById(id);
+          document.getElementById(
+            id
+          );
 
         select.replaceChildren();
 
@@ -1505,21 +1696,29 @@
           year++
         ) {
           const option =
-            document.createElement("option");
+            document.createElement(
+              "option"
+            );
 
-          option.value = String(year);
-          option.textContent = String(year);
+          option.value =
+            String(year);
+
+          option.textContent =
+            String(year);
 
           option.selected =
             year === currentYear;
 
-          select.appendChild(option);
+          select.appendChild(
+            option
+          );
         }
       });
 
       document.getElementById(
         "paymentDate"
-      ).value = localToday();
+      ).value =
+        localToday();
     }
 
 
@@ -1528,8 +1727,11 @@
       text,
       isError = false
     ) {
-      element.textContent = text || "";
-      element.className = "message";
+      element.textContent =
+        text || "";
+
+      element.className =
+        "message";
 
       if (
         element.id === "message"
@@ -1568,13 +1770,23 @@
       text,
       isError = false
     ) {
-      showStatus(
+      const element =
         document.getElementById(
           "message"
-        ),
+        );
+
+      showStatus(
+        element,
         text,
         isError
       );
+
+      if (text) {
+        element.scrollIntoView({
+          behavior: "smooth",
+          block: "nearest"
+        });
+      }
     }
 
 
@@ -1583,7 +1795,8 @@
       loading,
       loadingText
     ) {
-      button.disabled = loading;
+      button.disabled =
+        loading;
 
       button.classList.toggle(
         "is-loading",
@@ -1614,7 +1827,8 @@
     ) {
       document.getElementById(
         "loginBox"
-      ).hidden = false;
+      ).hidden =
+        false;
 
       document.getElementById(
         "adminApp"
@@ -1632,7 +1846,8 @@
     async function showAdminApp() {
       document.getElementById(
         "loginBox"
-      ).hidden = true;
+      ).hidden =
+        true;
 
       document.getElementById(
         "adminApp"
@@ -1767,11 +1982,19 @@
           throw error;
         }
 
-        await verifyAdministrator();
+        const isAdmin =
+          await verifyAdministrator();
+
+        if (!isAdmin) {
+          throw new Error(
+            "Unable to verify administrator access."
+          );
+        }
 
         document.getElementById(
           "password"
-        ).value = "";
+        ).value =
+          "";
 
         await showAdminApp();
 
@@ -1791,78 +2014,95 @@
       }
     }
 
+
     async function sendPasswordReset() {
-  const emailInput =
-    document.getElementById("email");
-
-  const email =
-    emailInput.value.trim();
-
-  if (!email) {
-    showLoginMessage(
-      "Enter your email address first.",
-      true
-    );
-
-    emailInput.focus();
-    return;
-  }
-
-  const button =
-    document.getElementById(
-      "forgotPasswordButton"
-    );
-
-  const originalText =
-    button.textContent;
-
-  button.disabled = true;
-  button.textContent = "Sending…";
-
-  showLoginMessage("");
-
-  try {
-    const redirectUrl =
-      new URL(
-        "reset-password.html",
-        window.location.href
-      ).href;
-
-    const { error } =
-      await supabaseClient.auth
-        .resetPasswordForEmail(
-          email,
-          {
-            redirectTo: redirectUrl
-          }
+      const emailInput =
+        document.getElementById(
+          "email"
         );
 
-    if (error) {
-      throw error;
+      const email =
+        emailInput.value.trim();
+
+      if (!email) {
+        showLoginMessage(
+          "Enter your email address first.",
+          true
+        );
+
+        emailInput.focus();
+        return;
+      }
+
+      const button =
+        document.getElementById(
+          "forgotPasswordButton"
+        );
+
+      const originalText =
+        button.textContent;
+
+      button.disabled =
+        true;
+
+      button.textContent =
+        "Sending…";
+
+      showLoginMessage("");
+
+      try {
+        const redirectUrl =
+          new URL(
+            "reset-password.html",
+            window.location.href
+          ).href;
+
+        const {
+          error
+        } =
+          await supabaseClient.auth
+            .resetPasswordForEmail(
+              email,
+              {
+                redirectTo:
+                  redirectUrl
+              }
+            );
+
+        if (error) {
+          throw error;
+        }
+
+        showLoginMessage(
+          "Password reset email sent. Check your inbox and spam folder."
+        );
+
+      } catch (error) {
+        showLoginMessage(
+          error.message ||
+          "Unable to send the password reset email.",
+          true
+        );
+
+      } finally {
+        button.disabled =
+          false;
+
+        button.textContent =
+          originalText;
+      }
     }
 
-    showLoginMessage(
-      "Password reset email sent. Check your inbox and spam folder."
-    );
 
-  } catch (error) {
-    showLoginMessage(
-      error.message ||
-      "Unable to send the password reset email.",
-      true
-    );
-
-  } finally {
-    button.disabled = false;
-    button.textContent = originalText;
-  }
-}
     async function logout() {
       await supabaseClient.auth
         .signOut();
 
-      currentUser = null;
-      currentProfile = null;
+      currentUser =
+        null;
+
+      currentProfile =
+        null;
 
       showMessage("");
       showLoginBox();
@@ -1876,7 +2116,9 @@
         );
 
       const amount =
-        Number(amountInput.value);
+        Number(
+          amountInput.value
+        );
 
       if (
         !Number.isFinite(amount) ||
@@ -1919,7 +2161,9 @@
           error
         } =
           await supabaseClient
-            .from("dhaftar_payments")
+            .from(
+              "dhaftar_payments"
+            )
             .insert({
               payer_name:
                 document.getElementById(
@@ -1939,18 +2183,23 @@
               note:
                 document.getElementById(
                   "paymentNote"
-                ).value.trim()
+                ).value.trim(),
+
+              created_by:
+                currentUser.id
             });
 
         if (error) {
           throw error;
         }
 
-        amountInput.value = "";
+        amountInput.value =
+          "";
 
         document.getElementById(
           "paymentNote"
-        ).value = "";
+        ).value =
+          "";
 
         showMessage(
           "Payment added successfully."
@@ -1985,7 +2234,7 @@
           "billType"
         ).value;
 
-      const billingMonth =
+      const selectedMonth =
         billingDate(
           document.getElementById(
             "billMonth"
@@ -2001,14 +2250,16 @@
       } =
         await supabaseClient
           .from("dhaftar_bills")
-          .select("amount, notes")
+          .select(
+            "amount, notes"
+          )
           .eq(
             "bill_type",
             billType
           )
           .eq(
             "billing_month",
-            billingMonth
+            selectedMonth
           )
           .maybeSingle();
 
@@ -2040,7 +2291,9 @@
         );
 
       const amount =
-        Number(amountInput.value);
+        Number(
+          amountInput.value
+        );
 
       if (
         !Number.isFinite(amount) ||
@@ -2069,7 +2322,7 @@
       showMessage("");
 
       try {
-        const billingMonth =
+        const selectedMonth =
           billingDate(
             document.getElementById(
               "billMonth"
@@ -2083,7 +2336,9 @@
           error
         } =
           await supabaseClient
-            .from("dhaftar_bills")
+            .from(
+              "dhaftar_bills"
+            )
             .upsert(
               {
                 bill_type:
@@ -2092,7 +2347,7 @@
                   ).value,
 
                 billing_month:
-                  billingMonth,
+                  selectedMonth,
 
                 amount,
 
@@ -2100,6 +2355,9 @@
                   document.getElementById(
                     "billNotes"
                   ).value.trim(),
+
+                created_by:
+                  currentUser.id,
 
                 updated_by:
                   currentUser.id
@@ -2157,9 +2415,11 @@
         error
       } =
         await supabaseClient
-          .from("dhaftar_rent_rates")
+          .from(
+            "dhaftar_rent_rates"
+          )
           .select(
-            "fixed_rent_share, note"
+            "full_rent_amount, fixed_rent_share, note"
           )
           .eq(
             "effective_from",
@@ -2177,6 +2437,11 @@
       }
 
       document.getElementById(
+        "fullRentAmount"
+      ).value =
+        data?.full_rent_amount ?? "";
+
+      document.getElementById(
         "rentAmount"
       ).value =
         data?.fixed_rent_share ?? "";
@@ -2189,24 +2454,49 @@
 
 
     async function submitRentRate() {
-      const amountInput =
+      const fullAmountInput =
+        document.getElementById(
+          "fullRentAmount"
+        );
+
+      const shareAmountInput =
         document.getElementById(
           "rentAmount"
         );
 
-      const amount =
-        Number(amountInput.value);
+      const fullAmount =
+        Number(
+          fullAmountInput.value
+        );
+
+      const shareAmount =
+        Number(
+          shareAmountInput.value
+        );
 
       if (
-        !Number.isFinite(amount) ||
-        amount < 0
+        !Number.isFinite(fullAmount) ||
+        fullAmount < 0
       ) {
         showMessage(
-          "Enter a valid rent amount.",
+          "Enter a valid full rent amount.",
           true
         );
 
-        amountInput.focus();
+        fullAmountInput.focus();
+        return;
+      }
+
+      if (
+        !Number.isFinite(shareAmount) ||
+        shareAmount < 0
+      ) {
+        showMessage(
+          "Enter a valid Dhaftar rent share.",
+          true
+        );
+
+        shareAmountInput.focus();
         return;
       }
 
@@ -2238,14 +2528,19 @@
           error
         } =
           await supabaseClient
-            .from("dhaftar_rent_rates")
+            .from(
+              "dhaftar_rent_rates"
+            )
             .upsert(
               {
                 effective_from:
                   effectiveFrom,
 
+                full_rent_amount:
+                  fullAmount,
+
                 fixed_rent_share:
-                  amount,
+                  shareAmount,
 
                 note:
                   document.getElementById(
@@ -2305,9 +2600,11 @@
         error
       } =
         await supabaseClient
-          .from("dhaftar_rent_rates")
+          .from(
+            "dhaftar_rent_rates"
+          )
           .select(
-            "effective_from, fixed_rent_share, note"
+            "effective_from, full_rent_amount, fixed_rent_share, note"
           )
           .order(
             "effective_from",
@@ -2315,11 +2612,16 @@
               ascending: false
             }
           )
-          .limit(6);
+          .limit(8);
 
       if (error) {
         list.textContent =
           "Unable to load rent rates.";
+
+        console.error(
+          "Rent rates error:",
+          error
+        );
 
         return;
       }
@@ -2335,13 +2637,17 @@
 
       data.forEach((rate) => {
         const item =
-          document.createElement("div");
+          document.createElement(
+            "div"
+          );
 
         item.className =
           "rate-item";
 
         const label =
-          document.createElement("span");
+          document.createElement(
+            "span"
+          );
 
         label.textContent =
           "From " +
@@ -2350,9 +2656,15 @@
           );
 
         const amount =
-          document.createElement("strong");
+          document.createElement(
+            "strong"
+          );
 
         amount.textContent =
+          formatMVR(
+            rate.full_rent_amount
+          ) +
+          " → " +
           formatMVR(
             rate.fixed_rent_share
           );
@@ -2362,7 +2674,9 @@
           amount
         );
 
-        list.appendChild(item);
+        list.appendChild(
+          item
+        );
       });
     }
 
@@ -2377,9 +2691,14 @@
         debts.forEach((debt) => {
           debtMap.set(
             String(
-              debt.name || ""
-            ).toLowerCase(),
-            Number(debt.amount) || 0
+              debt?.name || ""
+            )
+              .trim()
+              .toLowerCase(),
+
+            Number(
+              debt?.amount
+            ) || 0
           );
         });
       }
@@ -2388,30 +2707,35 @@
         "inaadDebt"
       ).textContent =
         formatMVR(
-          debtMap.get("inaad") || 0
+          debtMap.get("inaad") ||
+          0
         );
 
       document.getElementById(
         "yushDebt"
       ).textContent =
         formatMVR(
-          debtMap.get("yush") || 0
+          debtMap.get("yush") ||
+          0
         );
 
       document.getElementById(
         "imaadDebt"
       ).textContent =
         formatMVR(
-          debtMap.get("imaad") || 0
+          debtMap.get("imaad") ||
+          0
         );
     }
 
 
     async function loadOverview() {
       const currentMonth =
-        MONTHS[new Date().getMonth()];
+        MONTHS[
+          new Date().getMonth()
+        ];
 
-      const billingMonth =
+      const selectedMonth =
         billingDate(
           currentMonth,
           new Date().getFullYear()
@@ -2425,7 +2749,7 @@
           "get_dhaftar_summary",
           {
             p_billing_month:
-              billingMonth
+              selectedMonth
           }
         );
 
@@ -2444,106 +2768,142 @@
     }
 
 
-    document.getElementById(
-      "themeToggle"
-    ).addEventListener(
-      "click",
-      () => {
-        setTheme(
-          document.documentElement
-            .dataset.theme === "dark"
-            ? "light"
-            : "dark"
-        );
-      }
+    setTheme(
+      document.documentElement
+        .dataset.theme ||
+      "light",
+      false
     );
 
-
-    document.getElementById(
-      "passwordToggle"
-    ).addEventListener(
-      "click",
-      () => {
-        const input =
-          document.getElementById(
-            "password"
-          );
-
-        const visible =
-          input.type === "text";
-
-        input.type =
-          visible
-            ? "password"
-            : "text";
-
-        document.getElementById(
-          "passwordToggle"
-        ).textContent =
-          visible
-            ? "Show"
-            : "Hide";
-      }
-    );
 
     document
-  .getElementById("forgotPasswordButton")
-  .addEventListener(
-    "click",
-    sendPasswordReset
-  );
+      .getElementById(
+        "themeToggle"
+      )
+      .addEventListener(
+        "click",
+        () => {
+          setTheme(
+            document.documentElement
+              .dataset.theme === "dark"
+              ? "light"
+              : "dark"
+          );
+        }
+      );
 
 
-    document.getElementById(
-      "loginForm"
-    ).addEventListener(
-      "submit",
-      (event) => {
-        event.preventDefault();
-        login();
-      }
-    );
+    document
+      .getElementById(
+        "passwordToggle"
+      )
+      .addEventListener(
+        "click",
+        () => {
+          const passwordInput =
+            document.getElementById(
+              "password"
+            );
+
+          const isVisible =
+            passwordInput.type ===
+            "text";
+
+          passwordInput.type =
+            isVisible
+              ? "password"
+              : "text";
+
+          const button =
+            document.getElementById(
+              "passwordToggle"
+            );
+
+          button.textContent =
+            isVisible
+              ? "Show"
+              : "Hide";
+
+          button.setAttribute(
+            "aria-label",
+            isVisible
+              ? "Show password"
+              : "Hide password"
+          );
+        }
+      );
 
 
-    document.getElementById(
-      "paymentForm"
-    ).addEventListener(
-      "submit",
-      (event) => {
-        event.preventDefault();
-        submitPayment();
-      }
-    );
+    document
+      .getElementById(
+        "forgotPasswordButton"
+      )
+      .addEventListener(
+        "click",
+        sendPasswordReset
+      );
 
 
-    document.getElementById(
-      "billForm"
-    ).addEventListener(
-      "submit",
-      (event) => {
-        event.preventDefault();
-        submitBill();
-      }
-    );
+    document
+      .getElementById(
+        "loginForm"
+      )
+      .addEventListener(
+        "submit",
+        (event) => {
+          event.preventDefault();
+          login();
+        }
+      );
 
 
-    document.getElementById(
-      "rentForm"
-    ).addEventListener(
-      "submit",
-      (event) => {
-        event.preventDefault();
-        submitRentRate();
-      }
-    );
+    document
+      .getElementById(
+        "paymentForm"
+      )
+      .addEventListener(
+        "submit",
+        (event) => {
+          event.preventDefault();
+          submitPayment();
+        }
+      );
 
 
-    document.getElementById(
-      "logoutButton"
-    ).addEventListener(
-      "click",
-      logout
-    );
+    document
+      .getElementById(
+        "billForm"
+      )
+      .addEventListener(
+        "submit",
+        (event) => {
+          event.preventDefault();
+          submitBill();
+        }
+      );
+
+
+    document
+      .getElementById(
+        "rentForm"
+      )
+      .addEventListener(
+        "submit",
+        (event) => {
+          event.preventDefault();
+          submitRentRate();
+        }
+      );
+
+
+    document
+      .getElementById(
+        "logoutButton"
+      )
+      .addEventListener(
+        "click",
+        logout
+      );
 
 
     [
@@ -2551,7 +2911,8 @@
       "billMonth",
       "billYear"
     ].forEach((id) => {
-      document.getElementById(id)
+      document
+        .getElementById(id)
         .addEventListener(
           "change",
           loadSelectedBill
@@ -2563,7 +2924,8 @@
       "rentMonth",
       "rentYear"
     ].forEach((id) => {
-      document.getElementById(id)
+      document
+        .getElementById(id)
         .addEventListener(
           "change",
           loadSelectedRentRate
@@ -2574,13 +2936,6 @@
     window.addEventListener(
       "load",
       async () => {
-        setTheme(
-          document.documentElement
-            .dataset.theme ||
-          "light",
-          false
-        );
-
         loadSelectors();
 
         try {

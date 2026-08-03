@@ -2,21 +2,51 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+
+  <meta
+    name="viewport"
+    content="width=device-width, initial-scale=1, viewport-fit=cover"
+  >
+
   <title>Amanah · Dhaftar Admin</title>
-  <meta name="description" content="Private Amanah funds, accounts, loans and repayments inside Dhaftar.">
+
+  <meta
+    name="description"
+    content="Private Amanah funds, accounts, loans and repayments inside Dhaftar."
+  >
+
   <meta name="theme-color" content="#0f766e">
-  <link rel="icon" type="image/png" href="assets/app-icon.png">
-  <link rel="apple-touch-icon" sizes="180x180" href="assets/app-icon.png">
+
+  <link
+    rel="icon"
+    type="image/png"
+    href="assets/app-icon.png"
+  >
+
+  <link
+    rel="apple-touch-icon"
+    sizes="180x180"
+    href="assets/app-icon.png"
+  >
 
   <script>
     (() => {
       try {
-        const savedTheme = localStorage.getItem("dhaftar-theme");
-        const prefersDark = window.matchMedia("(prefers-color-scheme: dark)").matches;
-        document.documentElement.dataset.theme = savedTheme || (prefersDark ? "dark" : "light");
+        const savedTheme =
+          localStorage.getItem("dhaftar-theme");
+
+        const prefersDark =
+          window.matchMedia(
+            "(prefers-color-scheme: dark)"
+          ).matches;
+
+        document.documentElement.dataset.theme =
+          savedTheme ||
+          (prefersDark ? "dark" : "light");
+
       } catch (_) {
-        document.documentElement.dataset.theme = "light";
+        document.documentElement.dataset.theme =
+          "light";
       }
     })();
   </script>
@@ -24,129 +54,271 @@
   <style>
     :root {
       color-scheme: light;
+
       --ink: #16302d;
       --muted: #647773;
+
       --brand: #0f766e;
       --brand-dark: #0b5d57;
       --brand-soft: #e7f7f3;
+
       --surface: #ffffff;
       --surface-soft: #f8fbfa;
       --canvas: #f3f7f5;
+
       --line: #dfe9e5;
+
       --danger: #b42318;
       --danger-soft: #fff1f0;
+
       --success: #16794d;
       --success-soft: #eaf8f0;
+
       --warning: #9a5b12;
       --warning-soft: #fff6dd;
-      --shadow: 0 20px 50px rgba(17, 66, 59, .10);
+
+      --shadow:
+        0 20px 50px rgba(17, 66, 59, 0.10);
+
+      --soft-shadow:
+        0 10px 28px rgba(17, 66, 59, 0.06);
+
       --radius: 24px;
     }
 
     :root[data-theme="dark"] {
       color-scheme: dark;
+
       --ink: #e8f3ef;
       --muted: #9eb5ae;
+
       --brand: #4dd4c4;
       --brand-dark: #35b9aa;
       --brand-soft: #133d38;
+
       --surface: #142320;
       --surface-soft: #172824;
       --canvas: #0b1513;
+
       --line: #29413c;
+
       --danger: #ff8f87;
       --danger-soft: #3f211f;
+
       --success: #75d8a6;
       --success-soft: #17392a;
+
       --warning: #f2c66f;
       --warning-soft: #3b3019;
-      --shadow: 0 20px 50px rgba(0, 0, 0, .28);
+
+      --shadow:
+        0 20px 50px rgba(0, 0, 0, 0.28);
+
+      --soft-shadow:
+        0 10px 28px rgba(0, 0, 0, 0.18);
     }
 
-    * { box-sizing: border-box; }
+    * {
+      box-sizing: border-box;
+    }
 
     body {
       margin: 0;
       min-height: 100vh;
-      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+
+      font-family:
+        Inter,
+        ui-sans-serif,
+        system-ui,
+        -apple-system,
+        BlinkMacSystemFont,
+        "Segoe UI",
+        sans-serif;
+
       color: var(--ink);
+
       background:
-        radial-gradient(circle at 10% 0%, rgba(15, 118, 110, .12), transparent 34rem),
+        radial-gradient(
+          circle at 10% 0%,
+          rgba(15, 118, 110, 0.12),
+          transparent 34rem
+        ),
         var(--canvas);
+
+      transition:
+        color 0.25s ease,
+        background-color 0.25s ease;
     }
 
-    button, input, select, textarea { font: inherit; }
-    button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-visible, a:focus-visible {
-      outline: 3px solid rgba(15, 118, 110, .28);
+    button,
+    input,
+    select,
+    textarea {
+      font: inherit;
+    }
+
+    button:focus-visible,
+    input:focus-visible,
+    select:focus-visible,
+    textarea:focus-visible,
+    a:focus-visible {
+      outline:
+        3px solid rgba(15, 118, 110, 0.28);
+
       outline-offset: 3px;
     }
 
-    [hidden] { display: none !important; }
+    [hidden] {
+      display: none !important;
+    }
 
     .app-shell {
-      width: min(100% - 32px, 1180px);
+      width: min(100% - 32px, 1220px);
       margin: 0 auto;
       padding: 28px 0 64px;
     }
 
-    .topbar, .workspace-header {
+    .topbar,
+    .workspace-header {
       display: flex;
       align-items: center;
       justify-content: space-between;
       gap: 20px;
     }
 
-    .topbar { margin-bottom: 30px; }
-    .workspace-header { align-items: end; margin-bottom: 18px; }
+    .topbar {
+      margin-bottom: 30px;
+    }
+
+    .workspace-header {
+      align-items: end;
+      margin-bottom: 18px;
+    }
 
     .logo {
       display: block;
+
       width: 142px;
       max-height: 58px;
+
       object-fit: contain;
       object-position: left center;
     }
 
-    .topbar-actions, .header-actions, .tabs {
+    .topbar-actions,
+    .header-actions,
+    .tabs {
       display: flex;
       align-items: center;
       gap: 9px;
     }
 
-    .icon-button, .pill-link, .tab, .logout-button, .secondary-button {
+    .icon-button,
+    .pill-link,
+    .tab,
+    .logout-button,
+    .secondary-button {
       display: inline-flex;
       align-items: center;
       justify-content: center;
+
       min-height: 44px;
+
       border: 1px solid var(--line);
       border-radius: 999px;
+
       color: var(--ink);
       background: var(--surface);
+
       text-decoration: none;
       font-weight: 800;
       cursor: pointer;
+
+      transition:
+        border-color 0.2s,
+        background 0.2s,
+        transform 0.2s;
     }
 
-    .icon-button { width: 44px; padding: 0; }
-    .pill-link, .tab, .logout-button { padding: 0 15px; }
-    .tab.active { color: var(--brand); border-color: var(--brand); background: var(--brand-soft); }
-    .logout-button { color: var(--danger); background: var(--danger-soft); }
+    .icon-button {
+      width: 44px;
+      padding: 0;
+    }
+
+    .pill-link,
+    .tab,
+    .logout-button {
+      padding: 0 15px;
+    }
+
+    .icon-button:hover,
+    .pill-link:hover,
+    .tab:hover,
+    .secondary-button:hover {
+      border-color: var(--brand);
+      transform: translateY(-1px);
+    }
+
+    .tab.active {
+      color: var(--brand);
+      border-color: var(--brand);
+      background: var(--brand-soft);
+    }
+
+    .logout-button {
+      color: var(--danger);
+      background: var(--danger-soft);
+      border-color: var(--danger);
+    }
+
+    .logout-button:hover {
+      transform: translateY(-1px);
+    }
 
     .eyebrow {
       margin: 0 0 7px;
+
       color: var(--brand);
-      font-size: .76rem;
+
+      font-size: 0.76rem;
       font-weight: 850;
-      letter-spacing: .11em;
+
+      letter-spacing: 0.11em;
       text-transform: uppercase;
     }
 
-    h1 { margin: 0; font-size: clamp(2rem, 5vw, 3rem); line-height: 1.07; letter-spacing: -.04em; }
-    h2 { margin: 0; font-size: 1.15rem; letter-spacing: -.02em; }
-    .intro { margin: 10px 0 0; color: var(--muted); line-height: 1.55; }
+    h1 {
+      margin: 0;
 
-    .tabs { margin: 20px 0 22px; flex-wrap: wrap; }
-    .tab { font-size: .86rem; }
+      font-size:
+        clamp(2rem, 5vw, 3rem);
+
+      line-height: 1.07;
+      letter-spacing: -0.04em;
+    }
+
+    h2 {
+      margin: 0;
+
+      font-size: 1.15rem;
+      letter-spacing: -0.02em;
+    }
+
+    .intro {
+      margin: 10px 0 0;
+
+      color: var(--muted);
+      line-height: 1.55;
+    }
+
+    .tabs {
+      margin: 20px 0 22px;
+      flex-wrap: wrap;
+    }
+
+    .tab {
+      font-size: 0.86rem;
+    }
 
     .card {
       background: var(--surface);
@@ -155,617 +327,1764 @@
       box-shadow: var(--shadow);
     }
 
-    .summary-grid {
-      display: grid;
-      grid-template-columns: repeat(4, minmax(0, 1fr));
-      gap: 12px;
-      margin-bottom: 20px;
-    }
-
-    .metric {
-      padding: 18px;
-      border: 1px solid var(--line);
-      border-radius: 17px;
-      background: var(--surface);
-      box-shadow: 0 10px 25px rgba(17, 66, 59, .05);
-    }
-
-    .metric span { display: block; color: var(--muted); font-size: .78rem; font-weight: 750; }
-    .metric strong { display: block; margin-top: 9px; color: var(--brand); font-size: 1.25rem; font-weight: 900; }
-
     .message {
       display: none;
+
       margin: 0 0 18px;
       padding: 13px 15px;
+
       border: 1px solid;
       border-radius: 13px;
-      font-size: .88rem;
+
+      font-size: 0.88rem;
       font-weight: 750;
       line-height: 1.45;
     }
 
-    .message.is-visible { display: block; }
-    .message.success { color: var(--success); background: var(--success-soft); border-color: var(--success); }
-    .message.error { color: var(--danger); background: var(--danger-soft); border-color: var(--danger); }
+    .message.is-visible {
+      display: block;
+    }
 
-    .content-grid {
+    .message.success {
+      color: var(--success);
+      background: var(--success-soft);
+      border-color: var(--success);
+    }
+
+    .message.error {
+      color: var(--danger);
+      background: var(--danger-soft);
+      border-color: var(--danger);
+    }
+
+    .overview-section {
+      margin-bottom: 20px;
+    }
+
+    .overview-heading {
+      display: flex;
+      align-items: flex-end;
+      justify-content: space-between;
+      gap: 18px;
+
+      margin-bottom: 13px;
+    }
+
+    .overview-heading p {
+      margin: 5px 0 0;
+
+      color: var(--muted);
+
+      font-size: 0.82rem;
+      line-height: 1.5;
+    }
+
+    .currency-note {
+      flex: 0 0 auto;
+
+      padding: 6px 10px;
+
+      border-radius: 999px;
+
+      color: var(--brand);
+      background: var(--brand-soft);
+
+      font-size: 0.72rem;
+      font-weight: 850;
+    }
+
+    .private-balance-grid {
       display: grid;
-      grid-template-columns: minmax(330px, .8fr) minmax(0, 1.2fr);
+
+      grid-template-columns:
+        repeat(3, minmax(0, 1fr));
+
+      gap: 12px;
+    }
+
+    .private-balance-card {
+      position: relative;
+      overflow: hidden;
+
+      min-height: 170px;
+      padding: 21px;
+
+      border: 1px solid var(--line);
+      border-radius: 20px;
+
+      background:
+        linear-gradient(
+          145deg,
+          var(--surface),
+          var(--surface-soft)
+        );
+
+      box-shadow: var(--soft-shadow);
+    }
+
+    .private-balance-card::before {
+      content: "";
+
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+
+      height: 5px;
+
+      background:
+        linear-gradient(
+          90deg,
+          var(--brand),
+          rgba(77, 212, 196, 0.45)
+        );
+    }
+
+    .private-balance-card.loan-card::before {
+      background:
+        linear-gradient(
+          90deg,
+          var(--warning),
+          #e7bd65
+        );
+    }
+
+    .private-balance-card.total-card::before {
+      background:
+        linear-gradient(
+          90deg,
+          #3d63c7,
+          #7e97df
+        );
+    }
+
+    .balance-label {
+      display: block;
+
+      min-height: 2.7em;
+
+      color: var(--muted);
+
+      font-size: 0.79rem;
+      font-weight: 800;
+      line-height: 1.35;
+    }
+
+    .masked-amount {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+
+      width: 100%;
+      min-height: 54px;
+
+      margin-top: 14px;
+      padding: 0;
+
+      border: 0;
+
+      color: var(--ink);
+      background: transparent;
+
+      text-align: left;
+      cursor: pointer;
+    }
+
+    .masked-value {
+      overflow: hidden;
+
+      color: var(--brand);
+
+      font-size:
+        clamp(1.18rem, 2.7vw, 1.55rem);
+
+      font-weight: 900;
+      letter-spacing: -0.03em;
+
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .loan-card .masked-value {
+      color: var(--warning);
+    }
+
+    .total-card .masked-value {
+      color: #4968bd;
+    }
+
+    :root[data-theme="dark"] .total-card .masked-value {
+      color: #9db1f4;
+    }
+
+    .reveal-hint {
+      flex: 0 0 auto;
+
+      padding: 6px 8px;
+
+      border: 1px solid var(--line);
+      border-radius: 999px;
+
+      color: var(--muted);
+      background: var(--surface);
+
+      font-size: 0.68rem;
+      font-weight: 850;
+    }
+
+    .balance-note {
+      margin: 9px 0 0;
+
+      color: var(--muted);
+
+      font-size: 0.72rem;
+      line-height: 1.45;
+    }
+
+    .person-loan-card {
+      padding:
+        clamp(20px, 3vw, 28px);
+
+      margin-bottom: 20px;
+
+      box-shadow: var(--soft-shadow);
+    }
+
+    .person-loan-grid {
+      display: grid;
+
+      grid-template-columns:
+        repeat(4, minmax(0, 1fr));
+
+      gap: 11px;
+      margin-top: 18px;
+    }
+
+    .person-loan-item {
+      min-width: 0;
+      padding: 15px;
+
+      border: 1px solid var(--line);
+      border-radius: 15px;
+
+      background: var(--surface-soft);
+    }
+
+    .person-loan-name {
+      display: block;
+      overflow: hidden;
+
+      color: var(--ink);
+
+      font-size: 0.83rem;
+      font-weight: 850;
+
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .person-loan-amount {
+      display: block;
+      margin-top: 8px;
+
+      color: var(--warning);
+
+      font-size: 1rem;
+      font-weight: 900;
+    }
+
+    .person-loan-count {
+      display: block;
+      margin-top: 5px;
+
+      color: var(--muted);
+
+      font-size: 0.7rem;
+      font-weight: 700;
+    }
+
+    .empty-box {
+      grid-column: 1 / -1;
+
+      padding: 18px;
+
+      border: 1px dashed var(--line);
+      border-radius: 14px;
+
+      color: var(--muted);
+      background: var(--surface-soft);
+
+      text-align: center;
+      font-size: 0.84rem;
+    }
+
+    .data-stack {
+      display: grid;
+      gap: 18px;
+      margin-bottom: 24px;
+    }
+
+    .table-card {
+      overflow: hidden;
+      box-shadow: var(--soft-shadow);
+    }
+
+    .table-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 14px;
+
+      padding: 21px 22px 15px;
+    }
+
+    .table-head p {
+      margin: 4px 0 0;
+
+      color: var(--muted);
+
+      font-size: 0.82rem;
+      line-height: 1.45;
+    }
+
+    .table-scroll {
+      overflow-x: auto;
+    }
+
+    table {
+      width: 100%;
+      min-width: 760px;
+
+      border-collapse: collapse;
+    }
+
+    th,
+    td {
+      padding: 13px 16px;
+
+      border-top: 1px solid var(--line);
+
+      text-align: left;
+      vertical-align: top;
+
+      font-size: 0.82rem;
+    }
+
+    th {
+      color: var(--muted);
+      background: var(--surface-soft);
+
+      font-size: 0.72rem;
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+    }
+
+    td strong {
+      color: var(--brand);
+    }
+
+    .muted {
+      color: var(--muted);
+    }
+
+    .money-cell {
+      color: var(--brand);
+      font-weight: 850;
+      white-space: nowrap;
+    }
+
+    .available-cell {
+      color: var(--success);
+      font-weight: 900;
+      white-space: nowrap;
+    }
+
+    .loan-cell {
+      color: var(--warning);
+      font-weight: 850;
+      white-space: nowrap;
+    }
+
+    .status-badge {
+      display: inline-flex;
+
+      padding: 5px 8px;
+
+      border-radius: 999px;
+
+      color: var(--brand);
+      background: var(--brand-soft);
+
+      font-size: 0.72rem;
+      font-weight: 800;
+    }
+
+    .status-badge.overdue {
+      color: var(--danger);
+      background: var(--danger-soft);
+    }
+
+    .status-badge.paid {
+      color: var(--success);
+      background: var(--success-soft);
+    }
+
+    .status-badge.cancelled {
+      color: var(--muted);
+      background: var(--surface-soft);
+    }
+
+    .empty-row {
+      padding: 24px;
+
+      color: var(--muted);
+
+      text-align: center;
+    }
+
+    .management-heading {
+      margin: 0 0 14px;
+    }
+
+    .management-heading p {
+      margin: 5px 0 0;
+
+      color: var(--muted);
+
+      font-size: 0.84rem;
+      line-height: 1.5;
+    }
+
+    .management-grid {
+      display: grid;
+
+      grid-template-columns:
+        repeat(2, minmax(0, 1fr));
+
       gap: 18px;
       align-items: start;
     }
 
-    .stack { display: grid; gap: 18px; }
-    .section-card { padding: clamp(20px, 3vw, 28px); box-shadow: 0 10px 30px rgba(17, 66, 59, .06); }
+    .section-card {
+      padding:
+        clamp(20px, 3vw, 28px);
+
+      box-shadow: var(--soft-shadow);
+    }
 
     .card-heading {
       display: flex;
       align-items: flex-start;
       gap: 12px;
+
       margin-bottom: 20px;
     }
 
     .card-icon {
       display: grid;
       place-items: center;
+
       flex: 0 0 auto;
+
       width: 40px;
       height: 40px;
+
       border-radius: 12px;
+
       color: var(--brand);
       background: var(--brand-soft);
+
       font-weight: 900;
     }
 
-    .card-heading p { margin: 4px 0 0; color: var(--muted); font-size: .82rem; line-height: 1.45; }
+    .card-heading p {
+      margin: 4px 0 0;
+
+      color: var(--muted);
+
+      font-size: 0.82rem;
+      line-height: 1.45;
+    }
 
     .form-row {
       display: grid;
-      grid-template-columns: repeat(2, minmax(0, 1fr));
+
+      grid-template-columns:
+        repeat(2, minmax(0, 1fr));
+
       gap: 12px;
     }
 
-    .field + .field, .form-row + .field, .field + .form-row { margin-top: 14px; }
-    label { display: block; margin-bottom: 7px; font-size: .84rem; font-weight: 800; }
+    .field + .field,
+    .form-row + .field,
+    .field + .form-row {
+      margin-top: 14px;
+    }
 
-    input, select, textarea {
+    label {
+      display: block;
+      margin-bottom: 7px;
+
+      font-size: 0.84rem;
+      font-weight: 800;
+    }
+
+    input,
+    select,
+    textarea {
       width: 100%;
+
       border: 1px solid var(--line);
       border-radius: 12px;
+
       color: var(--ink);
       background: var(--surface-soft);
     }
 
-    input, select { min-height: 48px; padding: 0 13px; }
-    textarea { min-height: 82px; padding: 12px 13px; resize: vertical; }
-    input:focus, select:focus, textarea:focus { border-color: var(--brand); box-shadow: 0 0 0 4px rgba(15, 118, 110, .12); outline: none; }
+    input,
+    select {
+      min-height: 48px;
+      padding: 0 13px;
+    }
 
-    .check-row { display: flex; align-items: center; gap: 9px; margin-top: 14px; color: var(--muted); font-size: .84rem; }
-    .check-row input { width: 18px; height: 18px; min-height: 0; }
+    textarea {
+      min-height: 82px;
+      padding: 12px 13px;
+      resize: vertical;
+    }
 
-    .primary-button, .secondary-button {
+    input:focus,
+    select:focus,
+    textarea:focus {
+      border-color: var(--brand);
+
+      box-shadow:
+        0 0 0 4px rgba(15, 118, 110, 0.12);
+
+      outline: none;
+    }
+
+    .check-row {
+      display: flex;
+      align-items: center;
+      gap: 9px;
+
+      margin-top: 14px;
+
+      color: var(--muted);
+
+      font-size: 0.84rem;
+    }
+
+    .check-row input {
+      width: 18px;
+      height: 18px;
+      min-height: 0;
+    }
+
+    .primary-button,
+    .secondary-button {
       width: 100%;
       min-height: 50px;
+
       margin-top: 16px;
+
       border-radius: 12px;
+
       font-weight: 850;
     }
 
-    .primary-button { border: 0; color: #fff; background: var(--brand); box-shadow: 0 8px 18px rgba(15, 118, 110, .22); }
-    .primary-button:disabled { opacity: .6; cursor: wait; }
-    .secondary-button { color: var(--brand); background: var(--brand-soft); }
+    .primary-button {
+      border: 0;
 
-    .table-card { overflow: hidden; }
-    .table-head {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: 14px;
-      padding: 21px 22px 15px;
+      color: #ffffff;
+      background: var(--brand);
+
+      box-shadow:
+        0 8px 18px rgba(15, 118, 110, 0.22);
+
+      cursor: pointer;
     }
 
-    .table-head p { margin: 4px 0 0; color: var(--muted); font-size: .82rem; }
-    .table-scroll { overflow-x: auto; }
-    table { width: 100%; border-collapse: collapse; min-width: 700px; }
-    th, td { padding: 13px 16px; border-top: 1px solid var(--line); text-align: left; font-size: .82rem; vertical-align: top; }
-    th { color: var(--muted); background: var(--surface-soft); font-size: .74rem; letter-spacing: .05em; text-transform: uppercase; }
-    td strong { color: var(--brand); }
-    .muted { color: var(--muted); }
-    .status-badge { display: inline-flex; padding: 5px 8px; border-radius: 999px; color: var(--brand); background: var(--brand-soft); font-size: .72rem; font-weight: 800; }
-    .empty-row { padding: 24px; color: var(--muted); text-align: center; }
+    .primary-button:hover:not(:disabled) {
+      background: var(--brand-dark);
+      transform: translateY(-1px);
+    }
+
+    .primary-button:disabled {
+      opacity: 0.6;
+      cursor: wait;
+    }
+
+    .secondary-button {
+      color: var(--brand);
+      background: var(--brand-soft);
+    }
+
+    .form-note {
+      margin: 12px 0 0;
+
+      color: var(--muted);
+
+      font-size: 0.73rem;
+      line-height: 1.5;
+    }
 
     .loading-screen {
       min-height: 50vh;
+
       display: grid;
       place-items: center;
+
       color: var(--brand);
+
       font-weight: 800;
+      text-align: center;
     }
 
-    @media (max-width: 900px) {
-      .summary-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-      .content-grid { grid-template-columns: 1fr; }
+    @media (max-width: 980px) {
+      .private-balance-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .private-balance-card {
+        min-height: 0;
+      }
+
+      .person-loan-grid {
+        grid-template-columns:
+          repeat(3, minmax(0, 1fr));
+      }
+
+      .management-grid {
+        grid-template-columns: 1fr;
+      }
     }
 
-    @media (max-width: 620px) {
-      .app-shell { width: min(100% - 24px, 580px); padding-top: 18px; }
-      .logo { width: 120px; }
-      .workspace-header { display: block; }
-      .header-actions { margin-top: 16px; }
-      .summary-grid, .form-row { grid-template-columns: 1fr; }
-      .metric { display: flex; align-items: center; justify-content: space-between; gap: 15px; }
-      .metric strong { margin-top: 0; text-align: right; }
-      .pill-label { display: none; }
-      .pill-link { width: 44px; padding: 0; }
+    @media (max-width: 720px) {
+      .app-shell {
+        width: min(100% - 24px, 600px);
+        padding-top: 18px;
+      }
+
+      .logo {
+        width: 120px;
+      }
+
+      .workspace-header {
+        display: block;
+      }
+
+      .header-actions {
+        margin-top: 16px;
+      }
+
+      .overview-heading {
+        display: block;
+      }
+
+      .currency-note {
+        display: inline-flex;
+        margin-top: 10px;
+      }
+
+      .person-loan-grid {
+        grid-template-columns:
+          repeat(2, minmax(0, 1fr));
+      }
+
+      .form-row {
+        grid-template-columns: 1fr;
+      }
+
+      .pill-label {
+        display: none;
+      }
+
+      .pill-link {
+        width: 44px;
+        padding: 0;
+      }
+    }
+
+    @media (max-width: 460px) {
+      .person-loan-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .masked-value {
+        font-size: 1.17rem;
+      }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      *,
+      *::before,
+      *::after {
+        animation-duration: 0.01ms !important;
+        transition-duration: 0.01ms !important;
+      }
     }
   </style>
 </head>
 
 <body>
   <main class="app-shell">
+
     <header class="topbar">
-      <img src="assets/logo.png" class="logo" alt="Dhaftar">
+      <img
+        src="assets/logo.png"
+        class="logo"
+        alt="Dhaftar"
+      >
 
       <div class="topbar-actions">
-        <button class="icon-button" id="themeToggle" type="button" aria-label="Switch theme">
-          <span id="themeIcon" aria-hidden="true">☾</span>
+        <button
+          class="icon-button"
+          id="themeToggle"
+          type="button"
+          aria-label="Switch to dark mode"
+          title="Switch to dark mode"
+        >
+          <span
+            id="themeIcon"
+            aria-hidden="true"
+          >
+            ☾
+          </span>
         </button>
 
-        <a class="pill-link" href="index.html" aria-label="Open Dhaftar dashboard">
+        <a
+          class="pill-link"
+          href="index.html"
+          aria-label="Open Dhaftar dashboard"
+        >
           <span aria-hidden="true">←</span>
           <span class="pill-label">Dashboard</span>
         </a>
       </div>
     </header>
 
-    <section id="loadingScreen" class="loading-screen">Checking administrator access…</section>
+    <section
+      id="loadingScreen"
+      class="loading-screen"
+    >
+      Checking administrator access…
+    </section>
 
-    <section id="amanahApp" hidden>
+    <section
+      id="amanahApp"
+      hidden
+    >
+
       <div class="workspace-header">
         <div>
-          <p class="eyebrow">Private administrator</p>
-          <h1>Amanah</h1>
-          <p class="intro" id="signedInText">Funds, accounts, loans and repayments.</p>
+          <p class="eyebrow">
+            Private administrator
+          </p>
+
+          <h1>
+            Amanah
+          </h1>
+
+          <p
+            class="intro"
+            id="signedInText"
+          >
+            Funds, accounts, loans and repayments.
+          </p>
         </div>
 
         <div class="header-actions">
-          <button class="logout-button" id="logoutButton" type="button">Log out</button>
+          <button
+            class="logout-button"
+            id="logoutButton"
+            type="button"
+          >
+            Log out
+          </button>
         </div>
       </div>
 
-      <nav class="tabs" aria-label="Administrator sections">
-        <a class="tab" href="admin.html">Dhaftar</a>
-        <a class="tab active" href="amanah.html">🔒 Amanah</a>
+      <nav
+        class="tabs"
+        aria-label="Administrator sections"
+      >
+        <a
+          class="tab"
+          href="admin.html"
+        >
+          Dhaftar
+        </a>
+
+        <a
+          class="tab active"
+          href="amanah.html"
+          aria-current="page"
+        >
+          🔒 Amanah
+        </a>
       </nav>
 
-      <div id="message" class="message" role="status" aria-live="polite"></div>
+      <div
+        id="message"
+        class="message"
+        role="status"
+        aria-live="polite"
+      ></div>
 
-      <section class="summary-grid" aria-label="Amanah overview">
-        <article class="metric">
-          <span>Active loans</span>
-          <strong id="activeLoanCount">—</strong>
-        </article>
+      <!-- PRIVATE MONEY POSITION -->
+      <section
+        class="overview-section"
+        aria-labelledby="moneyPositionTitle"
+      >
+        <div class="overview-heading">
+          <div>
+            <h2 id="moneyPositionTitle">
+              Dad’s money position
+            </h2>
 
-        <article class="metric">
-          <span>Total remaining loans</span>
-          <strong id="totalRemaining">MVR —</strong>
-        </article>
+            <p>
+              Tap each masked amount to reveal or hide only that balance.
+            </p>
+          </div>
 
-        <article class="metric">
-          <span>You owe others</span>
-          <strong id="youOwe">MVR —</strong>
-        </article>
+          <span class="currency-note">
+            MVR balances
+          </span>
+        </div>
 
-        <article class="metric">
-          <span>Others owe you</span>
-          <strong id="owedToYou">MVR —</strong>
-        </article>
+        <div class="private-balance-grid">
+
+          <article class="private-balance-card">
+            <span class="balance-label">
+              Dad’s current cash in my custody
+            </span>
+
+            <button
+              class="masked-amount"
+              type="button"
+              data-balance-key="dadCash"
+              aria-pressed="false"
+              aria-label="Show Dad’s current cash in my custody"
+            >
+              <span class="masked-value">
+                MVR ••••••
+              </span>
+
+              <span class="reveal-hint">
+                Show
+              </span>
+            </button>
+
+            <p class="balance-note">
+              Dad-owned accounts where the holder is Me or Inaad,
+              using the available balance.
+            </p>
+          </article>
+
+          <article class="private-balance-card loan-card">
+            <span class="balance-label">
+              Dad’s money currently given as loans
+            </span>
+
+            <button
+              class="masked-amount"
+              type="button"
+              data-balance-key="dadLoans"
+              aria-pressed="false"
+              aria-label="Show Dad’s money currently given as loans"
+            >
+              <span class="masked-value">
+                MVR ••••••
+              </span>
+
+              <span class="reveal-hint">
+                Show
+              </span>
+            </button>
+
+            <p class="balance-note">
+              Remaining balance of all non-cancelled MVR loans
+              where Dad is the lender.
+            </p>
+          </article>
+
+          <article class="private-balance-card total-card">
+            <span class="balance-label">
+              Total Dad’s money I should account for
+            </span>
+
+            <button
+              class="masked-amount"
+              type="button"
+              data-balance-key="dadTotal"
+              aria-pressed="false"
+              aria-label="Show total Dad’s money I should account for"
+            >
+              <span class="masked-value">
+                MVR ••••••
+              </span>
+
+              <span class="reveal-hint">
+                Show
+              </span>
+            </button>
+
+            <p class="balance-note">
+              Current cash in custody plus all remaining
+              Dad-funded loans.
+            </p>
+          </article>
+
+        </div>
       </section>
 
-      <div class="content-grid">
-        <div class="stack">
-          <section class="card section-card">
-            <div class="card-heading">
-              <div class="card-icon">＋</div>
-              <div>
-                <h2>Add person</h2>
-                <p>Create a person used by accounts and loans.</p>
-              </div>
+      <!-- PERSON-WISE DAD LOANS -->
+      <section
+        class="card person-loan-card"
+        aria-labelledby="personLoanTitle"
+      >
+        <div class="overview-heading">
+          <div>
+            <h2 id="personLoanTitle">
+              Remaining Dad loans by person
+            </h2>
+
+            <p>
+              Multiple loans for the same borrower are combined.
+            </p>
+          </div>
+        </div>
+
+        <div
+          class="person-loan-grid"
+          id="personLoanGrid"
+        >
+          <div class="empty-box">
+            Loading person-wise balances…
+          </div>
+        </div>
+      </section>
+
+      <!-- DETAILS -->
+      <div class="data-stack">
+
+        <section class="card table-card">
+          <div class="table-head">
+            <div>
+              <h2>
+                Loan balances
+              </h2>
+
+              <p>
+                Current balance of every Amanah loan.
+              </p>
+            </div>
+          </div>
+
+          <div class="table-scroll">
+            <table>
+              <thead>
+                <tr>
+                  <th>Lender</th>
+                  <th>Borrower</th>
+                  <th>Principal</th>
+                  <th>Repaid</th>
+                  <th>Remaining</th>
+                  <th>Status</th>
+                  <th>Next payment</th>
+                </tr>
+              </thead>
+
+              <tbody id="loanRows"></tbody>
+            </table>
+          </div>
+        </section>
+
+        <section class="card table-card">
+          <div class="table-head">
+            <div>
+              <h2>
+                Account balances
+              </h2>
+
+              <p>
+                Managed balance, outstanding account loans and cash currently available.
+              </p>
+            </div>
+          </div>
+
+          <div class="table-scroll">
+            <table>
+              <thead>
+                <tr>
+                  <th>Account</th>
+                  <th>Owner</th>
+                  <th>Holder</th>
+                  <th>Type</th>
+                  <th>Managed balance</th>
+                  <th>In loans</th>
+                  <th>Available cash</th>
+                </tr>
+              </thead>
+
+              <tbody id="accountRows"></tbody>
+            </table>
+          </div>
+        </section>
+
+        <section class="card table-card">
+          <div class="table-head">
+            <div>
+              <h2>
+                Recent repayments
+              </h2>
+
+              <p>
+                Latest loan payment records.
+              </p>
+            </div>
+          </div>
+
+          <div class="table-scroll">
+            <table>
+              <thead>
+                <tr>
+                  <th>Date</th>
+                  <th>Loan</th>
+                  <th>Amount</th>
+                  <th>Method</th>
+                  <th>Notes</th>
+                </tr>
+              </thead>
+
+              <tbody id="repaymentRows"></tbody>
+            </table>
+          </div>
+        </section>
+
+        <section class="card table-card">
+          <div class="table-head">
+            <div>
+              <h2>
+                Recent account transactions
+              </h2>
+
+              <p>
+                Latest deposits, withdrawals and balance adjustments.
+              </p>
+            </div>
+          </div>
+
+          <div class="table-scroll">
+            <table>
+              <thead>
+                <tr>
+                  <th>Date</th>
+                  <th>Account</th>
+                  <th>Type</th>
+                  <th>Amount</th>
+                  <th>Description</th>
+                </tr>
+              </thead>
+
+              <tbody id="transactionRows"></tbody>
+            </table>
+          </div>
+        </section>
+
+        <section class="card table-card">
+          <div class="table-head">
+            <div>
+              <h2>
+                People
+              </h2>
+
+              <p>
+                People available for accounts and loans.
+              </p>
+            </div>
+          </div>
+
+          <div class="table-scroll">
+            <table>
+              <thead>
+                <tr>
+                  <th>Name</th>
+                  <th>Relationship</th>
+                  <th>Notes</th>
+                </tr>
+              </thead>
+
+              <tbody id="peopleRows"></tbody>
+            </table>
+          </div>
+        </section>
+
+      </div>
+
+      <!-- MANAGEMENT FORMS -->
+      <div class="management-heading">
+        <h2>
+          Manage Amanah records
+        </h2>
+
+        <p>
+          Add people, accounts, transactions, loans and repayments below.
+        </p>
+      </div>
+
+      <div class="management-grid">
+
+        <!-- ADD PERSON -->
+        <section
+          class="card section-card"
+          aria-labelledby="personFormTitle"
+        >
+          <div class="card-heading">
+            <div
+              class="card-icon"
+              aria-hidden="true"
+            >
+              ＋
             </div>
 
-            <form id="personForm">
-              <div class="field">
-                <label for="personName">Name</label>
-                <input id="personName" type="text" maxlength="80" required>
-              </div>
+            <div>
+              <h2 id="personFormTitle">
+                Add person
+              </h2>
 
-              <div class="field">
-                <label for="personRelationship">Relationship</label>
-                <input id="personRelationship" type="text" maxlength="80" placeholder="Father, Brother, Friend…">
-              </div>
-
-              <div class="field">
-                <label for="personNotes">Notes</label>
-                <textarea id="personNotes" maxlength="250" placeholder="Optional"></textarea>
-              </div>
-
-              <button class="primary-button" id="personButton" type="submit">Add person</button>
-            </form>
-          </section>
-
-          <section class="card section-card">
-            <div class="card-heading">
-              <div class="card-icon">▣</div>
-              <div>
-                <h2>Add account</h2>
-                <p>Register money held by or for someone.</p>
-              </div>
+              <p>
+                Create a person used by accounts and loans.
+              </p>
             </div>
+          </div>
 
-            <form id="accountForm">
-              <div class="field">
-                <label for="accountName">Account name</label>
-                <input id="accountName" type="text" maxlength="100" required>
-              </div>
-
-              <div class="form-row">
-                <div class="field">
-                  <label for="accountOwner">Owner</label>
-                  <select id="accountOwner" required></select>
-                </div>
-
-                <div class="field">
-                  <label for="accountHolder">Holder</label>
-                  <select id="accountHolder"></select>
-                </div>
-              </div>
-
-              <div class="form-row">
-                <div class="field">
-                  <label for="accountType">Account type</label>
-                  <input id="accountType" type="text" list="accountTypeOptions" placeholder="cash, bank, custody…" required>
-                  <datalist id="accountTypeOptions">
-                    <option value="cash"></option>
-                    <option value="bank"></option>
-                    <option value="custody"></option>
-                    <option value="wallet"></option>
-                  </datalist>
-                </div>
-
-                <div class="field">
-                  <label for="accountCurrency">Currency</label>
-                  <select id="accountCurrency">
-                    <option value="MVR">MVR</option>
-                    <option value="USD">USD</option>
-                  </select>
-                </div>
-              </div>
-
-              <div class="field">
-                <label for="openingBalance">Opening balance</label>
-                <input id="openingBalance" type="number" step="0.01" inputmode="decimal" value="0" required>
-              </div>
-
-              <div class="field">
-                <label for="accountNotes">Notes</label>
-                <textarea id="accountNotes" maxlength="250" placeholder="Optional"></textarea>
-              </div>
-
-              <button class="primary-button" id="accountButton" type="submit">Add account</button>
-            </form>
-          </section>
-
-          <section class="card section-card">
-            <div class="card-heading">
-              <div class="card-icon">↕</div>
-              <div>
-                <h2>Add account transaction</h2>
-                <p>Record money entering or leaving an Amanah account.</p>
-              </div>
-            </div>
-
-            <form id="transactionForm">
-              <div class="field">
-                <label for="transactionAccount">Account</label>
-                <select id="transactionAccount" required></select>
-              </div>
-
-              <div class="form-row">
-                <div class="field">
-                  <label for="transactionDate">Date</label>
-                  <input id="transactionDate" type="date" required>
-                </div>
-
-                <div class="field">
-                  <label for="transactionType">Transaction type</label>
-                  <input id="transactionType" type="text" list="transactionTypeOptions" placeholder="deposit or withdrawal" required>
-                  <datalist id="transactionTypeOptions">
-                    <option value="deposit"></option>
-                    <option value="withdrawal"></option>
-                    <option value="transfer_in"></option>
-                    <option value="transfer_out"></option>
-                    <option value="adjustment"></option>
-                  </datalist>
-                </div>
-              </div>
-
-              <div class="field">
-                <label for="transactionAmount">Amount</label>
-                <input id="transactionAmount" type="number" min="0.01" step="0.01" inputmode="decimal" required>
-              </div>
-
-              <div class="field">
-                <label for="transactionDescription">Description</label>
-                <input id="transactionDescription" type="text" maxlength="180">
-              </div>
-
-              <div class="field">
-                <label for="transactionReference">Reference number</label>
-                <input id="transactionReference" type="text" maxlength="100">
-              </div>
-
-              <button class="primary-button" id="transactionButton" type="submit">Add transaction</button>
-            </form>
-          </section>
-
-          <section class="card section-card">
-            <div class="card-heading">
-              <div class="card-icon">↗</div>
-              <div>
-                <h2>Add loan</h2>
-                <p>Record a new borrowing arrangement.</p>
-              </div>
-            </div>
-
-            <form id="loanForm">
-              <div class="form-row">
-                <div class="field">
-                  <label for="loanLender">Lender</label>
-                  <select id="loanLender" required></select>
-                </div>
-
-                <div class="field">
-                  <label for="loanBorrower">Borrower</label>
-                  <select id="loanBorrower" required></select>
-                </div>
-              </div>
-
-              <div class="field">
-                <label for="loanSourceAccount">Source account</label>
-                <select id="loanSourceAccount"></select>
-              </div>
-
-              <div class="form-row">
-                <div class="field">
-                  <label for="loanPrincipal">Principal amount</label>
-                  <input id="loanPrincipal" type="number" min="0.01" step="0.01" inputmode="decimal" required>
-                </div>
-
-                <div class="field">
-                  <label for="loanCurrency">Currency</label>
-                  <select id="loanCurrency">
-                    <option value="MVR">MVR</option>
-                    <option value="USD">USD</option>
-                  </select>
-                </div>
-              </div>
-
-              <div class="form-row">
-                <div class="field">
-                  <label for="loanDate">Loan date</label>
-                  <input id="loanDate" type="date">
-                </div>
-
-                <div class="field">
-                  <label for="loanStatus">Status</label>
-                  <input id="loanStatus" type="text" list="loanStatusOptions" value="active" required>
-                  <datalist id="loanStatusOptions">
-                    <option value="active"></option>
-                    <option value="paid"></option>
-                    <option value="cancelled"></option>
-                  </datalist>
-                </div>
-              </div>
-
-              <label class="check-row">
-                <input id="loanDateEstimated" type="checkbox">
-                The exact loan date is estimated
+          <form id="personForm">
+            <div class="field">
+              <label for="personName">
+                Name
               </label>
 
-              <div class="form-row">
-                <div class="field">
-                  <label for="installmentAmount">Installment amount</label>
-                  <input id="installmentAmount" type="number" min="0" step="0.01" inputmode="decimal">
-                </div>
+              <input
+                id="personName"
+                type="text"
+                maxlength="80"
+                required
+              >
+            </div>
 
-                <div class="field">
-                  <label for="installmentFrequency">Frequency</label>
-                  <input id="installmentFrequency" type="text" list="frequencyOptions" placeholder="monthly">
-                  <datalist id="frequencyOptions">
-                    <option value="weekly"></option>
-                    <option value="monthly"></option>
-                    <option value="quarterly"></option>
-                  </datalist>
-                </div>
+            <div class="field">
+              <label for="personRelationship">
+                Relationship
+              </label>
+
+              <input
+                id="personRelationship"
+                type="text"
+                maxlength="80"
+                placeholder="Father, Brother, Friend…"
+              >
+            </div>
+
+            <div class="field">
+              <label for="personNotes">
+                Notes
+              </label>
+
+              <textarea
+                id="personNotes"
+                maxlength="250"
+                placeholder="Optional"
+              ></textarea>
+            </div>
+
+            <button
+              class="primary-button"
+              id="personButton"
+              type="submit"
+            >
+              Add person
+            </button>
+          </form>
+        </section>
+
+        <!-- ADD ACCOUNT -->
+        <section
+          class="card section-card"
+          aria-labelledby="accountFormTitle"
+        >
+          <div class="card-heading">
+            <div
+              class="card-icon"
+              aria-hidden="true"
+            >
+              ▣
+            </div>
+
+            <div>
+              <h2 id="accountFormTitle">
+                Add account
+              </h2>
+
+              <p>
+                Register money held by or for someone.
+              </p>
+            </div>
+          </div>
+
+          <form id="accountForm">
+            <div class="field">
+              <label for="accountName">
+                Account name
+              </label>
+
+              <input
+                id="accountName"
+                type="text"
+                maxlength="100"
+                required
+              >
+            </div>
+
+            <div class="form-row">
+              <div class="field">
+                <label for="accountOwner">
+                  Owner
+                </label>
+
+                <select
+                  id="accountOwner"
+                  required
+                ></select>
               </div>
 
               <div class="field">
-                <label for="nextPaymentDate">Next payment date</label>
-                <input id="nextPaymentDate" type="date">
+                <label for="accountHolder">
+                  Holder
+                </label>
+
+                <select id="accountHolder"></select>
+              </div>
+            </div>
+
+            <div class="form-row">
+              <div class="field">
+                <label for="accountType">
+                  Account type
+                </label>
+
+                <input
+                  id="accountType"
+                  type="text"
+                  list="accountTypeOptions"
+                  placeholder="cash, bank, custody…"
+                  required
+                >
+
+                <datalist id="accountTypeOptions">
+                  <option value="cash"></option>
+                  <option value="bank"></option>
+                  <option value="custody"></option>
+                  <option value="wallet"></option>
+                </datalist>
               </div>
 
               <div class="field">
-                <label for="loanNotes">Notes</label>
-                <textarea id="loanNotes" maxlength="350" placeholder="Optional"></textarea>
-              </div>
+                <label for="accountCurrency">
+                  Currency
+                </label>
 
-              <button class="primary-button" id="loanButton" type="submit">Add loan</button>
-            </form>
-          </section>
-
-          <section class="card section-card">
-            <div class="card-heading">
-              <div class="card-icon">✓</div>
-              <div>
-                <h2>Add loan repayment</h2>
-                <p>Apply a repayment to an existing loan.</p>
+                <select id="accountCurrency">
+                  <option value="MVR">MVR</option>
+                  <option value="USD">USD</option>
+                </select>
               </div>
             </div>
 
-            <form id="repaymentForm">
+            <div class="field">
+              <label for="openingBalance">
+                Opening balance
+              </label>
+
+              <input
+                id="openingBalance"
+                type="number"
+                step="0.01"
+                inputmode="decimal"
+                value="0"
+                required
+              >
+            </div>
+
+            <div class="field">
+              <label for="accountNotes">
+                Notes
+              </label>
+
+              <textarea
+                id="accountNotes"
+                maxlength="250"
+                placeholder="Optional"
+              ></textarea>
+            </div>
+
+            <button
+              class="primary-button"
+              id="accountButton"
+              type="submit"
+            >
+              Add account
+            </button>
+          </form>
+        </section>
+
+        <!-- ADD ACCOUNT TRANSACTION -->
+        <section
+          class="card section-card"
+          aria-labelledby="transactionFormTitle"
+        >
+          <div class="card-heading">
+            <div
+              class="card-icon"
+              aria-hidden="true"
+            >
+              ↕
+            </div>
+
+            <div>
+              <h2 id="transactionFormTitle">
+                Add account transaction
+              </h2>
+
+              <p>
+                Record money entering or leaving an Amanah account.
+              </p>
+            </div>
+          </div>
+
+          <form id="transactionForm">
+            <div class="field">
+              <label for="transactionAccount">
+                Account
+              </label>
+
+              <select
+                id="transactionAccount"
+                required
+              ></select>
+            </div>
+
+            <div class="form-row">
               <div class="field">
-                <label for="repaymentLoan">Loan</label>
-                <select id="repaymentLoan" required></select>
-              </div>
+                <label for="transactionDate">
+                  Date
+                </label>
 
-              <div class="form-row">
-                <div class="field">
-                  <label for="repaymentDate">Payment date</label>
-                  <input id="repaymentDate" type="date" required>
-                </div>
-
-                <div class="field">
-                  <label for="repaymentAmount">Amount</label>
-                  <input id="repaymentAmount" type="number" min="0.01" step="0.01" inputmode="decimal" required>
-                </div>
+                <input
+                  id="transactionDate"
+                  type="date"
+                  required
+                >
               </div>
 
               <div class="field">
-                <label for="repaymentMethod">Payment method</label>
-                <input id="repaymentMethod" type="text" maxlength="80" placeholder="Cash, transfer…">
+                <label for="transactionType">
+                  Transaction type
+                </label>
+
+                <select
+                  id="transactionType"
+                  required
+                >
+                  <option value="deposit">
+                    Deposit
+                  </option>
+
+                  <option value="withdrawal">
+                    Withdrawal
+                  </option>
+
+                  <option value="adjustment_in">
+                    Adjustment in
+                  </option>
+
+                  <option value="adjustment_out">
+                    Adjustment out
+                  </option>
+                </select>
+              </div>
+            </div>
+
+            <div class="field">
+              <label for="transactionAmount">
+                Amount
+              </label>
+
+              <input
+                id="transactionAmount"
+                type="number"
+                min="0.01"
+                step="0.01"
+                inputmode="decimal"
+                required
+              >
+            </div>
+
+            <div class="field">
+              <label for="transactionDescription">
+                Description
+              </label>
+
+              <input
+                id="transactionDescription"
+                type="text"
+                maxlength="180"
+              >
+            </div>
+
+            <div class="field">
+              <label for="transactionReference">
+                Reference number
+              </label>
+
+              <input
+                id="transactionReference"
+                type="text"
+                maxlength="100"
+              >
+            </div>
+
+            <button
+              class="primary-button"
+              id="transactionButton"
+              type="submit"
+            >
+              Add transaction
+            </button>
+
+            <p class="form-note">
+              These are the four transaction types recognised by
+              the current account balance view.
+            </p>
+          </form>
+        </section>
+
+        <!-- ADD LOAN -->
+        <section
+          class="card section-card"
+          aria-labelledby="loanFormTitle"
+        >
+          <div class="card-heading">
+            <div
+              class="card-icon"
+              aria-hidden="true"
+            >
+              ↗
+            </div>
+
+            <div>
+              <h2 id="loanFormTitle">
+                Add loan
+              </h2>
+
+              <p>
+                Record a new borrowing arrangement.
+              </p>
+            </div>
+          </div>
+
+          <form id="loanForm">
+            <div class="form-row">
+              <div class="field">
+                <label for="loanLender">
+                  Lender
+                </label>
+
+                <select
+                  id="loanLender"
+                  required
+                ></select>
               </div>
 
               <div class="field">
-                <label for="repaymentNotes">Notes</label>
-                <textarea id="repaymentNotes" maxlength="250" placeholder="Optional"></textarea>
-              </div>
+                <label for="loanBorrower">
+                  Borrower
+                </label>
 
-              <button class="primary-button" id="repaymentButton" type="submit">Add repayment</button>
-            </form>
-          </section>
-        </div>
-
-        <div class="stack">
-          <section class="card table-card">
-            <div class="table-head">
-              <div>
-                <h2>Loan balances</h2>
-                <p>Current balance of every Amanah loan.</p>
+                <select
+                  id="loanBorrower"
+                  required
+                ></select>
               </div>
             </div>
 
-            <div class="table-scroll">
-              <table>
-                <thead>
-                  <tr>
-                    <th>Lender</th>
-                    <th>Borrower</th>
-                    <th>Principal</th>
-                    <th>Repaid</th>
-                    <th>Remaining</th>
-                    <th>Status</th>
-                    <th>Next payment</th>
-                  </tr>
-                </thead>
-                <tbody id="loanRows"></tbody>
-              </table>
-            </div>
-          </section>
+            <div class="field">
+              <label for="loanSourceAccount">
+                Source account
+              </label>
 
-          <section class="card table-card">
-            <div class="table-head">
-              <div>
-                <h2>Account balances</h2>
-                <p>Balances returned by your existing account_balances view.</p>
+              <select id="loanSourceAccount"></select>
+            </div>
+
+            <div class="form-row">
+              <div class="field">
+                <label for="loanPrincipal">
+                  Principal amount
+                </label>
+
+                <input
+                  id="loanPrincipal"
+                  type="number"
+                  min="0.01"
+                  step="0.01"
+                  inputmode="decimal"
+                  required
+                >
+              </div>
+
+              <div class="field">
+                <label for="loanCurrency">
+                  Currency
+                </label>
+
+                <select id="loanCurrency">
+                  <option value="MVR">MVR</option>
+                  <option value="USD">USD</option>
+                </select>
               </div>
             </div>
 
-            <div class="table-scroll">
-              <table>
-                <thead>
-                  <tr>
-                    <th>Account</th>
-                    <th>Owner</th>
-                    <th>Holder</th>
-                    <th>Type</th>
-                    <th>Balance</th>
-                  </tr>
-                </thead>
-                <tbody id="accountRows"></tbody>
-              </table>
-            </div>
-          </section>
+            <div class="form-row">
+              <div class="field">
+                <label for="loanDate">
+                  Loan date
+                </label>
 
-          <section class="card table-card">
-            <div class="table-head">
-              <div>
-                <h2>Recent repayments</h2>
-                <p>Latest loan payment records.</p>
+                <input
+                  id="loanDate"
+                  type="date"
+                >
+              </div>
+
+              <div class="field">
+                <label for="loanStatus">
+                  Status
+                </label>
+
+                <select
+                  id="loanStatus"
+                  required
+                >
+                  <option value="active">
+                    Active
+                  </option>
+
+                  <option value="paid">
+                    Paid
+                  </option>
+
+                  <option value="cancelled">
+                    Cancelled
+                  </option>
+                </select>
               </div>
             </div>
 
-            <div class="table-scroll">
-              <table>
-                <thead>
-                  <tr>
-                    <th>Date</th>
-                    <th>Loan</th>
-                    <th>Amount</th>
-                    <th>Method</th>
-                    <th>Notes</th>
-                  </tr>
-                </thead>
-                <tbody id="repaymentRows"></tbody>
-              </table>
-            </div>
-          </section>
+            <label class="check-row">
+              <input
+                id="loanDateEstimated"
+                type="checkbox"
+              >
 
-          <section class="card table-card">
-            <div class="table-head">
-              <div>
-                <h2>People</h2>
-                <p>People available for accounts and loans.</p>
+              The exact loan date is estimated
+            </label>
+
+            <div class="form-row">
+              <div class="field">
+                <label for="installmentAmount">
+                  Installment amount
+                </label>
+
+                <input
+                  id="installmentAmount"
+                  type="number"
+                  min="0"
+                  step="0.01"
+                  inputmode="decimal"
+                >
+              </div>
+
+              <div class="field">
+                <label for="installmentFrequency">
+                  Frequency
+                </label>
+
+                <select id="installmentFrequency">
+                  <option value="">
+                    Not specified
+                  </option>
+
+                  <option value="weekly">
+                    Weekly
+                  </option>
+
+                  <option value="monthly">
+                    Monthly
+                  </option>
+
+                  <option value="quarterly">
+                    Quarterly
+                  </option>
+                </select>
               </div>
             </div>
 
-            <div class="table-scroll">
-              <table>
-                <thead>
-                  <tr>
-                    <th>Name</th>
-                    <th>Relationship</th>
-                    <th>Notes</th>
-                  </tr>
-                </thead>
-                <tbody id="peopleRows"></tbody>
-              </table>
-            </div>
-          </section>
+            <div class="field">
+              <label for="nextPaymentDate">
+                Next payment date
+              </label>
 
-          <section class="card table-card">
-            <div class="table-head">
-              <div>
-                <h2>Recent account transactions</h2>
-                <p>Latest activity recorded against Amanah accounts.</p>
+              <input
+                id="nextPaymentDate"
+                type="date"
+              >
+            </div>
+
+            <div class="field">
+              <label for="loanNotes">
+                Notes
+              </label>
+
+              <textarea
+                id="loanNotes"
+                maxlength="350"
+                placeholder="Optional"
+              ></textarea>
+            </div>
+
+            <button
+              class="primary-button"
+              id="loanButton"
+              type="submit"
+            >
+              Add loan
+            </button>
+
+            <p class="form-note">
+              A source-account loan is already deducted by the
+              account balance view. Do not add a duplicate withdrawal.
+            </p>
+          </form>
+        </section>
+
+        <!-- ADD REPAYMENT -->
+        <section
+          class="card section-card"
+          aria-labelledby="repaymentFormTitle"
+        >
+          <div class="card-heading">
+            <div
+              class="card-icon"
+              aria-hidden="true"
+            >
+              ✓
+            </div>
+
+            <div>
+              <h2 id="repaymentFormTitle">
+                Add loan repayment
+              </h2>
+
+              <p>
+                Apply a repayment to an existing loan.
+              </p>
+            </div>
+          </div>
+
+          <form id="repaymentForm">
+            <div class="field">
+              <label for="repaymentLoan">
+                Loan
+              </label>
+
+              <select
+                id="repaymentLoan"
+                required
+              ></select>
+            </div>
+
+            <div class="form-row">
+              <div class="field">
+                <label for="repaymentDate">
+                  Payment date
+                </label>
+
+                <input
+                  id="repaymentDate"
+                  type="date"
+                  required
+                >
+              </div>
+
+              <div class="field">
+                <label for="repaymentAmount">
+                  Amount
+                </label>
+
+                <input
+                  id="repaymentAmount"
+                  type="number"
+                  min="0.01"
+                  step="0.01"
+                  inputmode="decimal"
+                  required
+                >
               </div>
             </div>
 
-            <div class="table-scroll">
-              <table>
-                <thead>
-                  <tr>
-                    <th>Date</th>
-                    <th>Account</th>
-                    <th>Type</th>
-                    <th>Amount</th>
-                    <th>Description</th>
-                  </tr>
-                </thead>
-                <tbody id="transactionRows"></tbody>
-              </table>
+            <div class="field">
+              <label for="repaymentMethod">
+                Payment method
+              </label>
+
+              <input
+                id="repaymentMethod"
+                type="text"
+                maxlength="80"
+                placeholder="Cash, transfer…"
+              >
             </div>
-          </section>
-        </div>
+
+            <div class="field">
+              <label for="repaymentNotes">
+                Notes
+              </label>
+
+              <textarea
+                id="repaymentNotes"
+                maxlength="250"
+                placeholder="Optional"
+              ></textarea>
+            </div>
+
+            <button
+              class="primary-button"
+              id="repaymentButton"
+              type="submit"
+            >
+              Add repayment
+            </button>
+
+            <p class="form-note">
+              Repayments automatically reduce the remaining loan and
+              increase the source account’s available cash through the view.
+            </p>
+          </form>
+        </section>
+
       </div>
     </section>
   </main>
@@ -776,6 +2095,7 @@
   <script>
     let currentUser = null;
     let currentProfile = null;
+
     let people = [];
     let accounts = [];
     let loanBalances = [];
@@ -783,515 +2103,2406 @@
     let repayments = [];
     let transactions = [];
 
-    function setTheme(theme, remember = true) {
-      document.documentElement.dataset.theme = theme;
-      const isDark = theme === "dark";
-      document.getElementById("themeIcon").textContent = isDark ? "☀" : "☾";
-      document.querySelector('meta[name="theme-color"]').content = isDark ? "#0b1513" : "#0f766e";
+    const privateBalanceValues = {
+      dadCash: 0,
+      dadLoans: 0,
+      dadTotal: 0
+    };
+
+    const revealedBalanceKeys =
+      new Set();
+
+    const VALID_TRANSACTION_TYPES =
+      new Set([
+        "deposit",
+        "withdrawal",
+        "adjustment_in",
+        "adjustment_out"
+      ]);
+
+
+    function setTheme(
+      theme,
+      remember = true
+    ) {
+      document.documentElement.dataset.theme =
+        theme;
+
+      const isDark =
+        theme === "dark";
+
+      const toggle =
+        document.getElementById(
+          "themeToggle"
+        );
+
+      const label =
+        isDark
+          ? "Switch to light mode"
+          : "Switch to dark mode";
+
+      toggle.setAttribute(
+        "aria-label",
+        label
+      );
+
+      toggle.title =
+        label;
+
+      toggle.setAttribute(
+        "aria-pressed",
+        String(isDark)
+      );
+
+      document.getElementById(
+        "themeIcon"
+      ).textContent =
+        isDark ? "☀" : "☾";
+
+      document.querySelector(
+        'meta[name="theme-color"]'
+      ).content =
+        isDark
+          ? "#0b1513"
+          : "#0f766e";
+
       if (remember) {
-        try { localStorage.setItem("dhaftar-theme", theme); } catch (_) {}
+        try {
+          localStorage.setItem(
+            "dhaftar-theme",
+            theme
+          );
+        } catch (_) {}
       }
     }
 
+
     function localToday() {
-      const now = new Date();
-      const local = new Date(now.getTime() - now.getTimezoneOffset() * 60000);
-      return local.toISOString().slice(0, 10);
+      const now =
+        new Date();
+
+      const local =
+        new Date(
+          now.getTime() -
+          now.getTimezoneOffset() *
+          60000
+        );
+
+      return local
+        .toISOString()
+        .slice(0, 10);
     }
 
+
     function clean(value) {
-      const text = String(value ?? "").trim();
+      const text =
+        String(
+          value ?? ""
+        ).trim();
+
       return text || null;
     }
 
-    function nullableNumber(value) {
-      if (value === "" || value === null || value === undefined) return null;
-      const number = Number(value);
-      return Number.isFinite(number) ? number : null;
+
+    function normalize(value) {
+      return String(
+        value ?? ""
+      )
+        .trim()
+        .toLowerCase();
     }
 
-    function formatMoney(value, currency = "MVR") {
-      const amount = Number(value);
-      if (!Number.isFinite(amount)) return currency + " —";
-      return currency + " " + amount.toLocaleString("en-US", {
-        minimumFractionDigits: 2,
-        maximumFractionDigits: 2
-      });
+
+    function nullableNumber(value) {
+      if (
+        value === "" ||
+        value === null ||
+        value === undefined
+      ) {
+        return null;
+      }
+
+      const number =
+        Number(value);
+
+      return Number.isFinite(number)
+        ? number
+        : null;
     }
+
+
+    function formatMoney(
+      value,
+      currency = "MVR"
+    ) {
+      const amount =
+        Number(value);
+
+      if (!Number.isFinite(amount)) {
+        return currency + " —";
+      }
+
+      return (
+        currency +
+        " " +
+        amount.toLocaleString(
+          "en-US",
+          {
+            minimumFractionDigits: 2,
+            maximumFractionDigits: 2
+          }
+        )
+      );
+    }
+
 
     function formatDate(value) {
-      if (!value) return "—";
-      const date = new Date(value + (String(value).length === 10 ? "T00:00:00" : ""));
-      if (Number.isNaN(date.getTime())) return String(value);
-      return date.toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" });
+      if (!value) {
+        return "—";
+      }
+
+      const text =
+        String(value);
+
+      const date =
+        new Date(
+          text +
+          (
+            text.length === 10
+              ? "T00:00:00"
+              : ""
+          )
+        );
+
+      if (
+        Number.isNaN(
+          date.getTime()
+        )
+      ) {
+        return text;
+      }
+
+      return date.toLocaleDateString(
+        "en-GB",
+        {
+          day: "2-digit",
+          month: "short",
+          year: "numeric"
+        }
+      );
     }
 
-    function showMessage(text, isError = false) {
-      const box = document.getElementById("message");
-      box.textContent = text || "";
-      box.className = "message";
-      if (text) box.classList.add("is-visible", isError ? "error" : "success");
-      if (text) box.scrollIntoView({ behavior: "smooth", block: "nearest" });
+
+    function showMessage(
+      text,
+      isError = false
+    ) {
+      const box =
+        document.getElementById(
+          "message"
+        );
+
+      box.textContent =
+        text || "";
+
+      box.className =
+        "message";
+
+      if (text) {
+        box.classList.add(
+          "is-visible",
+          isError
+            ? "error"
+            : "success"
+        );
+
+        box.scrollIntoView({
+          behavior: "smooth",
+          block: "nearest"
+        });
+      }
     }
 
-    function setButtonLoading(button, loading, loadingText) {
-      if (!button.dataset.defaultText) button.dataset.defaultText = button.textContent.trim();
-      button.disabled = loading;
-      button.textContent = loading ? loadingText : button.dataset.defaultText;
+
+    function setButtonLoading(
+      button,
+      loading,
+      loadingText
+    ) {
+      if (
+        !button.dataset.defaultText
+      ) {
+        button.dataset.defaultText =
+          button.textContent.trim();
+      }
+
+      button.disabled =
+        loading;
+
+      button.textContent =
+        loading
+          ? loadingText
+          : button.dataset.defaultText;
     }
 
-    function cell(text, className = "") {
-      const td = document.createElement("td");
-      td.textContent = text ?? "—";
-      if (className) td.className = className;
+
+    function cell(
+      text,
+      className = ""
+    ) {
+      const td =
+        document.createElement(
+          "td"
+        );
+
+      td.textContent =
+        text ?? "—";
+
+      if (className) {
+        td.className =
+          className;
+      }
+
       return td;
     }
 
-    function emptyTable(tbody, columns, message) {
+
+    function statusCell(status) {
+      const td =
+        document.createElement(
+          "td"
+        );
+
+      const badge =
+        document.createElement(
+          "span"
+        );
+
+      const normalized =
+        normalize(status) ||
+        "active";
+
+      badge.className =
+        "status-badge " +
+        normalized;
+
+      badge.textContent =
+        normalized.charAt(0)
+          .toUpperCase() +
+        normalized.slice(1);
+
+      td.appendChild(
+        badge
+      );
+
+      return td;
+    }
+
+
+    function emptyTable(
+      tbody,
+      columns,
+      message
+    ) {
       tbody.replaceChildren();
-      const row = document.createElement("tr");
-      const td = document.createElement("td");
-      td.colSpan = columns;
-      td.className = "empty-row";
-      td.textContent = message;
+
+      const row =
+        document.createElement(
+          "tr"
+        );
+
+      const td =
+        document.createElement(
+          "td"
+        );
+
+      td.colSpan =
+        columns;
+
+      td.className =
+        "empty-row";
+
+      td.textContent =
+        message;
+
       row.appendChild(td);
       tbody.appendChild(row);
     }
 
-    function pick(row, keys, fallback = null) {
-      for (const key of keys) {
-        if (row && row[key] !== undefined && row[key] !== null) return row[key];
-      }
-      return fallback;
+
+    function isDadPerson(person) {
+      return (
+        normalize(
+          person?.name
+        ) === "dad" ||
+        normalize(
+          person?.relationship
+        ) === "father"
+      );
     }
 
+
+    function isSelfPerson(person) {
+      return (
+        ["me", "inaad"].includes(
+          normalize(
+            person?.name
+          )
+        ) ||
+        normalize(
+          person?.relationship
+        ) === "self"
+      );
+    }
+
+
+    function getDadIds() {
+      return new Set(
+        people
+          .filter(
+            isDadPerson
+          )
+          .map(
+            (person) =>
+              person.id
+          )
+      );
+    }
+
+
+    function getSelfIds() {
+      return new Set(
+        people
+          .filter(
+            isSelfPerson
+          )
+          .map(
+            (person) =>
+              person.id
+          )
+      );
+    }
+
+
+    function isDadLoan(loan) {
+      const dadIds =
+        getDadIds();
+
+      return (
+        dadIds.has(
+          loan?.lender_id
+        ) ||
+        normalize(
+          loan?.lender_name
+        ) === "dad" ||
+        normalize(
+          loan?.lender_relationship
+        ) === "father"
+      );
+    }
+
+
+    function getActiveDadMvrLoans() {
+      return loanBalances.filter(
+        (loan) => {
+          return (
+            isDadLoan(loan) &&
+            normalize(
+              loan?.currency
+            ) === "mvr" &&
+            normalize(
+              loan?.calculated_status
+            ) !== "cancelled" &&
+            Number(
+              loan?.remaining_amount
+            ) > 0
+          );
+        }
+      );
+    }
+
+
+    function getDadCustodyAccounts() {
+      const dadIds =
+        getDadIds();
+
+      const selfIds =
+        getSelfIds();
+
+      return accountBalances.filter(
+        (account) => {
+          const ownerIsDad =
+            dadIds.has(
+              account?.owner_id
+            ) ||
+            normalize(
+              account?.owner_name
+            ) === "dad";
+
+          const holderIsSelf =
+            selfIds.has(
+              account?.holder_id
+            ) ||
+            ["me", "inaad"].includes(
+              normalize(
+                account?.holder_name
+              )
+            );
+
+          return (
+            ownerIsDad &&
+            holderIsSelf &&
+            normalize(
+              account?.currency
+            ) === "mvr"
+          );
+        }
+      );
+    }
+
+
+    function borrowerDisplayName(loan) {
+      if (
+        ["me", "inaad"].includes(
+          normalize(
+            loan?.borrower_name
+          )
+        ) ||
+        normalize(
+          loan?.borrower_relationship
+        ) === "self"
+      ) {
+        return "Inaad";
+      }
+
+      return (
+        String(
+          loan?.borrower_name ||
+          "Unknown"
+        ).trim() ||
+        "Unknown"
+      );
+    }
+
+
+    function updateMaskedBalance(
+      key
+    ) {
+      const button =
+        document.querySelector(
+          '[data-balance-key="' +
+          key +
+          '"]'
+        );
+
+      if (!button) {
+        return;
+      }
+
+      const value =
+        button.querySelector(
+          ".masked-value"
+        );
+
+      const hint =
+        button.querySelector(
+          ".reveal-hint"
+        );
+
+      const isRevealed =
+        revealedBalanceKeys.has(
+          key
+        );
+
+      value.textContent =
+        isRevealed
+          ? formatMoney(
+              privateBalanceValues[
+                key
+              ],
+              "MVR"
+            )
+          : "MVR ••••••";
+
+      hint.textContent =
+        isRevealed
+          ? "Hide"
+          : "Show";
+
+      button.setAttribute(
+        "aria-pressed",
+        String(isRevealed)
+      );
+    }
+
+
+    function toggleMaskedBalance(
+      key
+    ) {
+      if (
+        revealedBalanceKeys.has(
+          key
+        )
+      ) {
+        revealedBalanceKeys.delete(
+          key
+        );
+      } else {
+        revealedBalanceKeys.add(
+          key
+        );
+      }
+
+      updateMaskedBalance(
+        key
+      );
+    }
+
+
     async function ensureAdministrator() {
-      const { data: sessionData, error: sessionError } = await supabaseClient.auth.getSession();
-      if (sessionError) throw sessionError;
-      if (!sessionData.session) {
-        window.location.replace("admin.html");
+      const {
+        data: sessionData,
+        error: sessionError
+      } =
+        await supabaseClient.auth
+          .getSession();
+
+      if (sessionError) {
+        throw sessionError;
+      }
+
+      if (
+        !sessionData.session
+      ) {
+        window.location.replace(
+          "admin.html"
+        );
+
         return false;
       }
 
-      const { data: profile, error: profileError } = await supabaseClient
-        .from("profiles")
-        .select("id, email, full_name, role")
-        .eq("id", sessionData.session.user.id)
-        .single();
+      const {
+        data: profile,
+        error: profileError
+      } =
+        await supabaseClient
+          .from("profiles")
+          .select(
+            "id, email, full_name, role"
+          )
+          .eq(
+            "id",
+            sessionData.session
+              .user.id
+          )
+          .single();
 
-      if (profileError) throw profileError;
-      if (profile.role !== "admin") {
-        await supabaseClient.auth.signOut();
-        throw new Error("This account does not have administrator access.");
+      if (profileError) {
+        throw profileError;
       }
 
-      currentUser = sessionData.session.user;
-      currentProfile = profile;
+      if (
+        profile.role !== "admin"
+      ) {
+        await supabaseClient.auth
+          .signOut();
+
+        throw new Error(
+          "This account does not have administrator access."
+        );
+      }
+
+      currentUser =
+        sessionData.session.user;
+
+      currentProfile =
+        profile;
+
       return true;
     }
 
-    async function loadData() {
-      const results = await Promise.all([
-        supabaseClient.from("people").select("id, name, relationship, notes, created_at").order("name"),
-        supabaseClient.from("accounts").select("id, account_name, owner_id, holder_id, account_type, currency, opening_balance, notes, created_at").order("account_name"),
-        supabaseClient.from("loan_balances").select("*").order("created_at", { ascending: false }),
-        supabaseClient.from("account_balances").select("*"),
-        supabaseClient.from("loan_payments").select("id, loan_id, payment_date, amount, payment_method, notes, created_at").order("payment_date", { ascending: false }).limit(30),
-        supabaseClient.from("account_transactions").select("id, account_id, transaction_date, transaction_type, amount, description, reference_number, created_at").order("transaction_date", { ascending: false }).limit(30)
-      ]);
 
-      for (const result of results) {
-        if (result.error) throw result.error;
+    async function loadData() {
+      const results =
+        await Promise.all([
+          supabaseClient
+            .from("people")
+            .select(
+              "id, name, relationship, notes, created_at"
+            )
+            .order("name"),
+
+          supabaseClient
+            .from("accounts")
+            .select(
+              "id, account_name, owner_id, holder_id, account_type, currency, opening_balance, notes, created_at"
+            )
+            .order(
+              "account_name"
+            ),
+
+          supabaseClient
+            .from("loan_balances")
+            .select("*")
+            .order(
+              "created_at",
+              {
+                ascending: false
+              }
+            ),
+
+          supabaseClient
+            .from(
+              "account_balances"
+            )
+            .select("*")
+            .order(
+              "account_name"
+            ),
+
+          supabaseClient
+            .from("loan_payments")
+            .select(
+              "id, loan_id, payment_date, amount, payment_method, notes, created_at"
+            )
+            .order(
+              "payment_date",
+              {
+                ascending: false
+              }
+            )
+            .limit(40),
+
+          supabaseClient
+            .from(
+              "account_transactions"
+            )
+            .select(
+              "id, account_id, transaction_date, transaction_type, amount, description, reference_number, created_at"
+            )
+            .order(
+              "transaction_date",
+              {
+                ascending: false
+              }
+            )
+            .limit(40)
+        ]);
+
+      for (
+        const result of results
+      ) {
+        if (result.error) {
+          throw result.error;
+        }
       }
 
-      people = results[0].data || [];
-      accounts = results[1].data || [];
-      loanBalances = results[2].data || [];
-      accountBalances = results[3].data || [];
-      repayments = results[4].data || [];
-      transactions = results[5].data || [];
+      people =
+        results[0].data || [];
+
+      accounts =
+        results[1].data || [];
+
+      loanBalances =
+        results[2].data || [];
+
+      accountBalances =
+        results[3].data || [];
+
+      repayments =
+        results[4].data || [];
+
+      transactions =
+        results[5].data || [];
 
       populateSelectors();
       renderAll();
     }
 
-    function populateSelect(select, rows, placeholder, labelBuilder) {
-      const previous = select.value;
+
+    function populateSelect(
+      select,
+      rows,
+      placeholder,
+      labelBuilder
+    ) {
+      const previous =
+        select.value;
+
       select.replaceChildren();
 
-      const first = document.createElement("option");
-      first.value = "";
-      first.textContent = placeholder;
-      select.appendChild(first);
-
-      rows.forEach((row) => {
-        const option = document.createElement("option");
-        option.value = row.id;
-        option.textContent = labelBuilder(row);
-        select.appendChild(option);
-      });
-
-      if ([...select.options].some((option) => option.value === previous)) select.value = previous;
-    }
-
-    function populateSelectors() {
-      ["accountOwner", "loanLender", "loanBorrower"].forEach((id) => {
-        populateSelect(document.getElementById(id), people, "Choose a person", (person) =>
-          person.name + (person.relationship ? " · " + person.relationship : "")
+      const first =
+        document.createElement(
+          "option"
         );
-      });
 
-      populateSelect(document.getElementById("accountHolder"), people, "No separate holder", (person) =>
-        person.name + (person.relationship ? " · " + person.relationship : "")
+      first.value =
+        "";
+
+      first.textContent =
+        placeholder;
+
+      select.appendChild(
+        first
       );
 
-      ["transactionAccount", "loanSourceAccount"].forEach((id) => {
-        populateSelect(document.getElementById(id), accounts, id === "loanSourceAccount" ? "No source account" : "Choose an account", (account) =>
-          account.account_name + " · " + account.currency
+      rows.forEach((row) => {
+        const option =
+          document.createElement(
+            "option"
+          );
+
+        option.value =
+          row.id;
+
+        option.textContent =
+          labelBuilder(row);
+
+        select.appendChild(
+          option
         );
       });
 
-      const repaymentSelect = document.getElementById("repaymentLoan");
-      const previous = repaymentSelect.value;
+      if (
+        [...select.options]
+          .some(
+            (option) =>
+              option.value ===
+              previous
+          )
+      ) {
+        select.value =
+          previous;
+      }
+    }
+
+
+    function populateSelectors() {
+      [
+        "accountOwner",
+        "loanLender",
+        "loanBorrower"
+      ].forEach((id) => {
+        populateSelect(
+          document.getElementById(
+            id
+          ),
+          people,
+          "Choose a person",
+          (person) =>
+            person.name +
+            (
+              person.relationship
+                ? " · " +
+                  person.relationship
+                : ""
+            )
+        );
+      });
+
+      populateSelect(
+        document.getElementById(
+          "accountHolder"
+        ),
+        people,
+        "No separate holder",
+        (person) =>
+          person.name +
+          (
+            person.relationship
+              ? " · " +
+                person.relationship
+              : ""
+          )
+      );
+
+      const balanceMap =
+        new Map(
+          accountBalances.map(
+            (account) => [
+              account.account_id,
+              account
+            ]
+          )
+        );
+
+      [
+        "transactionAccount",
+        "loanSourceAccount"
+      ].forEach((id) => {
+        populateSelect(
+          document.getElementById(
+            id
+          ),
+          accounts,
+          id ===
+            "loanSourceAccount"
+            ? "No source account"
+            : "Choose an account",
+          (account) => {
+            const balance =
+              balanceMap.get(
+                account.id
+              );
+
+            const suffix =
+              balance
+                ? " · Available " +
+                  formatMoney(
+                    balance.available_balance,
+                    account.currency
+                  )
+                : "";
+
+            return (
+              account.account_name +
+              " · " +
+              account.currency +
+              suffix
+            );
+          }
+        );
+      });
+
+      const repaymentSelect =
+        document.getElementById(
+          "repaymentLoan"
+        );
+
+      const previous =
+        repaymentSelect.value;
+
       repaymentSelect.replaceChildren();
-      const first = document.createElement("option");
-      first.value = "";
-      first.textContent = "Choose an active loan";
-      repaymentSelect.appendChild(first);
+
+      const first =
+        document.createElement(
+          "option"
+        );
+
+      first.value =
+        "";
+
+      first.textContent =
+        "Choose an active loan";
+
+      repaymentSelect.appendChild(
+        first
+      );
 
       loanBalances
-        .filter((loan) => Number(loan.remaining_amount) > 0)
+        .filter(
+          (loan) =>
+            Number(
+              loan.remaining_amount
+            ) > 0 &&
+            normalize(
+              loan.calculated_status
+            ) !== "cancelled"
+        )
         .forEach((loan) => {
-          const option = document.createElement("option");
-          option.value = loan.loan_id;
-          option.textContent = `${loan.lender_name} → ${loan.borrower_name} · ${formatMoney(loan.remaining_amount, loan.currency)}`;
-          repaymentSelect.appendChild(option);
+          const option =
+            document.createElement(
+              "option"
+            );
+
+          option.value =
+            loan.loan_id;
+
+          option.textContent =
+            loan.lender_name +
+            " → " +
+            loan.borrower_name +
+            " · " +
+            formatMoney(
+              loan.remaining_amount,
+              loan.currency
+            );
+
+          repaymentSelect.appendChild(
+            option
+          );
         });
 
-      if ([...repaymentSelect.options].some((option) => option.value === previous)) repaymentSelect.value = previous;
+      if (
+        [...repaymentSelect.options]
+          .some(
+            (option) =>
+              option.value ===
+              previous
+          )
+      ) {
+        repaymentSelect.value =
+          previous;
+      }
     }
 
-    function renderSummary() {
-      const active = loanBalances.filter((loan) => Number(loan.remaining_amount) > 0);
-      const mvrLoans = active.filter((loan) => String(loan.currency).toUpperCase() === "MVR");
-      const totalRemaining = mvrLoans.reduce((sum, loan) => sum + Number(loan.remaining_amount || 0), 0);
 
-      const isMe = (name) => ["me", "inaad"].includes(String(name || "").trim().toLowerCase());
-      const youOwe = mvrLoans.filter((loan) => isMe(loan.borrower_name)).reduce((sum, loan) => sum + Number(loan.remaining_amount || 0), 0);
-      const owedToYou = mvrLoans.filter((loan) => isMe(loan.lender_name)).reduce((sum, loan) => sum + Number(loan.remaining_amount || 0), 0);
+    function renderPrivateMoneyPosition() {
+      const custodyCash =
+        getDadCustodyAccounts()
+          .reduce(
+            (sum, account) =>
+              sum +
+              Number(
+                account.available_balance ||
+                0
+              ),
+            0
+          );
 
-      document.getElementById("activeLoanCount").textContent = String(active.length);
-      document.getElementById("totalRemaining").textContent = formatMoney(totalRemaining);
-      document.getElementById("youOwe").textContent = formatMoney(youOwe);
-      document.getElementById("owedToYou").textContent = formatMoney(owedToYou);
+      const remainingDadLoans =
+        getActiveDadMvrLoans()
+          .reduce(
+            (sum, loan) =>
+              sum +
+              Number(
+                loan.remaining_amount ||
+                0
+              ),
+            0
+          );
+
+      privateBalanceValues.dadCash =
+        custodyCash;
+
+      privateBalanceValues.dadLoans =
+        remainingDadLoans;
+
+      privateBalanceValues.dadTotal =
+        custodyCash +
+        remainingDadLoans;
+
+      Object.keys(
+        privateBalanceValues
+      ).forEach(
+        updateMaskedBalance
+      );
     }
+
+
+    function renderPersonLoanTotals() {
+      const container =
+        document.getElementById(
+          "personLoanGrid"
+        );
+
+      container.replaceChildren();
+
+      const totals =
+        new Map();
+
+      getActiveDadMvrLoans()
+        .forEach((loan) => {
+          const name =
+            borrowerDisplayName(
+              loan
+            );
+
+          const key =
+            normalize(name);
+
+          const current =
+            totals.get(key) || {
+              name,
+              amount: 0,
+              count: 0
+            };
+
+          current.amount +=
+            Number(
+              loan.remaining_amount ||
+              0
+            );
+
+          current.count +=
+            1;
+
+          totals.set(
+            key,
+            current
+          );
+        });
+
+      const preferredOrder =
+        new Map([
+          ["inaad", 0],
+          ["yush", 1],
+          ["imaad", 2]
+        ]);
+
+      const rows =
+        [...totals.values()]
+          .sort((a, b) => {
+            const aRank =
+              preferredOrder.has(
+                normalize(a.name)
+              )
+                ? preferredOrder.get(
+                    normalize(a.name)
+                  )
+                : 100;
+
+            const bRank =
+              preferredOrder.has(
+                normalize(b.name)
+              )
+                ? preferredOrder.get(
+                    normalize(b.name)
+                  )
+                : 100;
+
+            if (aRank !== bRank) {
+              return aRank - bRank;
+            }
+
+            return a.name.localeCompare(
+              b.name
+            );
+          });
+
+      if (!rows.length) {
+        const empty =
+          document.createElement(
+            "div"
+          );
+
+        empty.className =
+          "empty-box";
+
+        empty.textContent =
+          "No remaining MVR loans from Dad.";
+
+        container.appendChild(
+          empty
+        );
+
+        return;
+      }
+
+      rows.forEach((item) => {
+        const card =
+          document.createElement(
+            "article"
+          );
+
+        card.className =
+          "person-loan-item";
+
+        const name =
+          document.createElement(
+            "span"
+          );
+
+        name.className =
+          "person-loan-name";
+
+        name.textContent =
+          item.name;
+
+        const amount =
+          document.createElement(
+            "strong"
+          );
+
+        amount.className =
+          "person-loan-amount";
+
+        amount.textContent =
+          formatMoney(
+            item.amount,
+            "MVR"
+          );
+
+        const count =
+          document.createElement(
+            "span"
+          );
+
+        count.className =
+          "person-loan-count";
+
+        count.textContent =
+          item.count +
+          (
+            item.count === 1
+              ? " loan"
+              : " loans"
+          );
+
+        card.append(
+          name,
+          amount,
+          count
+        );
+
+        container.appendChild(
+          card
+        );
+      });
+    }
+
 
     function renderLoans() {
-      const tbody = document.getElementById("loanRows");
-      tbody.replaceChildren();
-      if (!loanBalances.length) return emptyTable(tbody, 7, "No loans found.");
-
-      loanBalances.forEach((loan) => {
-        const row = document.createElement("tr");
-        row.append(
-          cell(loan.lender_name),
-          cell(loan.borrower_name),
-          cell(formatMoney(loan.principal_amount, loan.currency)),
-          cell(formatMoney(loan.total_repaid, loan.currency)),
-          cell(formatMoney(loan.remaining_amount, loan.currency)),
-          cell(loan.calculated_status || "—"),
-          cell(formatDate(loan.next_payment_date))
+      const tbody =
+        document.getElementById(
+          "loanRows"
         );
-        tbody.appendChild(row);
-      });
+
+      tbody.replaceChildren();
+
+      if (!loanBalances.length) {
+        return emptyTable(
+          tbody,
+          7,
+          "No loans found."
+        );
+      }
+
+      loanBalances.forEach(
+        (loan) => {
+          const row =
+            document.createElement(
+              "tr"
+            );
+
+          row.append(
+            cell(
+              loan.lender_name
+            ),
+
+            cell(
+              loan.borrower_name
+            ),
+
+            cell(
+              formatMoney(
+                loan.principal_amount,
+                loan.currency
+              ),
+              "money-cell"
+            ),
+
+            cell(
+              formatMoney(
+                loan.total_repaid,
+                loan.currency
+              ),
+              "money-cell"
+            ),
+
+            cell(
+              formatMoney(
+                loan.remaining_amount,
+                loan.currency
+              ),
+              "loan-cell"
+            ),
+
+            statusCell(
+              loan.calculated_status ||
+              "active"
+            ),
+
+            cell(
+              formatDate(
+                loan.next_payment_date
+              )
+            )
+          );
+
+          tbody.appendChild(
+            row
+          );
+        }
+      );
     }
+
 
     function renderAccounts() {
-      const tbody = document.getElementById("accountRows");
-      tbody.replaceChildren();
-      if (!accountBalances.length) return emptyTable(tbody, 5, "No account balances found.");
-
-      accountBalances.forEach((account) => {
-        const currency = pick(account, ["currency"], "MVR");
-        const balance = pick(account, ["current_balance", "balance", "calculated_balance", "closing_balance", "opening_balance"], 0);
-        const row = document.createElement("tr");
-        row.append(
-          cell(pick(account, ["account_name", "name"], "Account")),
-          cell(pick(account, ["owner_name", "owner"], "—")),
-          cell(pick(account, ["holder_name", "holder"], "—")),
-          cell(pick(account, ["account_type", "type"], "—")),
-          cell(formatMoney(balance, currency))
+      const tbody =
+        document.getElementById(
+          "accountRows"
         );
-        tbody.appendChild(row);
-      });
+
+      tbody.replaceChildren();
+
+      if (!accountBalances.length) {
+        return emptyTable(
+          tbody,
+          7,
+          "No account balances found."
+        );
+      }
+
+      accountBalances.forEach(
+        (account) => {
+          const currency =
+            account.currency ||
+            "MVR";
+
+          const managed =
+            Number(
+              account.total_managed_balance ??
+              0
+            );
+
+          const inLoans =
+            Number(
+              account.outstanding_loans ??
+              0
+            );
+
+          const available =
+            Number(
+              account.available_balance ??
+              0
+            );
+
+          const row =
+            document.createElement(
+              "tr"
+            );
+
+          row.append(
+            cell(
+              account.account_name ||
+              "Account"
+            ),
+
+            cell(
+              account.owner_name ||
+              "—"
+            ),
+
+            cell(
+              account.holder_name ||
+              "—"
+            ),
+
+            cell(
+              account.account_type ||
+              "—"
+            ),
+
+            cell(
+              formatMoney(
+                managed,
+                currency
+              ),
+              "money-cell"
+            ),
+
+            cell(
+              formatMoney(
+                inLoans,
+                currency
+              ),
+              "loan-cell"
+            ),
+
+            cell(
+              formatMoney(
+                available,
+                currency
+              ),
+              "available-cell"
+            )
+          );
+
+          tbody.appendChild(
+            row
+          );
+        }
+      );
     }
+
 
     function renderRepayments() {
-      const tbody = document.getElementById("repaymentRows");
-      tbody.replaceChildren();
-      if (!repayments.length) return emptyTable(tbody, 5, "No repayments found.");
-
-      const loanMap = new Map(loanBalances.map((loan) => [loan.loan_id, loan]));
-      repayments.forEach((payment) => {
-        const loan = loanMap.get(payment.loan_id);
-        const label = loan ? `${loan.lender_name} → ${loan.borrower_name}` : "Loan";
-        const currency = loan?.currency || "MVR";
-        const row = document.createElement("tr");
-        row.append(
-          cell(formatDate(payment.payment_date)),
-          cell(label),
-          cell(formatMoney(payment.amount, currency)),
-          cell(payment.payment_method || "—"),
-          cell(payment.notes || "—", "muted")
+      const tbody =
+        document.getElementById(
+          "repaymentRows"
         );
-        tbody.appendChild(row);
-      });
+
+      tbody.replaceChildren();
+
+      if (!repayments.length) {
+        return emptyTable(
+          tbody,
+          5,
+          "No repayments found."
+        );
+      }
+
+      const loanMap =
+        new Map(
+          loanBalances.map(
+            (loan) => [
+              loan.loan_id,
+              loan
+            ]
+          )
+        );
+
+      repayments.forEach(
+        (payment) => {
+          const loan =
+            loanMap.get(
+              payment.loan_id
+            );
+
+          const label =
+            loan
+              ? loan.lender_name +
+                " → " +
+                loan.borrower_name
+              : "Loan";
+
+          const currency =
+            loan?.currency ||
+            "MVR";
+
+          const row =
+            document.createElement(
+              "tr"
+            );
+
+          row.append(
+            cell(
+              formatDate(
+                payment.payment_date
+              )
+            ),
+
+            cell(label),
+
+            cell(
+              formatMoney(
+                payment.amount,
+                currency
+              ),
+              "money-cell"
+            ),
+
+            cell(
+              payment.payment_method ||
+              "—"
+            ),
+
+            cell(
+              payment.notes ||
+              "—",
+              "muted"
+            )
+          );
+
+          tbody.appendChild(
+            row
+          );
+        }
+      );
     }
+
 
     function renderPeople() {
-      const tbody = document.getElementById("peopleRows");
-      tbody.replaceChildren();
-      if (!people.length) return emptyTable(tbody, 3, "No people found.");
+      const tbody =
+        document.getElementById(
+          "peopleRows"
+        );
 
-      people.forEach((person) => {
-        const row = document.createElement("tr");
-        row.append(cell(person.name), cell(person.relationship || "—"), cell(person.notes || "—", "muted"));
-        tbody.appendChild(row);
-      });
+      tbody.replaceChildren();
+
+      if (!people.length) {
+        return emptyTable(
+          tbody,
+          3,
+          "No people found."
+        );
+      }
+
+      people.forEach(
+        (person) => {
+          const row =
+            document.createElement(
+              "tr"
+            );
+
+          row.append(
+            cell(
+              person.name
+            ),
+
+            cell(
+              person.relationship ||
+              "—"
+            ),
+
+            cell(
+              person.notes ||
+              "—",
+              "muted"
+            )
+          );
+
+          tbody.appendChild(
+            row
+          );
+        }
+      );
     }
+
 
     function renderTransactions() {
-      const tbody = document.getElementById("transactionRows");
-      tbody.replaceChildren();
-      if (!transactions.length) return emptyTable(tbody, 5, "No account transactions found.");
-
-      const accountMap = new Map(accounts.map((account) => [account.id, account]));
-      transactions.forEach((transaction) => {
-        const account = accountMap.get(transaction.account_id);
-        const row = document.createElement("tr");
-        row.append(
-          cell(formatDate(transaction.transaction_date)),
-          cell(account?.account_name || "Account"),
-          cell(transaction.transaction_type),
-          cell(formatMoney(transaction.amount, account?.currency || "MVR")),
-          cell(transaction.description || "—", "muted")
+      const tbody =
+        document.getElementById(
+          "transactionRows"
         );
-        tbody.appendChild(row);
-      });
+
+      tbody.replaceChildren();
+
+      if (!transactions.length) {
+        return emptyTable(
+          tbody,
+          5,
+          "No account transactions found."
+        );
+      }
+
+      const accountMap =
+        new Map(
+          accounts.map(
+            (account) => [
+              account.id,
+              account
+            ]
+          )
+        );
+
+      transactions.forEach(
+        (transaction) => {
+          const account =
+            accountMap.get(
+              transaction.account_id
+            );
+
+          const row =
+            document.createElement(
+              "tr"
+            );
+
+          row.append(
+            cell(
+              formatDate(
+                transaction.transaction_date
+              )
+            ),
+
+            cell(
+              account?.account_name ||
+              "Account"
+            ),
+
+            cell(
+              transaction.transaction_type
+            ),
+
+            cell(
+              formatMoney(
+                transaction.amount,
+                account?.currency ||
+                "MVR"
+              ),
+              "money-cell"
+            ),
+
+            cell(
+              transaction.description ||
+              "—",
+              "muted"
+            )
+          );
+
+          tbody.appendChild(
+            row
+          );
+        }
+      );
     }
 
+
     function renderAll() {
-      renderSummary();
+      renderPrivateMoneyPosition();
+      renderPersonLoanTotals();
       renderLoans();
       renderAccounts();
       renderRepayments();
-      renderPeople();
       renderTransactions();
+      renderPeople();
     }
+
 
     async function submitPerson(event) {
       event.preventDefault();
-      const button = document.getElementById("personButton");
-      setButtonLoading(button, true, "Adding…");
+
+      const button =
+        document.getElementById(
+          "personButton"
+        );
+
+      setButtonLoading(
+        button,
+        true,
+        "Adding…"
+      );
+
       showMessage("");
 
       try {
-        const name = clean(document.getElementById("personName").value);
-        if (!name) throw new Error("Enter the person's name.");
+        const name =
+          clean(
+            document.getElementById(
+              "personName"
+            ).value
+          );
 
-        const { error } = await supabaseClient.from("people").insert({
-          name,
-          relationship: clean(document.getElementById("personRelationship").value),
-          notes: clean(document.getElementById("personNotes").value)
-        });
-        if (error) throw error;
+        if (!name) {
+          throw new Error(
+            "Enter the person's name."
+          );
+        }
+
+        const {
+          error
+        } =
+          await supabaseClient
+            .from("people")
+            .insert({
+              name,
+
+              relationship:
+                clean(
+                  document.getElementById(
+                    "personRelationship"
+                  ).value
+                ),
+
+              notes:
+                clean(
+                  document.getElementById(
+                    "personNotes"
+                  ).value
+                )
+            });
+
+        if (error) {
+          throw error;
+        }
 
         event.target.reset();
-        showMessage("Person added successfully.");
+
+        showMessage(
+          "Person added successfully."
+        );
+
         await loadData();
+
       } catch (error) {
-        showMessage(error.message || "Person could not be added.", true);
+        showMessage(
+          error.message ||
+          "Person could not be added.",
+          true
+        );
+
       } finally {
-        setButtonLoading(button, false, "Adding…");
+        setButtonLoading(
+          button,
+          false,
+          "Adding…"
+        );
       }
     }
+
 
     async function submitAccount(event) {
       event.preventDefault();
-      const button = document.getElementById("accountButton");
-      setButtonLoading(button, true, "Adding…");
+
+      const button =
+        document.getElementById(
+          "accountButton"
+        );
+
+      setButtonLoading(
+        button,
+        true,
+        "Adding…"
+      );
+
       showMessage("");
 
       try {
-        const openingBalance = Number(document.getElementById("openingBalance").value);
-        if (!Number.isFinite(openingBalance)) throw new Error("Enter a valid opening balance.");
+        const accountName =
+          clean(
+            document.getElementById(
+              "accountName"
+            ).value
+          );
 
-        const { error } = await supabaseClient.from("accounts").insert({
-          account_name: clean(document.getElementById("accountName").value),
-          owner_id: document.getElementById("accountOwner").value,
-          holder_id: clean(document.getElementById("accountHolder").value),
-          account_type: clean(document.getElementById("accountType").value),
-          currency: document.getElementById("accountCurrency").value,
-          opening_balance: openingBalance,
-          notes: clean(document.getElementById("accountNotes").value)
-        });
-        if (error) throw error;
+        const ownerId =
+          document.getElementById(
+            "accountOwner"
+          ).value;
+
+        const accountType =
+          clean(
+            document.getElementById(
+              "accountType"
+            ).value
+          );
+
+        const openingBalance =
+          Number(
+            document.getElementById(
+              "openingBalance"
+            ).value
+          );
+
+        if (!accountName) {
+          throw new Error(
+            "Enter an account name."
+          );
+        }
+
+        if (!ownerId) {
+          throw new Error(
+            "Choose the account owner."
+          );
+        }
+
+        if (!accountType) {
+          throw new Error(
+            "Enter an account type."
+          );
+        }
+
+        if (
+          !Number.isFinite(
+            openingBalance
+          )
+        ) {
+          throw new Error(
+            "Enter a valid opening balance."
+          );
+        }
+
+        const {
+          error
+        } =
+          await supabaseClient
+            .from("accounts")
+            .insert({
+              account_name:
+                accountName,
+
+              owner_id:
+                ownerId,
+
+              holder_id:
+                clean(
+                  document.getElementById(
+                    "accountHolder"
+                  ).value
+                ),
+
+              account_type:
+                accountType,
+
+              currency:
+                document.getElementById(
+                  "accountCurrency"
+                ).value,
+
+              opening_balance:
+                openingBalance,
+
+              notes:
+                clean(
+                  document.getElementById(
+                    "accountNotes"
+                  ).value
+                )
+            });
+
+        if (error) {
+          throw error;
+        }
 
         event.target.reset();
-        document.getElementById("openingBalance").value = "0";
-        showMessage("Account added successfully.");
+
+        document.getElementById(
+          "openingBalance"
+        ).value =
+          "0";
+
+        showMessage(
+          "Account added successfully."
+        );
+
         await loadData();
+
       } catch (error) {
-        showMessage(error.message || "Account could not be added.", true);
+        showMessage(
+          error.message ||
+          "Account could not be added.",
+          true
+        );
+
       } finally {
-        setButtonLoading(button, false, "Adding…");
+        setButtonLoading(
+          button,
+          false,
+          "Adding…"
+        );
       }
     }
+
 
     async function submitTransaction(event) {
       event.preventDefault();
-      const button = document.getElementById("transactionButton");
-      setButtonLoading(button, true, "Adding…");
+
+      const button =
+        document.getElementById(
+          "transactionButton"
+        );
+
+      setButtonLoading(
+        button,
+        true,
+        "Adding…"
+      );
+
       showMessage("");
 
       try {
-        const amount = Number(document.getElementById("transactionAmount").value);
-        if (!Number.isFinite(amount) || amount <= 0) throw new Error("Enter a valid transaction amount.");
+        const accountId =
+          document.getElementById(
+            "transactionAccount"
+          ).value;
 
-        const { error } = await supabaseClient.from("account_transactions").insert({
-          account_id: document.getElementById("transactionAccount").value,
-          transaction_date: document.getElementById("transactionDate").value,
-          transaction_type: clean(document.getElementById("transactionType").value),
-          amount,
-          description: clean(document.getElementById("transactionDescription").value),
-          reference_number: clean(document.getElementById("transactionReference").value)
-        });
-        if (error) throw error;
+        const transactionType =
+          document.getElementById(
+            "transactionType"
+          ).value;
+
+        const amount =
+          Number(
+            document.getElementById(
+              "transactionAmount"
+            ).value
+          );
+
+        if (!accountId) {
+          throw new Error(
+            "Choose an account."
+          );
+        }
+
+        if (
+          !VALID_TRANSACTION_TYPES.has(
+            transactionType
+          )
+        ) {
+          throw new Error(
+            "Choose a supported transaction type."
+          );
+        }
+
+        if (
+          !Number.isFinite(amount) ||
+          amount <= 0
+        ) {
+          throw new Error(
+            "Enter a valid transaction amount."
+          );
+        }
+
+        const {
+          error
+        } =
+          await supabaseClient
+            .from(
+              "account_transactions"
+            )
+            .insert({
+              account_id:
+                accountId,
+
+              transaction_date:
+                document.getElementById(
+                  "transactionDate"
+                ).value,
+
+              transaction_type:
+                transactionType,
+
+              amount,
+
+              description:
+                clean(
+                  document.getElementById(
+                    "transactionDescription"
+                  ).value
+                ),
+
+              reference_number:
+                clean(
+                  document.getElementById(
+                    "transactionReference"
+                  ).value
+                )
+            });
+
+        if (error) {
+          throw error;
+        }
 
         event.target.reset();
-        document.getElementById("transactionDate").value = localToday();
-        showMessage("Account transaction added successfully.");
+
+        document.getElementById(
+          "transactionDate"
+        ).value =
+          localToday();
+
+        document.getElementById(
+          "transactionType"
+        ).value =
+          "deposit";
+
+        showMessage(
+          "Account transaction added successfully."
+        );
+
         await loadData();
+
       } catch (error) {
-        showMessage(error.message || "Transaction could not be added.", true);
+        showMessage(
+          error.message ||
+          "Transaction could not be added.",
+          true
+        );
+
       } finally {
-        setButtonLoading(button, false, "Adding…");
+        setButtonLoading(
+          button,
+          false,
+          "Adding…"
+        );
       }
     }
+
 
     async function submitLoan(event) {
       event.preventDefault();
-      const button = document.getElementById("loanButton");
-      setButtonLoading(button, true, "Adding…");
+
+      const button =
+        document.getElementById(
+          "loanButton"
+        );
+
+      setButtonLoading(
+        button,
+        true,
+        "Adding…"
+      );
+
       showMessage("");
 
       try {
-        const principal = Number(document.getElementById("loanPrincipal").value);
-        if (!Number.isFinite(principal) || principal <= 0) throw new Error("Enter a valid principal amount.");
+        const principal =
+          Number(
+            document.getElementById(
+              "loanPrincipal"
+            ).value
+          );
 
-        const lenderId = document.getElementById("loanLender").value;
-        const borrowerId = document.getElementById("loanBorrower").value;
-        if (!lenderId || !borrowerId) throw new Error("Choose the lender and borrower.");
-        if (lenderId === borrowerId) throw new Error("The lender and borrower cannot be the same person.");
+        const lenderId =
+          document.getElementById(
+            "loanLender"
+          ).value;
 
-        const { error } = await supabaseClient.from("loans").insert({
-          source_account_id: clean(document.getElementById("loanSourceAccount").value),
-          lender_id: lenderId,
-          borrower_id: borrowerId,
-          principal_amount: principal,
-          currency: document.getElementById("loanCurrency").value,
-          loan_date: clean(document.getElementById("loanDate").value),
-          date_is_estimated: document.getElementById("loanDateEstimated").checked,
-          installment_amount: nullableNumber(document.getElementById("installmentAmount").value),
-          installment_frequency: clean(document.getElementById("installmentFrequency").value),
-          next_payment_date: clean(document.getElementById("nextPaymentDate").value),
-          status: clean(document.getElementById("loanStatus").value) || "active",
-          notes: clean(document.getElementById("loanNotes").value)
-        });
-        if (error) throw error;
+        const borrowerId =
+          document.getElementById(
+            "loanBorrower"
+          ).value;
+
+        const sourceAccountId =
+          clean(
+            document.getElementById(
+              "loanSourceAccount"
+            ).value
+          );
+
+        const currency =
+          document.getElementById(
+            "loanCurrency"
+          ).value;
+
+        if (
+          !Number.isFinite(
+            principal
+          ) ||
+          principal <= 0
+        ) {
+          throw new Error(
+            "Enter a valid principal amount."
+          );
+        }
+
+        if (
+          !lenderId ||
+          !borrowerId
+        ) {
+          throw new Error(
+            "Choose the lender and borrower."
+          );
+        }
+
+        if (
+          lenderId === borrowerId
+        ) {
+          throw new Error(
+            "The lender and borrower cannot be the same person."
+          );
+        }
+
+        if (sourceAccountId) {
+          const sourceAccount =
+            accounts.find(
+              (account) =>
+                account.id ===
+                sourceAccountId
+            );
+
+          if (
+            sourceAccount &&
+            normalize(
+              sourceAccount.currency
+            ) !==
+              normalize(
+                currency
+              )
+          ) {
+            throw new Error(
+              "The loan currency must match the source account currency."
+            );
+          }
+        }
+
+        const {
+          error
+        } =
+          await supabaseClient
+            .from("loans")
+            .insert({
+              source_account_id:
+                sourceAccountId,
+
+              lender_id:
+                lenderId,
+
+              borrower_id:
+                borrowerId,
+
+              principal_amount:
+                principal,
+
+              currency,
+
+              loan_date:
+                clean(
+                  document.getElementById(
+                    "loanDate"
+                  ).value
+                ),
+
+              date_is_estimated:
+                document.getElementById(
+                  "loanDateEstimated"
+                ).checked,
+
+              installment_amount:
+                nullableNumber(
+                  document.getElementById(
+                    "installmentAmount"
+                  ).value
+                ),
+
+              installment_frequency:
+                clean(
+                  document.getElementById(
+                    "installmentFrequency"
+                  ).value
+                ),
+
+              next_payment_date:
+                clean(
+                  document.getElementById(
+                    "nextPaymentDate"
+                  ).value
+                ),
+
+              status:
+                document.getElementById(
+                  "loanStatus"
+                ).value ||
+                "active",
+
+              notes:
+                clean(
+                  document.getElementById(
+                    "loanNotes"
+                  ).value
+                )
+            });
+
+        if (error) {
+          throw error;
+        }
 
         event.target.reset();
-        document.getElementById("loanStatus").value = "active";
-        showMessage("Loan added successfully.");
+
+        document.getElementById(
+          "loanDate"
+        ).value =
+          localToday();
+
+        document.getElementById(
+          "loanStatus"
+        ).value =
+          "active";
+
+        document.getElementById(
+          "loanCurrency"
+        ).value =
+          "MVR";
+
+        showMessage(
+          "Loan added successfully."
+        );
+
         await loadData();
+
       } catch (error) {
-        showMessage(error.message || "Loan could not be added.", true);
+        showMessage(
+          error.message ||
+          "Loan could not be added.",
+          true
+        );
+
       } finally {
-        setButtonLoading(button, false, "Adding…");
+        setButtonLoading(
+          button,
+          false,
+          "Adding…"
+        );
       }
     }
+
 
     async function submitRepayment(event) {
       event.preventDefault();
-      const button = document.getElementById("repaymentButton");
-      setButtonLoading(button, true, "Adding…");
+
+      const button =
+        document.getElementById(
+          "repaymentButton"
+        );
+
+      setButtonLoading(
+        button,
+        true,
+        "Adding…"
+      );
+
       showMessage("");
 
       try {
-        const amount = Number(document.getElementById("repaymentAmount").value);
-        if (!Number.isFinite(amount) || amount <= 0) throw new Error("Enter a valid repayment amount.");
+        const amount =
+          Number(
+            document.getElementById(
+              "repaymentAmount"
+            ).value
+          );
 
-        const loanId = document.getElementById("repaymentLoan").value;
-        const loan = loanBalances.find((row) => row.loan_id === loanId);
-        if (!loan) throw new Error("Choose a valid loan.");
-        if (amount > Number(loan.remaining_amount)) throw new Error("The repayment cannot exceed the remaining loan balance.");
+        const loanId =
+          document.getElementById(
+            "repaymentLoan"
+          ).value;
 
-        const { error } = await supabaseClient.from("loan_payments").insert({
-          loan_id: loanId,
-          payment_date: document.getElementById("repaymentDate").value,
-          amount,
-          payment_method: clean(document.getElementById("repaymentMethod").value),
-          notes: clean(document.getElementById("repaymentNotes").value)
-        });
-        if (error) throw error;
+        const loan =
+          loanBalances.find(
+            (row) =>
+              row.loan_id ===
+              loanId
+          );
+
+        if (!loan) {
+          throw new Error(
+            "Choose a valid loan."
+          );
+        }
+
+        if (
+          !Number.isFinite(amount) ||
+          amount <= 0
+        ) {
+          throw new Error(
+            "Enter a valid repayment amount."
+          );
+        }
+
+        if (
+          amount >
+          Number(
+            loan.remaining_amount
+          )
+        ) {
+          throw new Error(
+            "The repayment cannot exceed the remaining loan balance."
+          );
+        }
+
+        const {
+          error
+        } =
+          await supabaseClient
+            .from(
+              "loan_payments"
+            )
+            .insert({
+              loan_id:
+                loanId,
+
+              payment_date:
+                document.getElementById(
+                  "repaymentDate"
+                ).value,
+
+              amount,
+
+              payment_method:
+                clean(
+                  document.getElementById(
+                    "repaymentMethod"
+                  ).value
+                ),
+
+              notes:
+                clean(
+                  document.getElementById(
+                    "repaymentNotes"
+                  ).value
+                )
+            });
+
+        if (error) {
+          throw error;
+        }
 
         event.target.reset();
-        document.getElementById("repaymentDate").value = localToday();
-        showMessage("Loan repayment added successfully.");
+
+        document.getElementById(
+          "repaymentDate"
+        ).value =
+          localToday();
+
+        showMessage(
+          "Loan repayment added successfully."
+        );
+
         await loadData();
+
       } catch (error) {
-        showMessage(error.message || "Repayment could not be added.", true);
+        showMessage(
+          error.message ||
+          "Repayment could not be added.",
+          true
+        );
+
       } finally {
-        setButtonLoading(button, false, "Adding…");
+        setButtonLoading(
+          button,
+          false,
+          "Adding…"
+        );
       }
     }
+
 
     async function logout() {
-      await supabaseClient.auth.signOut();
-      window.location.replace("admin.html");
+      await supabaseClient.auth
+        .signOut();
+
+      window.location.replace(
+        "admin.html"
+      );
     }
 
-    document.getElementById("themeToggle").addEventListener("click", () => {
-      setTheme(document.documentElement.dataset.theme === "dark" ? "light" : "dark");
-    });
-    document.getElementById("logoutButton").addEventListener("click", logout);
-    document.getElementById("personForm").addEventListener("submit", submitPerson);
-    document.getElementById("accountForm").addEventListener("submit", submitAccount);
-    document.getElementById("transactionForm").addEventListener("submit", submitTransaction);
-    document.getElementById("loanForm").addEventListener("submit", submitLoan);
-    document.getElementById("repaymentForm").addEventListener("submit", submitRepayment);
 
-    window.addEventListener("load", async () => {
-      setTheme(document.documentElement.dataset.theme || "light", false);
-      ["transactionDate", "loanDate", "repaymentDate"].forEach((id) => {
-        document.getElementById(id).value = localToday();
+    document
+      .getElementById(
+        "themeToggle"
+      )
+      .addEventListener(
+        "click",
+        () => {
+          setTheme(
+            document.documentElement
+              .dataset.theme ===
+              "dark"
+              ? "light"
+              : "dark"
+          );
+        }
+      );
+
+
+    document
+      .getElementById(
+        "logoutButton"
+      )
+      .addEventListener(
+        "click",
+        logout
+      );
+
+
+    document
+      .querySelectorAll(
+        ".masked-amount"
+      )
+      .forEach((button) => {
+        button.addEventListener(
+          "click",
+          () => {
+            toggleMaskedBalance(
+              button.dataset.balanceKey
+            );
+          }
+        );
       });
 
-      try {
-        const allowed = await ensureAdministrator();
-        if (!allowed) return;
 
-        document.getElementById("signedInText").textContent =
-          "Signed in as " + (currentProfile.email || currentUser.email || "administrator") + ".";
+    document
+      .getElementById(
+        "personForm"
+      )
+      .addEventListener(
+        "submit",
+        submitPerson
+      );
 
-        await loadData();
-        document.getElementById("loadingScreen").hidden = true;
-        document.getElementById("amanahApp").hidden = false;
-      } catch (error) {
-        document.getElementById("loadingScreen").textContent = error.message || "Unable to open Amanah.";
-        console.error(error);
+
+    document
+      .getElementById(
+        "accountForm"
+      )
+      .addEventListener(
+        "submit",
+        submitAccount
+      );
+
+
+    document
+      .getElementById(
+        "transactionForm"
+      )
+      .addEventListener(
+        "submit",
+        submitTransaction
+      );
+
+
+    document
+      .getElementById(
+        "loanForm"
+      )
+      .addEventListener(
+        "submit",
+        submitLoan
+      );
+
+
+    document
+      .getElementById(
+        "repaymentForm"
+      )
+      .addEventListener(
+        "submit",
+        submitRepayment
+      );
+
+
+    window.addEventListener(
+      "load",
+      async () => {
+        setTheme(
+          document.documentElement
+            .dataset.theme ||
+          "light",
+          false
+        );
+
+        [
+          "transactionDate",
+          "loanDate",
+          "repaymentDate"
+        ].forEach((id) => {
+          document.getElementById(
+            id
+          ).value =
+            localToday();
+        });
+
+        try {
+          const allowed =
+            await ensureAdministrator();
+
+          if (!allowed) {
+            return;
+          }
+
+          document.getElementById(
+            "signedInText"
+          ).textContent =
+            "Signed in as " +
+            (
+              currentProfile.email ||
+              currentUser.email ||
+              "administrator"
+            ) +
+            ".";
+
+          await loadData();
+
+          document.getElementById(
+            "loadingScreen"
+          ).hidden =
+            true;
+
+          document.getElementById(
+            "amanahApp"
+          ).hidden =
+            false;
+
+        } catch (error) {
+          document.getElementById(
+            "loadingScreen"
+          ).textContent =
+            error.message ||
+            "Unable to open Amanah.";
+
+          console.error(error);
+        }
       }
-    });
+    );
   </script>
 </body>
 </html>

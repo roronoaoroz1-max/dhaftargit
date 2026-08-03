@@ -2,23 +2,66 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+
+  <meta
+    name="viewport"
+    content="width=device-width, initial-scale=1, viewport-fit=cover"
+  >
+
   <title>Dhaftar 2026</title>
-  <meta name="description" content="A simple monthly household balance overview.">
+
+  <meta
+    name="description"
+    content="Dhaftar household payments, bills and balances."
+  >
+
   <meta name="theme-color" content="#0f766e">
-  <link rel="icon" type="image/png" href="assets/app-icon.png">
-  <link rel="apple-touch-icon" sizes="180x180" href="assets/app-icon.png">
-  <meta name="apple-mobile-web-app-capable" content="yes">
-  <meta name="apple-mobile-web-app-title" content="Dhaftar">
-  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+
+  <link
+    rel="icon"
+    type="image/png"
+    href="assets/app-icon.png"
+  >
+
+  <link
+    rel="apple-touch-icon"
+    sizes="180x180"
+    href="assets/app-icon.png"
+  >
+
+  <meta
+    name="apple-mobile-web-app-capable"
+    content="yes"
+  >
+
+  <meta
+    name="apple-mobile-web-app-title"
+    content="Dhaftar"
+  >
+
+  <meta
+    name="apple-mobile-web-app-status-bar-style"
+    content="default"
+  >
+
   <script>
     (() => {
       try {
-        const savedTheme = localStorage.getItem("dhaftar-theme");
-        const prefersDark = window.matchMedia("(prefers-color-scheme: dark)").matches;
-        document.documentElement.dataset.theme = savedTheme || (prefersDark ? "dark" : "light");
+        const savedTheme =
+          localStorage.getItem("dhaftar-theme");
+
+        const prefersDark =
+          window.matchMedia(
+            "(prefers-color-scheme: dark)"
+          ).matches;
+
+        document.documentElement.dataset.theme =
+          savedTheme ||
+          (prefersDark ? "dark" : "light");
+
       } catch (_) {
-        document.documentElement.dataset.theme = "light";
+        document.documentElement.dataset.theme =
+          "light";
       }
     })();
   </script>
@@ -26,61 +69,112 @@
   <style>
     :root {
       color-scheme: light;
+
       --ink: #16302d;
       --muted: #647773;
+
       --brand: #0f766e;
       --brand-dark: #0b5d57;
       --brand-soft: #e7f7f3;
+
       --surface: #ffffff;
+      --surface-soft: #fbfdfc;
       --canvas: #f3f7f5;
+
       --line: #dfe9e5;
+
       --warning: #9a5b12;
       --warning-soft: #fff6dd;
+
       --danger: #b42318;
       --danger-soft: #fff1f0;
-      --shadow: 0 20px 50px rgba(17, 66, 59, .10);
+
+      --success: #16794d;
+      --success-soft: #eaf8f0;
+
+      --shadow:
+        0 20px 50px rgba(17, 66, 59, 0.10);
+
       --radius: 24px;
     }
 
     :root[data-theme="dark"] {
       color-scheme: dark;
+
       --ink: #e8f3ef;
       --muted: #9eb5ae;
+
       --brand: #4dd4c4;
       --brand-dark: #35b9aa;
       --brand-soft: #133d38;
+
       --surface: #142320;
+      --surface-soft: #172824;
       --canvas: #0b1513;
+
       --line: #29413c;
+
       --warning: #f2c66f;
       --warning-soft: #3b3019;
+
       --danger: #ff8f87;
       --danger-soft: #3f211f;
-      --shadow: 0 20px 50px rgba(0, 0, 0, .28);
+
+      --success: #75d8a6;
+      --success-soft: #17392a;
+
+      --shadow:
+        0 20px 50px rgba(0, 0, 0, 0.28);
     }
 
-    * { box-sizing: border-box; }
+    * {
+      box-sizing: border-box;
+    }
 
     body {
       margin: 0;
       min-height: 100vh;
-      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+
+      font-family:
+        Inter,
+        ui-sans-serif,
+        system-ui,
+        -apple-system,
+        BlinkMacSystemFont,
+        "Segoe UI",
+        sans-serif;
+
       color: var(--ink);
+
       background:
-        radial-gradient(circle at 10% 0%, rgba(15, 118, 110, .12), transparent 34rem),
+        radial-gradient(
+          circle at 10% 0%,
+          rgba(15, 118, 110, 0.12),
+          transparent 34rem
+        ),
         var(--canvas);
-      transition: color .25s ease, background-color .25s ease;
+
+      transition:
+        color 0.25s ease,
+        background-color 0.25s ease;
     }
 
-    button, select { font: inherit; }
+    button,
+    select {
+      font: inherit;
+    }
 
-    button:focus-visible, select:focus-visible, a:focus-visible {
-      outline: 3px solid rgba(15, 118, 110, .25);
+    button:focus-visible,
+    select:focus-visible,
+    a:focus-visible {
+      outline:
+        3px solid rgba(15, 118, 110, 0.25);
+
       outline-offset: 3px;
     }
 
     .app-shell {
-      width: min(100% - 32px, 920px);
+      width: min(100% - 32px, 980px);
       margin: 0 auto;
       padding: 28px 0 56px;
     }
@@ -90,59 +184,95 @@
       align-items: center;
       justify-content: space-between;
       gap: 20px;
+
       margin-bottom: 28px;
     }
 
     .logo {
       display: block;
+
       width: 142px;
       max-height: 58px;
+
       object-fit: contain;
       object-position: left center;
+    }
+
+    .topbar-actions {
+      display: flex;
+      align-items: center;
+      gap: 9px;
     }
 
     .admin-link {
       display: inline-flex;
       align-items: center;
       gap: 8px;
+
       min-height: 44px;
       padding: 10px 16px;
+
       border: 1px solid var(--line);
       border-radius: 999px;
+
       color: var(--ink);
-      background: rgba(255,255,255,.78);
+      background: rgba(255, 255, 255, 0.78);
+
       text-decoration: none;
-      font-size: .9rem;
+      font-size: 0.9rem;
       font-weight: 700;
-      transition: border-color .2s, background .2s, transform .2s;
+
+      transition:
+        border-color 0.2s,
+        background 0.2s,
+        transform 0.2s;
     }
 
-    .admin-link:hover { background: white; border-color: #b9cec7; transform: translateY(-1px); }
-
-    .topbar-actions { display: flex; align-items: center; gap: 9px; }
+    .admin-link:hover {
+      background: #ffffff;
+      border-color: #b9cec7;
+      transform: translateY(-1px);
+    }
 
     .theme-toggle {
       display: inline-grid;
       place-items: center;
+
       width: 44px;
       height: 44px;
       padding: 0;
+
       border: 1px solid var(--line);
       border-radius: 50%;
+
       color: var(--ink);
-      background: rgba(255,255,255,.78);
+      background: rgba(255, 255, 255, 0.78);
+
       cursor: pointer;
       font-size: 1.05rem;
-      transition: border-color .2s, background .2s, transform .2s;
+
+      transition:
+        border-color 0.2s,
+        background 0.2s,
+        transform 0.2s;
     }
 
-    .theme-toggle:hover { background: white; border-color: #b9cec7; transform: translateY(-1px); }
+    .theme-toggle:hover {
+      background: #ffffff;
+      border-color: #b9cec7;
+      transform: translateY(-1px);
+    }
 
     :root[data-theme="dark"] .admin-link,
-    :root[data-theme="dark"] .theme-toggle { background: rgba(20,35,32,.88); }
+    :root[data-theme="dark"] .theme-toggle {
+      background: rgba(20, 35, 32, 0.88);
+    }
 
     :root[data-theme="dark"] .admin-link:hover,
-    :root[data-theme="dark"] .theme-toggle:hover { background: #1c302c; border-color: #45645d; }
+    :root[data-theme="dark"] .theme-toggle:hover {
+      background: #1c302c;
+      border-color: #45645d;
+    }
 
     .hero {
       margin-bottom: 24px;
@@ -150,50 +280,105 @@
 
     .eyebrow {
       margin: 0 0 8px;
+
       color: var(--brand);
-      font-size: .78rem;
+
+      font-size: 0.78rem;
       font-weight: 800;
-      letter-spacing: .11em;
+
+      letter-spacing: 0.11em;
       text-transform: uppercase;
     }
 
     h1 {
       margin: 0;
       max-width: 650px;
-      font-size: clamp(2rem, 6vw, 3.75rem);
+
+      font-size:
+        clamp(2rem, 6vw, 3.75rem);
+
       line-height: 1.04;
-      letter-spacing: -.045em;
+      letter-spacing: -0.045em;
     }
 
-    .intro { margin: 14px 0 0; color: var(--muted); font-size: 1.05rem; }
+    .intro {
+      margin: 14px 0 0;
 
-    .layout { display: grid; grid-template-columns: minmax(0, 1fr) 280px; gap: 20px; align-items: start; }
+      color: var(--muted);
+
+      font-size: 1.05rem;
+      line-height: 1.55;
+    }
+
+    .layout {
+      display: grid;
+
+      grid-template-columns:
+        minmax(0, 1fr)
+        300px;
+
+      gap: 20px;
+      align-items: start;
+    }
 
     .card {
       background: var(--surface);
-      border: 1px solid rgba(223,233,229,.9);
+
+      border:
+        1px solid rgba(223, 233, 229, 0.9);
+
       border-radius: var(--radius);
       box-shadow: var(--shadow);
-      transition: background-color .25s ease, border-color .25s ease;
+
+      transition:
+        background-color 0.25s ease,
+        border-color 0.25s ease;
     }
 
-    :root[data-theme="dark"] .card { border-color: var(--line); }
+    :root[data-theme="dark"] .card {
+      border-color: var(--line);
+    }
 
-    .main-card { padding: clamp(22px, 5vw, 38px); }
+    .main-card {
+      padding:
+        clamp(22px, 5vw, 38px);
+    }
 
-    .section-heading { margin: 0 0 6px; font-size: 1.3rem; letter-spacing: -.02em; }
-    .section-copy { margin: 0 0 24px; color: var(--muted); }
+    .section-heading {
+      margin: 0 0 6px;
 
-    label { display: block; margin-bottom: 9px; font-size: .9rem; font-weight: 750; }
+      font-size: 1.3rem;
+      letter-spacing: -0.02em;
+    }
 
-    .select-wrap { position: relative; }
+    .section-copy {
+      margin: 0 0 24px;
+      color: var(--muted);
+    }
+
+    label {
+      display: block;
+      margin-bottom: 9px;
+
+      font-size: 0.9rem;
+      font-weight: 750;
+    }
+
+    .select-wrap {
+      position: relative;
+    }
+
     .select-wrap::after {
       content: "⌄";
+
       position: absolute;
       right: 17px;
       top: 50%;
+
       transform: translateY(-57%);
+
       color: var(--brand);
+
       font-size: 1.25rem;
       pointer-events: none;
     }
@@ -201,299 +386,1469 @@
     select {
       width: 100%;
       min-height: 54px;
+
       appearance: none;
-      padding: 0 48px 0 16px;
+
+      padding:
+        0 48px 0 16px;
+
       border: 1px solid #cbdad5;
       border-radius: 14px;
-      background: white;
+
+      background: #ffffff;
       color: var(--ink);
+
       cursor: pointer;
     }
 
-    :root[data-theme="dark"] select { background: #172824; border-color: #38534d; }
+    :root[data-theme="dark"] select {
+      background: #172824;
+      border-color: #38534d;
+    }
 
     .primary-btn {
       width: 100%;
       min-height: 54px;
+
       margin-top: 14px;
+
       border: 0;
       border-radius: 14px;
+
       background: var(--brand);
-      color: white;
+      color: #ffffff;
+
       font-weight: 800;
       cursor: pointer;
-      box-shadow: 0 8px 18px rgba(15,118,110,.22);
-      transition: background .2s, transform .2s, box-shadow .2s;
+
+      box-shadow:
+        0 8px 18px rgba(15, 118, 110, 0.22);
+
+      transition:
+        background 0.2s,
+        transform 0.2s,
+        box-shadow 0.2s;
     }
 
-    .primary-btn:hover:not(:disabled) { background: var(--brand-dark); transform: translateY(-1px); box-shadow: 0 11px 22px rgba(15,118,110,.27); }
-    .primary-btn:disabled { opacity: .65; cursor: wait; }
+    .primary-btn:hover:not(:disabled) {
+      background: var(--brand-dark);
+      transform: translateY(-1px);
 
-    .status { min-height: 24px; margin-top: 14px; text-align: center; font-size: .9rem; font-weight: 700; }
-    #loading { display: none; color: var(--brand); }
-    #error { color: var(--danger); }
+      box-shadow:
+        0 11px 22px rgba(15, 118, 110, 0.27);
+    }
+
+    .primary-btn:disabled {
+      opacity: 0.65;
+      cursor: wait;
+    }
+
+    .status {
+      min-height: 24px;
+      margin-top: 14px;
+
+      text-align: center;
+      font-size: 0.9rem;
+      font-weight: 700;
+    }
+
+    #loading {
+      display: none;
+      color: var(--brand);
+    }
+
+    #error {
+      color: var(--danger);
+    }
 
     .spinner {
       display: inline-block;
+
       width: 15px;
       height: 15px;
+
       margin-right: 7px;
-      border: 2px solid rgba(15,118,110,.25);
+
+      border:
+        2px solid rgba(15, 118, 110, 0.25);
+
       border-top-color: var(--brand);
       border-radius: 50%;
+
       vertical-align: -2px;
-      animation: spin .7s linear infinite;
+
+      animation:
+        spin 0.7s linear infinite;
     }
-    @keyframes spin { to { transform: rotate(360deg); } }
 
-    .result-section { display: none; margin-top: 24px; }
-    .result-section.is-visible { display: block; animation: rise .35s ease both; }
-    @keyframes rise { from { opacity: 0; transform: translateY(7px); } }
+    @keyframes spin {
+      to {
+        transform: rotate(360deg);
+      }
+    }
 
-    .summary-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
-    .metric { padding: 17px; border: 1px solid var(--line); border-radius: 16px; background: #fbfdfc; }
-    :root[data-theme="dark"] .metric { background: #172824; }
-    .metric-label { display: block; min-height: 2.5em; color: var(--muted); font-size: .78rem; font-weight: 700; line-height: 1.3; }
-    .amount { display: block; margin-top: 9px; color: var(--brand); font-size: clamp(1.05rem, 3vw, 1.35rem); font-weight: 850; letter-spacing: -.025em; }
-    .amount.negative { color: var(--danger); }
+    .result-section {
+      display: none;
+      margin-top: 24px;
+    }
 
-    .bills-head { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; margin-bottom: 5px; }
-    .bills-head h2 { margin: 0; font-size: 1.15rem; }
-    #selectedMonth { color: var(--brand); font-size: .85rem; font-weight: 800; }
-    .bill-item { display: flex; justify-content: space-between; gap: 20px; padding: 14px 2px; border-bottom: 1px solid var(--line); }
-    .bill-item:last-child { border-bottom: 0; }
-    .bill-item span { color: var(--muted); }
+    .result-section.is-visible {
+      display: block;
+      animation: rise 0.35s ease both;
+    }
 
-    .borrowing-card { position: sticky; top: 24px; overflow: hidden; }
-    .borrowing-accent { height: 7px; background: linear-gradient(90deg, #eeb957, #f3d89a); }
-    .borrowing-body { padding: 25px; }
-    .borrowing-icon { display: grid; place-items: center; width: 42px; height: 42px; margin-bottom: 20px; border-radius: 13px; background: var(--warning-soft); font-size: 1.15rem; }
-    .borrowing-label { margin: 0; color: var(--muted); font-size: .84rem; font-weight: 750; }
-    .borrowing-amount { display: block; margin-top: 8px; color: var(--warning); font-size: 1.6rem; font-weight: 850; letter-spacing: -.035em; }
-    .borrowing-note { margin: 12px 0 0; color: var(--muted); font-size: .8rem; line-height: 1.55; }
+    @keyframes rise {
+      from {
+        opacity: 0;
+        transform: translateY(7px);
+      }
+    }
+
+    .summary-grid {
+      display: grid;
+
+      grid-template-columns:
+        repeat(2, minmax(0, 1fr));
+
+      gap: 10px;
+    }
+
+    .metric {
+      padding: 17px;
+
+      border: 1px solid var(--line);
+      border-radius: 16px;
+
+      background: var(--surface-soft);
+    }
+
+    .metric-label {
+      display: block;
+      min-height: 2.5em;
+
+      color: var(--muted);
+
+      font-size: 0.78rem;
+      font-weight: 700;
+      line-height: 1.3;
+    }
+
+    .amount {
+      display: block;
+      margin-top: 9px;
+
+      color: var(--brand);
+
+      font-size:
+        clamp(1.05rem, 3vw, 1.35rem);
+
+      font-weight: 850;
+      letter-spacing: -0.025em;
+    }
+
+    .amount.outstanding {
+      color: var(--danger);
+    }
+
+    .amount.cleared {
+      color: var(--success);
+    }
+
+    .bills-head {
+      display: flex;
+      align-items: baseline;
+      justify-content: space-between;
+      gap: 12px;
+
+      margin-bottom: 5px;
+    }
+
+    .bills-head h2 {
+      margin: 0;
+      font-size: 1.15rem;
+    }
+
+    #selectedMonth {
+      color: var(--brand);
+
+      font-size: 0.85rem;
+      font-weight: 800;
+    }
+
+    .bill-item {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 20px;
+
+      padding: 14px 2px;
+
+      border-bottom:
+        1px solid var(--line);
+    }
+
+    .bill-item:last-child {
+      border-bottom: 0;
+    }
+
+    .bill-item span {
+      color: var(--muted);
+    }
+
+    .rent-item {
+      margin-bottom: 3px;
+      padding: 14px 12px;
+
+      border: 1px solid var(--line);
+      border-radius: 13px;
+
+      background: var(--brand-soft);
+    }
+
+    .empty-state {
+      margin: 14px 0 0;
+      padding: 16px;
+
+      border: 1px dashed var(--line);
+      border-radius: 14px;
+
+      color: var(--muted);
+      background: var(--surface-soft);
+
+      text-align: center;
+      font-size: 0.88rem;
+    }
+
+    .debt-card {
+      position: sticky;
+      top: 24px;
+      overflow: hidden;
+    }
+
+    .debt-accent {
+      height: 7px;
+
+      background:
+        linear-gradient(
+          90deg,
+          #eeb957,
+          #f3d89a
+        );
+    }
+
+    .debt-body {
+      padding: 25px;
+    }
+
+    .debt-header {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+
+      margin-bottom: 21px;
+    }
+
+    .debt-icon {
+      display: grid;
+      place-items: center;
+
+      flex: 0 0 auto;
+
+      width: 42px;
+      height: 42px;
+
+      border-radius: 13px;
+
+      background: var(--warning-soft);
+
+      font-size: 1.15rem;
+    }
+
+    .debt-title {
+      margin: 0;
+
+      font-size: 1.05rem;
+      letter-spacing: -0.02em;
+    }
+
+    .debt-subtitle {
+      margin: 3px 0 0;
+
+      color: var(--muted);
+
+      font-size: 0.78rem;
+      line-height: 1.4;
+    }
+
+    .debt-list {
+      display: grid;
+      gap: 10px;
+    }
+
+    .debt-item {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 14px;
+
+      min-height: 67px;
+      padding: 13px 14px;
+
+      border: 1px solid var(--line);
+      border-radius: 14px;
+
+      background: var(--surface-soft);
+    }
+
+    .debt-person {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+
+      min-width: 0;
+    }
+
+    .debt-avatar {
+      display: grid;
+      place-items: center;
+
+      flex: 0 0 auto;
+
+      width: 34px;
+      height: 34px;
+
+      border-radius: 50%;
+
+      color: var(--warning);
+      background: var(--warning-soft);
+
+      font-size: 0.78rem;
+      font-weight: 850;
+    }
+
+    .debt-name {
+      overflow: hidden;
+
+      font-size: 0.86rem;
+      font-weight: 750;
+
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .debt-amount {
+      color: var(--warning);
+
+      font-size: 0.9rem;
+      font-weight: 850;
+
+      text-align: right;
+      white-space: nowrap;
+    }
+
+    .debt-loading {
+      padding: 16px;
+
+      color: var(--muted);
+
+      text-align: center;
+      font-size: 0.85rem;
+    }
+
+    .debt-note {
+      margin: 17px 0 0;
+
+      color: var(--muted);
+
+      font-size: 0.78rem;
+      line-height: 1.55;
+    }
 
     #splash {
       position: fixed;
       inset: 0;
       z-index: 9999;
+
       display: grid;
       place-items: center;
+
       background: var(--canvas);
-      transition: opacity .35s ease, visibility .35s ease;
-    }
-    #splash.is-hidden { opacity: 0; visibility: hidden; }
-    #splash img { width: 155px; max-width: 58vw; }
 
-    @media (max-width: 720px) {
-      .app-shell { width: min(100% - 24px, 560px); padding-top: 18px; }
-      .topbar { margin-bottom: 34px; }
-      .logo { width: 120px; }
-      .admin-link { padding: 9px 13px; font-size: .82rem; }
-      .topbar-actions { gap: 7px; }
-      .layout { grid-template-columns: 1fr; }
-      .borrowing-card { position: static; grid-row: 1; }
-      .borrowing-body { display: grid; grid-template-columns: 44px 1fr; column-gap: 14px; padding: 20px; }
-      .borrowing-icon { grid-row: 1 / 4; margin: 0; }
-      .borrowing-note { margin-top: 6px; }
+      transition:
+        opacity 0.35s ease,
+        visibility 0.35s ease;
     }
 
-    @media (max-width: 480px) {
-      .summary-grid { grid-template-columns: 1fr; }
-      .metric { display: flex; align-items: center; justify-content: space-between; gap: 20px; }
-      .metric-label { min-height: 0; }
-      .amount { margin-top: 0; text-align: right; white-space: nowrap; }
+    #splash.is-hidden {
+      opacity: 0;
+      visibility: hidden;
+    }
+
+    #splash img {
+      width: 155px;
+      max-width: 58vw;
+    }
+
+    @media (max-width: 760px) {
+      .app-shell {
+        width: min(100% - 24px, 560px);
+        padding-top: 18px;
+      }
+
+      .topbar {
+        margin-bottom: 34px;
+      }
+
+      .logo {
+        width: 120px;
+      }
+
+      .admin-link {
+        padding: 9px 13px;
+        font-size: 0.82rem;
+      }
+
+      .topbar-actions {
+        gap: 7px;
+      }
+
+      .layout {
+        grid-template-columns: 1fr;
+      }
+
+      .debt-card {
+        position: static;
+        grid-row: 1;
+      }
+
+      .debt-body {
+        padding: 20px;
+      }
+
+      .debt-list {
+        grid-template-columns:
+          repeat(3, minmax(0, 1fr));
+      }
+
+      .debt-item {
+        display: block;
+        padding: 13px 10px;
+
+        text-align: center;
+      }
+
+      .debt-person {
+        display: block;
+      }
+
+      .debt-avatar {
+        margin: 0 auto 7px;
+      }
+
+      .debt-name {
+        display: block;
+      }
+
+      .debt-amount {
+        display: block;
+        margin-top: 7px;
+
+        text-align: center;
+      }
+    }
+
+    @media (max-width: 520px) {
+      .summary-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .metric {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 20px;
+      }
+
+      .metric-label {
+        min-height: 0;
+      }
+
+      .amount {
+        margin-top: 0;
+
+        text-align: right;
+        white-space: nowrap;
+      }
+
+      .debt-list {
+        grid-template-columns: 1fr;
+      }
+
+      .debt-item {
+        display: flex;
+        padding: 13px 14px;
+
+        text-align: left;
+      }
+
+      .debt-person {
+        display: flex;
+      }
+
+      .debt-avatar {
+        margin: 0;
+      }
+
+      .debt-amount {
+        display: block;
+        margin-top: 0;
+
+        text-align: right;
+      }
     }
 
     @media (prefers-reduced-motion: reduce) {
-      *, *::before, *::after { scroll-behavior: auto !important; animation-duration: .01ms !important; transition-duration: .01ms !important; }
+      *,
+      *::before,
+      *::after {
+        scroll-behavior: auto !important;
+        animation-duration: 0.01ms !important;
+        transition-duration: 0.01ms !important;
+      }
     }
   </style>
 </head>
 
 <body>
   <div id="splash" aria-hidden="true">
-    <img src="assets/logo.png" alt="">
+    <img
+      src="assets/logo.png"
+      alt=""
+    >
   </div>
 
   <main class="app-shell">
+
     <header class="topbar">
-      <img src="assets/logo.png" class="logo" alt="Dhaftar">
+
+      <img
+        src="assets/logo.png"
+        class="logo"
+        alt="Dhaftar"
+      >
+
       <div class="topbar-actions">
-        <button class="theme-toggle" id="themeToggle" type="button" aria-label="Switch to dark mode" title="Switch to dark mode">
-          <span id="themeIcon" aria-hidden="true">☾</span>
+
+        <button
+          class="theme-toggle"
+          id="themeToggle"
+          type="button"
+          aria-label="Switch to dark mode"
+          title="Switch to dark mode"
+        >
+          <span
+            id="themeIcon"
+            aria-hidden="true"
+          >
+            ☾
+          </span>
         </button>
-        <a class="admin-link" href="admin.html" aria-label="Open admin access">Admin access <span aria-hidden="true">→</span></a>
+
+        <a
+          class="admin-link"
+          href="admin.html"
+          aria-label="Open admin access"
+        >
+          Admin access
+          <span aria-hidden="true">→</span>
+        </a>
+
       </div>
     </header>
 
-    <section class="hero" aria-labelledby="page-title">
-      <p class="eyebrow">Household overview · 2026 . v.02</p>
-      <h1 id="page-title">WELCOME TO DHAFTAR.</h1>
-      <p class="intro">Choose a month to see payments, remaining balance, and a clear bill breakdown.</p>
+    <section
+      class="hero"
+      aria-labelledby="page-title"
+    >
+
+      <p class="eyebrow">
+        Household overview · 2026
+      </p>
+
+      <h1 id="page-title">
+        WELCOME TO DHAFTAR.
+      </h1>
+
+      <p class="intro">
+        Choose a month to see payments, remaining balance,
+        bills and the amounts owed to Dad.
+      </p>
+
     </section>
 
     <div class="layout">
-      <section class="card main-card" aria-labelledby="balance-title">
-        <h2 class="section-heading" id="balance-title">Check your balance</h2>
-        <p class="section-copy">Select the month you would like to review.</p>
 
-        <label for="monthSelector">Month</label>
+      <section
+        class="card main-card"
+        aria-labelledby="balance-title"
+      >
+
+        <h2
+          class="section-heading"
+          id="balance-title"
+        >
+          Check your balance
+        </h2>
+
+        <p class="section-copy">
+          Select the month you would like to review.
+        </p>
+
+        <label for="monthSelector">
+          Month
+        </label>
+
         <div class="select-wrap">
+
           <select id="monthSelector">
-            <option value="" selected disabled>Choose a month</option>
-            <option>January</option><option>February</option><option>March</option>
-            <option>April</option><option>May</option><option>June</option>
-            <option>July</option><option>August</option><option>September</option>
-            <option>October</option><option>November</option><option>December</option>
+
+            <option
+              value=""
+              selected
+              disabled
+            >
+              Choose a month
+            </option>
+
+            <option value="January">January</option>
+            <option value="February">February</option>
+            <option value="March">March</option>
+            <option value="April">April</option>
+            <option value="May">May</option>
+            <option value="June">June</option>
+            <option value="July">July</option>
+            <option value="August">August</option>
+            <option value="September">September</option>
+            <option value="October">October</option>
+            <option value="November">November</option>
+            <option value="December">December</option>
+
           </select>
+
         </div>
 
-        <button class="primary-btn" id="calculateButton" type="button">View monthly balance</button>
+        <button
+          class="primary-btn"
+          id="calculateButton"
+          type="button"
+        >
+          View monthly balance
+        </button>
 
-        <div class="status" aria-live="polite" aria-atomic="true">
-          <div id="loading"><span class="spinner" aria-hidden="true"></span>Loading your balance…</div>
-          <div id="error" role="alert"></div>
+        <div
+          class="status"
+          aria-live="polite"
+          aria-atomic="true"
+        >
+
+          <div id="loading">
+            <span
+              class="spinner"
+              aria-hidden="true"
+            ></span>
+
+            Loading your balance…
+          </div>
+
+          <div
+            id="error"
+            role="alert"
+          ></div>
+
         </div>
 
-        <section id="result" class="result-section" aria-labelledby="summary-title">
-          <h2 id="summary-title" class="section-heading">Balance summary</h2>
+        <section
+          id="result"
+          class="result-section"
+          aria-labelledby="summary-title"
+        >
+
+          <h2
+            id="summary-title"
+            class="section-heading"
+          >
+            Balance summary
+          </h2>
+
           <div class="summary-grid">
-            <div class="metric"><span class="metric-label">Total amount due</span><strong class="amount" id="totalDue">MVR 0</strong></div>
-            <div class="metric"><span class="metric-label">Amount paid</span><strong class="amount" id="totalPaid">MVR 0</strong></div>
-            <div class="metric"><span class="metric-label">Remaining amount</span><strong class="amount" id="remaining">MVR 0</strong></div>
+
+            <div class="metric">
+              <span class="metric-label">
+                Total amount due
+              </span>
+
+              <strong
+                class="amount"
+                id="totalDue"
+              >
+                MVR 0.00
+              </strong>
+            </div>
+
+            <div class="metric">
+              <span class="metric-label">
+                Amount paid
+              </span>
+
+              <strong
+                class="amount"
+                id="totalPaid"
+              >
+                MVR 0.00
+              </strong>
+            </div>
+
+            <div class="metric">
+              <span class="metric-label">
+                Remaining amount
+              </span>
+
+              <strong
+                class="amount"
+                id="remaining"
+              >
+                MVR 0.00
+              </strong>
+            </div>
+
+            <div class="metric">
+              <span class="metric-label">
+                Fixed rent share used
+              </span>
+
+              <strong
+                class="amount"
+                id="fixedRentShare"
+              >
+                MVR 0.00
+              </strong>
+            </div>
+
           </div>
+
         </section>
 
-        <section id="bills" class="result-section" aria-labelledby="bills-title">
+        <section
+          id="bills"
+          class="result-section"
+          aria-labelledby="bills-title"
+        >
+
           <div class="bills-head">
-            <h2 id="bills-title">Bills summary</h2>
+
+            <h2 id="bills-title">
+              Bills summary
+            </h2>
+
             <span id="selectedMonth"></span>
+
           </div>
+
           <div id="billsList"></div>
+
         </section>
+
       </section>
 
-      <aside class="card borrowing-card" aria-labelledby="borrowing-title">
-        <div class="borrowing-accent"></div>
-        <div class="borrowing-body">
-          <div class="borrowing-icon" aria-hidden="true">↗</div>
-          <p class="borrowing-label" id="borrowing-title">Dad's borrowing</p>
-          <strong class="borrowing-amount" id="dadBorrowingTop">Loading…</strong>
-          <p class="borrowing-note">Current recorded amount. It refreshes with the monthly summary.</p>
+      <aside
+        class="card debt-card"
+        aria-labelledby="dad-debts-title"
+      >
+
+        <div class="debt-accent"></div>
+
+        <div class="debt-body">
+
+          <div class="debt-header">
+
+            <div
+              class="debt-icon"
+              aria-hidden="true"
+            >
+              ↗
+            </div>
+
+            <div>
+
+              <h2
+                class="debt-title"
+                id="dad-debts-title"
+              >
+                Owed to Dad
+              </h2>
+
+              <p class="debt-subtitle">
+                Current Amanah loan balances
+              </p>
+
+            </div>
+
+          </div>
+
+          <div
+            class="debt-list"
+            id="dadDebtList"
+          >
+
+            <div class="debt-loading">
+              Loading balances…
+            </div>
+
+          </div>
+
+          <p class="debt-note">
+            These amounts update automatically when a loan
+            or repayment is recorded in Amanah.
+          </p>
+
         </div>
+
       </aside>
+
     </div>
   </main>
 
+  <!-- Supabase JavaScript library -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+  <!-- Your Supabase project connection -->
+  <script src="supabase-client.js"></script>
+
   <script>
-    const API_URL = "https://script.google.com/macros/s/AKfycbxPrt1iDtxFtobHuJy_0k0QDMB-CSMCN5simJ3VDQpBd-4_4FlgJBCd-0NFzkBDEqpCcA/exec";
+    const APP_YEAR = 2026;
+
+    const MONTHS = [
+      "January",
+      "February",
+      "March",
+      "April",
+      "May",
+      "June",
+      "July",
+      "August",
+      "September",
+      "October",
+      "November",
+      "December"
+    ];
 
     const elements = {
-      month: document.getElementById("monthSelector"), button: document.getElementById("calculateButton"),
-      loading: document.getElementById("loading"), error: document.getElementById("error"),
-      result: document.getElementById("result"), bills: document.getElementById("bills"),
-      dad: document.getElementById("dadBorrowingTop"), remaining: document.getElementById("remaining")
+      month:
+        document.getElementById("monthSelector"),
+
+      button:
+        document.getElementById("calculateButton"),
+
+      loading:
+        document.getElementById("loading"),
+
+      error:
+        document.getElementById("error"),
+
+      result:
+        document.getElementById("result"),
+
+      bills:
+        document.getElementById("bills"),
+
+      billsList:
+        document.getElementById("billsList"),
+
+      debtList:
+        document.getElementById("dadDebtList"),
+
+      remaining:
+        document.getElementById("remaining")
     };
 
-    function setTheme(theme, remember = true) {
-      document.documentElement.dataset.theme = theme;
-      const isDark = theme === "dark";
-      const toggle = document.getElementById("themeToggle");
-      const icon = document.getElementById("themeIcon");
-      const label = isDark ? "Switch to light mode" : "Switch to dark mode";
-      toggle.setAttribute("aria-label", label);
+
+    function setTheme(
+      theme,
+      remember = true
+    ) {
+      document.documentElement.dataset.theme =
+        theme;
+
+      const isDark =
+        theme === "dark";
+
+      const toggle =
+        document.getElementById(
+          "themeToggle"
+        );
+
+      const icon =
+        document.getElementById(
+          "themeIcon"
+        );
+
+      const label =
+        isDark
+          ? "Switch to light mode"
+          : "Switch to dark mode";
+
+      toggle.setAttribute(
+        "aria-label",
+        label
+      );
+
       toggle.title = label;
-      toggle.setAttribute("aria-pressed", String(isDark));
-      icon.textContent = isDark ? "☀" : "☾";
-      document.querySelector('meta[name="theme-color"]').content = isDark ? "#0b1513" : "#0f766e";
+
+      toggle.setAttribute(
+        "aria-pressed",
+        String(isDark)
+      );
+
+      icon.textContent =
+        isDark ? "☀" : "☾";
+
+      document.querySelector(
+        'meta[name="theme-color"]'
+      ).content =
+        isDark
+          ? "#0b1513"
+          : "#0f766e";
+
       if (remember) {
-        try { localStorage.setItem("dhaftar-theme", theme); } catch (_) {}
+        try {
+          localStorage.setItem(
+            "dhaftar-theme",
+            theme
+          );
+        } catch (_) {}
       }
     }
 
-    setTheme(document.documentElement.dataset.theme || "light", false);
-    document.getElementById("themeToggle").addEventListener("click", () => {
-      setTheme(document.documentElement.dataset.theme === "dark" ? "light" : "dark");
-    });
 
-    async function api(action, data = {}) {
-      const response = await fetch(API_URL, { method: "POST", body: JSON.stringify({ action, data }) });
-      if (!response.ok) throw new Error("We couldn't reach the service. Please try again.");
-      return response.json();
+    function formatMVR(value) {
+      const amount =
+        Number(value);
+
+      if (!Number.isFinite(amount)) {
+        return "MVR —";
+      }
+
+      return (
+        "MVR " +
+        amount.toLocaleString(
+          "en-US",
+          {
+            minimumFractionDigits: 2,
+            maximumFractionDigits: 2
+          }
+        )
+      );
     }
 
-    function formatMVR(num) {
-      const value = Number(num);
-      if (!Number.isFinite(value)) return "MVR —";
-      return "MVR " + value.toLocaleString("en-IN", { maximumFractionDigits: 0 });
+
+    function monthToDatabaseDate(
+      monthName
+    ) {
+      const monthIndex =
+        MONTHS.indexOf(monthName);
+
+      if (monthIndex === -1) {
+        throw new Error(
+          "Invalid month selected."
+        );
+      }
+
+      const monthNumber =
+        String(monthIndex + 1)
+          .padStart(2, "0");
+
+      return (
+        APP_YEAR +
+        "-" +
+        monthNumber +
+        "-01"
+      );
     }
 
-    async function loadDadBorrowingTop() {
-      try {
-        const data = await api("summary", { month: "January" });
-        elements.dad.textContent = data.success !== false ? formatMVR(data.dadsBorrowing) : "MVR —";
-      } catch (_) { elements.dad.textContent = "MVR —"; }
+
+    async function fetchSummary(
+      monthName
+    ) {
+      const billingMonth =
+        monthToDatabaseDate(monthName);
+
+      const {
+        data,
+        error
+      } =
+        await supabaseClient.rpc(
+          "get_dhaftar_summary",
+          {
+            p_billing_month:
+              billingMonth
+          }
+        );
+
+      if (error) {
+        throw new Error(
+          error.message ||
+          "Unable to load Dhaftar data."
+        );
+      }
+
+      if (
+        !data ||
+        data.success === false
+      ) {
+        throw new Error(
+          data?.message ||
+          "Unable to load Dhaftar data."
+        );
+      }
+
+      return data;
     }
+
+
+    function showError(message) {
+      elements.error.textContent =
+        message || "";
+    }
+
 
     function setLoading(isLoading) {
-      elements.loading.style.display = isLoading ? "block" : "none";
-      elements.button.disabled = isLoading;
-      elements.button.textContent = isLoading ? "Loading…" : "View monthly balance";
+      elements.loading.style.display =
+        isLoading
+          ? "block"
+          : "none";
+
+      elements.button.disabled =
+        isLoading;
+
+      elements.button.textContent =
+        isLoading
+          ? "Loading…"
+          : "View monthly balance";
     }
 
+
+    function createDebtItem(
+      name,
+      amount
+    ) {
+      const item =
+        document.createElement("div");
+
+      item.className =
+        "debt-item";
+
+      const person =
+        document.createElement("div");
+
+      person.className =
+        "debt-person";
+
+      const avatar =
+        document.createElement("div");
+
+      avatar.className =
+        "debt-avatar";
+
+      avatar.textContent =
+        String(name || "?")
+          .trim()
+          .charAt(0)
+          .toUpperCase();
+
+      const nameElement =
+        document.createElement("span");
+
+      nameElement.className =
+        "debt-name";
+
+      nameElement.textContent =
+        name || "Unknown";
+
+      const amountElement =
+        document.createElement("strong");
+
+      amountElement.className =
+        "debt-amount";
+
+      amountElement.textContent =
+        formatMVR(amount);
+
+      person.append(
+        avatar,
+        nameElement
+      );
+
+      item.append(
+        person,
+        amountElement
+      );
+
+      return item;
+    }
+
+
+    function displayDadDebts(
+      debts
+    ) {
+      elements.debtList.replaceChildren();
+
+      const expectedNames = [
+        "Inaad",
+        "Yush",
+        "Imaad"
+      ];
+
+      const debtMap =
+        new Map();
+
+      if (Array.isArray(debts)) {
+        debts.forEach((debt) => {
+          const name =
+            String(
+              debt?.name || ""
+            ).trim();
+
+          if (name) {
+            debtMap.set(
+              name.toLowerCase(),
+              Number(debt.amount) || 0
+            );
+          }
+        });
+      }
+
+      expectedNames.forEach(
+        (name) => {
+          elements.debtList.appendChild(
+            createDebtItem(
+              name,
+              debtMap.get(
+                name.toLowerCase()
+              ) || 0
+            )
+          );
+        }
+      );
+    }
+
+
+    async function loadDadDebts() {
+      try {
+        const currentMonth =
+          MONTHS[
+            new Date().getMonth()
+          ];
+
+        const data =
+          await fetchSummary(
+            currentMonth
+          );
+
+        displayDadDebts(
+          data.dadDebts
+        );
+
+      } catch (error) {
+        elements.debtList.replaceChildren();
+
+        const message =
+          document.createElement("div");
+
+        message.className =
+          "debt-loading";
+
+        message.textContent =
+          "Unable to load balances.";
+
+        elements.debtList.appendChild(
+          message
+        );
+
+        console.error(
+          "Dad balances error:",
+          error
+        );
+      }
+    }
+
+
+    function displayBills(data) {
+      elements.billsList.replaceChildren();
+
+      const rentItem =
+        document.createElement("div");
+
+      rentItem.className =
+        "bill-item rent-item";
+
+      const rentLabel =
+        document.createElement("span");
+
+      rentLabel.textContent =
+        "Fixed rent share";
+
+      const rentAmount =
+        document.createElement("strong");
+
+      rentAmount.textContent =
+        formatMVR(
+          data.fixedRentShare
+        );
+
+      rentItem.append(
+        rentLabel,
+        rentAmount
+      );
+
+      elements.billsList.appendChild(
+        rentItem
+      );
+
+      const breakdown =
+        Array.isArray(
+          data.billBreakdown
+        )
+          ? data.billBreakdown
+          : [];
+
+      const nonRentBills =
+        breakdown.filter(
+          (bill) =>
+            String(
+              bill?.type || ""
+            )
+              .trim()
+              .toLowerCase() !==
+            "rent"
+        );
+
+      if (!nonRentBills.length) {
+        const empty =
+          document.createElement("p");
+
+        empty.className =
+          "empty-state";
+
+        empty.textContent =
+          "No other bills have been entered for this month.";
+
+        elements.billsList.appendChild(
+          empty
+        );
+
+        return;
+      }
+
+      nonRentBills.forEach(
+        (bill) => {
+          const item =
+            document.createElement("div");
+
+          item.className =
+            "bill-item";
+
+          const label =
+            document.createElement("span");
+
+          label.textContent =
+            bill.type || "Bill";
+
+          const amount =
+            document.createElement("strong");
+
+          amount.textContent =
+            formatMVR(
+              bill.amount
+            );
+
+          item.append(
+            label,
+            amount
+          );
+
+          elements.billsList.appendChild(
+            item
+          );
+        }
+      );
+    }
+
+
+    function displayResult(data) {
+      document.getElementById(
+        "totalDue"
+      ).textContent =
+        formatMVR(
+          data.totalAmountDue
+        );
+
+      document.getElementById(
+        "totalPaid"
+      ).textContent =
+        formatMVR(
+          data.totalPaid
+        );
+
+      document.getElementById(
+        "fixedRentShare"
+      ).textContent =
+        formatMVR(
+          data.fixedRentShare
+        );
+
+      const remainingAmount =
+        Number(
+          data.remainingBalance
+        ) || 0;
+
+      elements.remaining.textContent =
+        formatMVR(
+          remainingAmount
+        );
+
+      elements.remaining.classList.toggle(
+        "outstanding",
+        remainingAmount > 0
+      );
+
+      elements.remaining.classList.toggle(
+        "cleared",
+        remainingAmount <= 0
+      );
+
+      document.getElementById(
+        "selectedMonth"
+      ).textContent =
+        elements.month.value +
+        " " +
+        APP_YEAR;
+
+      displayBills(data);
+
+      displayDadDebts(
+        data.dadDebts
+      );
+
+      elements.result.classList.add(
+        "is-visible"
+      );
+
+      elements.bills.classList.add(
+        "is-visible"
+      );
+    }
+
+
     async function getBalance() {
-      const month = elements.month.value;
-      if (!month) { showError("Please choose a month first."); elements.month.focus(); return; }
+      const monthName =
+        elements.month.value;
+
+      if (!monthName) {
+        showError(
+          "Please choose a month first."
+        );
+
+        elements.month.focus();
+        return;
+      }
 
       setLoading(true);
       showError("");
-      elements.result.classList.remove("is-visible");
-      elements.bills.classList.remove("is-visible");
+
+      elements.result.classList.remove(
+        "is-visible"
+      );
+
+      elements.bills.classList.remove(
+        "is-visible"
+      );
 
       try {
-        const data = await api("summary", { month });
-        if (data.success === false) { showError(data.message || "We couldn't load this month's balance."); return; }
+        const data =
+          await fetchSummary(
+            monthName
+          );
+
         displayResult(data);
-      } catch (err) {
-        showError(err.message || "Something went wrong. Please try again.");
-      } finally { setLoading(false); }
-    }
 
-    function displayResult(data) {
-      elements.dad.textContent = formatMVR(data.dadsBorrowing);
-      document.getElementById("totalDue").textContent = formatMVR(data.totalAmountDue);
-      document.getElementById("totalPaid").textContent = formatMVR(data.totalPaid);
-      elements.remaining.textContent = formatMVR(data.remainingBalance);
-      elements.remaining.classList.toggle("negative", Number(data.remainingBalance) > 0);
-      elements.result.classList.add("is-visible");
+      } catch (error) {
+        console.error(
+          "Monthly summary error:",
+          error
+        );
 
-      const list = document.getElementById("billsList");
-      list.replaceChildren();
-      if (Array.isArray(data.billBreakdown) && data.billBreakdown.length) {
-        data.billBreakdown.forEach((bill) => {
-          const item = document.createElement("div");
-          const label = document.createElement("span");
-          const amount = document.createElement("strong");
-          item.className = "bill-item";
-          label.textContent = bill.type || "Bill";
-          amount.textContent = formatMVR(bill.amount);
-          item.append(label, amount);
-          list.appendChild(item);
-        });
-        document.getElementById("selectedMonth").textContent = data.month || elements.month.value;
-        elements.bills.classList.add("is-visible");
+        showError(
+          error.message ||
+          "Something went wrong. Please try again."
+        );
+
+      } finally {
+        setLoading(false);
       }
     }
 
-    function showError(message) { elements.error.textContent = message; }
-    elements.button.addEventListener("click", getBalance);
-    elements.month.addEventListener("change", () => showError(""));
 
-    window.addEventListener("load", () => {
-      loadDadBorrowingTop();
-      setTimeout(() => document.getElementById("splash").classList.add("is-hidden"), 650);
-    });
+    setTheme(
+      document.documentElement.dataset.theme ||
+      "light",
+      false
+    );
+
+
+    document
+      .getElementById("themeToggle")
+      .addEventListener(
+        "click",
+        () => {
+          setTheme(
+            document.documentElement
+              .dataset.theme === "dark"
+              ? "light"
+              : "dark"
+          );
+        }
+      );
+
+
+    elements.button.addEventListener(
+      "click",
+      getBalance
+    );
+
+
+    elements.month.addEventListener(
+      "change",
+      () => showError("")
+    );
+
+
+    window.addEventListener(
+      "load",
+      () => {
+        loadDadDebts();
+
+        setTimeout(
+          () => {
+            document
+              .getElementById("splash")
+              .classList.add(
+                "is-hidden"
+              );
+          },
+          650
+        );
+      }
+    );
   </script>
 </body>
 </html>
-F

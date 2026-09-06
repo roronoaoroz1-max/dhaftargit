@@ -8,7 +8,7 @@
     content="width=device-width, initial-scale=1, viewport-fit=cover"
   >
 
-  <title>Dhaftar 2026</title>
+  <title>Dhaftar · Household balance</title>
 
   <meta
     name="description"
@@ -380,6 +380,58 @@
 
       font-size: 1.25rem;
       pointer-events: none;
+    }
+
+    .period-fields {
+      display: grid;
+      grid-template-columns: minmax(0, 1.5fr) minmax(100px, 1fr);
+      gap: 12px;
+    }
+
+    .period-fields > div {
+      min-width: 0;
+    }
+
+    .period-fields select {
+      padding-left: 12px;
+      padding-right: 32px;
+    }
+
+    .period-fields .select-wrap::after {
+      right: 12px;
+    }
+
+    .period-navigation {
+      display: grid;
+      grid-template-columns: 1fr auto 1fr;
+      gap: 8px;
+      margin-top: 12px;
+    }
+
+    .period-button {
+      min-height: 44px;
+      padding: 9px 12px;
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      background: var(--surface-soft);
+      color: var(--ink);
+      font-size: 0.875rem;
+      font-weight: 700;
+      cursor: pointer;
+    }
+
+    .period-button:hover:not(:disabled) {
+      border-color: var(--brand);
+      background: var(--brand-soft);
+    }
+
+    .period-button:disabled {
+      opacity: 0.5;
+      cursor: default;
+    }
+
+    .today-button {
+      color: var(--brand);
     }
 
     select {
@@ -849,7 +901,6 @@
 
       .debt-card {
         position: static;
-        grid-row: 1;
       }
 
       .debt-body {
@@ -941,6 +992,15 @@
     }
 
     @media (max-width: 440px) {
+      .period-navigation {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+
+      .today-button {
+        grid-column: 1 / -1;
+        grid-row: 2;
+      }
+
       .bill-item {
         align-items: flex-start;
         flex-direction: column;
@@ -954,6 +1014,12 @@
 
       .split-arrow {
         margin: 0 4px;
+      }
+    }
+
+    @media (max-width: 360px) {
+      .period-fields {
+        grid-template-columns: 1fr;
       }
     }
 
@@ -1022,7 +1088,7 @@
     >
 
       <p class="eyebrow">
-        Household overview · 2026
+        Household overview
       </p>
 
       <h1 id="page-title">
@@ -1030,8 +1096,8 @@
       </h1>
 
       <p class="intro">
-        Choose a month to see payments, remaining balance,
-        bills and the amounts owed to Dad.
+        Review this month’s payments, bills and remaining balance,
+        or browse another month.
       </p>
 
     </section>
@@ -1047,52 +1113,76 @@
           class="section-heading"
           id="balance-title"
         >
-          Check your balance
+          Monthly balance
         </h2>
 
         <p class="section-copy">
-          Select the month you would like to review.
+          Your balance updates when you change the month or year.
         </p>
 
-        <label for="monthSelector">
-          Month
-        </label>
+        <div class="period-fields">
+          <div>
+            <label for="monthSelector">Month</label>
+            <div class="select-wrap">
+              <select id="monthSelector">
+                <option value="January">January</option>
+                <option value="February">February</option>
+                <option value="March">March</option>
+                <option value="April">April</option>
+                <option value="May">May</option>
+                <option value="June">June</option>
+                <option value="July">July</option>
+                <option value="August">August</option>
+                <option value="September">September</option>
+                <option value="October">October</option>
+                <option value="November">November</option>
+                <option value="December">December</option>
+              </select>
+            </div>
+          </div>
 
-        <div class="select-wrap">
-
-          <select id="monthSelector">
-
-            <option
-              value=""
-              selected
-              disabled
-            >
-              Choose a month
-            </option>
-
-            <option value="January">January</option>
-            <option value="February">February</option>
-            <option value="March">March</option>
-            <option value="April">April</option>
-            <option value="May">May</option>
-            <option value="June">June</option>
-            <option value="July">July</option>
-            <option value="August">August</option>
-            <option value="September">September</option>
-            <option value="October">October</option>
-            <option value="November">November</option>
-            <option value="December">December</option>
-
-          </select>
-
+          <div>
+            <label for="yearSelector">Year</label>
+            <div class="select-wrap">
+              <select id="yearSelector"></select>
+            </div>
+          </div>
         </div>
+
+        <nav class="period-navigation" aria-label="Billing month navigation">
+          <button
+            class="period-button"
+            id="previousMonthButton"
+            type="button"
+            aria-label="View previous month"
+          >
+            <span aria-hidden="true">←</span> Previous
+          </button>
+
+          <button
+            class="period-button today-button"
+            id="currentMonthButton"
+            type="button"
+          >
+            This month
+          </button>
+
+          <button
+            class="period-button"
+            id="nextMonthButton"
+            type="button"
+            aria-label="View next month"
+          >
+            Next <span aria-hidden="true">→</span>
+          </button>
+        </nav>
 
         <button
           class="primary-btn"
           id="calculateButton"
           type="button"
         >
-          View monthly balance
+          Refresh balance
         </button>
 
         <div
@@ -1107,7 +1197,7 @@
               aria-hidden="true"
             ></span>
 
-            Loading your balance…
+            <span id="loadingLabel">Loading your balance…</span>
           </div>
 
           <div
@@ -1269,7 +1359,9 @@
   <script src="supabase-client.js"></script>
 
   <script>
-    const APP_YEAR = 2026;
+    const APP_START_YEAR = 2026;
+    const APP_TIME_ZONE = "Indian/Maldives";
+    let latestBalanceRequest = 0;
 
     const MONTHS = [
       "January",
@@ -1290,11 +1382,26 @@
       month:
         document.getElementById("monthSelector"),
 
+      year:
+        document.getElementById("yearSelector"),
+
+      previousMonth:
+        document.getElementById("previousMonthButton"),
+
+      nextMonth:
+        document.getElementById("nextMonthButton"),
+
+      currentMonth:
+        document.getElementById("currentMonthButton"),
+
       button:
         document.getElementById("calculateButton"),
 
       loading:
         document.getElementById("loading"),
+
+      loadingLabel:
+        document.getElementById("loadingLabel"),
 
       error:
         document.getElementById("error"),
@@ -1395,8 +1502,97 @@
     }
 
 
+    function getCurrentPeriod(date = new Date()) {
+      const parts = new Intl.DateTimeFormat("en-US", {
+        timeZone: APP_TIME_ZONE,
+        month: "2-digit",
+        year: "numeric"
+      }).formatToParts(date);
+
+      const month = Number(
+        parts.find((part) => part.type === "month").value
+      );
+      const year = Number(
+        parts.find((part) => part.type === "year").value
+      );
+
+      return { month: MONTHS[month - 1], year };
+    }
+
+
+    function getLastAvailableYear() {
+      return Math.max(getCurrentPeriod().year + 2, 2028);
+    }
+
+
+    function getSelectedPeriod() {
+      return {
+        month: elements.month.value,
+        year: Number(elements.year.value)
+      };
+    }
+
+
+    function isSamePeriod(first, second) {
+      return first.month === second.month && first.year === second.year;
+    }
+
+
+    function shiftPeriod(period, offset) {
+      const absoluteMonth =
+        period.year * 12 + MONTHS.indexOf(period.month) + offset;
+
+      return {
+        month: MONTHS[absoluteMonth % 12],
+        year: Math.floor(absoluteMonth / 12)
+      };
+    }
+
+
+    function updatePeriodNavigation() {
+      const period = getSelectedPeriod();
+
+      elements.previousMonth.disabled =
+        period.year === APP_START_YEAR && period.month === "January";
+      elements.nextMonth.disabled =
+        period.year === getLastAvailableYear() && period.month === "December";
+      elements.currentMonth.disabled = isSamePeriod(period, getCurrentPeriod());
+    }
+
+
+    function initializePeriodSelectors() {
+      const current = getCurrentPeriod();
+      elements.year.replaceChildren();
+
+      for (let year = APP_START_YEAR; year <= getLastAvailableYear(); year++) {
+        const option = document.createElement("option");
+        option.value = String(year);
+        option.textContent = String(year);
+        elements.year.appendChild(option);
+      }
+
+      elements.month.value = current.month;
+      elements.year.value = String(current.year);
+      updatePeriodNavigation();
+    }
+
+
+    function changeMonth(offset) {
+      const next = shiftPeriod(getSelectedPeriod(), offset);
+
+      if (next.year < APP_START_YEAR || next.year > getLastAvailableYear()) {
+        return;
+      }
+
+      elements.month.value = next.month;
+      elements.year.value = String(next.year);
+      getBalance();
+    }
+
+
     function monthToDatabaseDate(
-      monthName
+      monthName,
+      year
     ) {
       const monthIndex =
         MONTHS.indexOf(monthName);
@@ -1407,12 +1603,20 @@
         );
       }
 
+      if (
+        !Number.isInteger(year) ||
+        year < APP_START_YEAR ||
+        year > getLastAvailableYear()
+      ) {
+        throw new Error("Invalid year selected.");
+      }
+
       const monthNumber =
         String(monthIndex + 1)
           .padStart(2, "0");
 
       return (
-        APP_YEAR +
+        year +
         "-" +
         monthNumber +
         "-01"
@@ -1421,10 +1625,15 @@
 
 
     async function fetchSummary(
-      monthName
+      monthName,
+      year
     ) {
       const billingMonth =
-        monthToDatabaseDate(monthName);
+        monthToDatabaseDate(monthName, year);
+
+      if (typeof supabaseClient === "undefined") {
+        throw new Error("Unable to connect. Check your connection and refresh the page.");
+      }
 
       const {
         data,
@@ -1465,7 +1674,7 @@
     }
 
 
-    function setLoading(isLoading) {
+    function setLoading(isLoading, periodLabel = "your balance") {
       elements.loading.style.display =
         isLoading
           ? "block"
@@ -1477,7 +1686,11 @@
       elements.button.textContent =
         isLoading
           ? "Loading…"
-          : "View monthly balance";
+          : "Refresh balance";
+
+      elements.loadingLabel.textContent = "Loading " + periodLabel + "…";
+      elements.result.setAttribute("aria-busy", String(isLoading));
+      elements.bills.setAttribute("aria-busy", String(isLoading));
     }
 
 
@@ -1584,43 +1797,11 @@
     }
 
 
-    async function loadDadDebts() {
-      try {
-        const currentMonth =
-          MONTHS[
-            new Date().getMonth()
-          ];
-
-        const data =
-          await fetchSummary(
-            currentMonth
-          );
-
-        displayDadDebts(
-          data.dadDebts
-        );
-
-      } catch (error) {
-        elements.debtList.replaceChildren();
-
-        const message =
-          document.createElement("div");
-
-        message.className =
-          "debt-loading";
-
-        message.textContent =
-          "Unable to load balances.";
-
-        elements.debtList.appendChild(
-          message
-        );
-
-        console.error(
-          "Dad balances error:",
-          error
-        );
-      }
+    function showDadDebtsError() {
+      const message = document.createElement("div");
+      message.className = "debt-loading";
+      message.textContent = "Unable to load current balances. Tap Refresh balance to retry.";
+      elements.debtList.replaceChildren(message);
     }
 
 
@@ -1736,7 +1917,7 @@
     }
 
 
-    function displayResult(data) {
+    function displayResult(data, period) {
       document.getElementById(
         "totalDue"
       ).textContent =
@@ -1774,15 +1955,14 @@
       document.getElementById(
         "selectedMonth"
       ).textContent =
-        elements.month.value +
+        period.month +
         " " +
-        APP_YEAR;
+        period.year;
+
+      document.getElementById("summary-title").textContent =
+        period.month + " " + period.year + " balance";
 
       displayBills(data);
-
-      displayDadDebts(
-        data.dadDebts
-      );
 
       elements.result.classList.add(
         "is-visible"
@@ -1795,20 +1975,15 @@
 
 
     async function getBalance() {
-      const monthName =
-        elements.month.value;
+      const requestId = ++latestBalanceRequest;
+      const period = getSelectedPeriod();
+      const current = getCurrentPeriod();
+      const periodLabel = period.month + " " + period.year;
 
-      if (!monthName) {
-        showError(
-          "Please choose a month first."
-        );
-
-        elements.month.focus();
-        return;
-      }
-
-      setLoading(true);
+      updatePeriodNavigation();
+      setLoading(true, periodLabel);
       showError("");
+      document.title = periodLabel + " · Dhaftar";
 
       elements.result.classList.remove(
         "is-visible"
@@ -1819,14 +1994,41 @@
       );
 
       try {
-        const data =
-          await fetchSummary(
-            monthName
-          );
+        const summaryRequest = fetchSummary(period.month, period.year);
 
-        displayResult(data);
+        // Amanah shows today's debt position even when viewing an older month.
+        // Reuse the same request when the household month is also current.
+        const debtsRequest = isSamePeriod(period, current)
+          ? summaryRequest
+          : fetchSummary(current.month, current.year);
+
+        const [summaryResult, debtsResult] = await Promise.allSettled([
+          summaryRequest,
+          debtsRequest
+        ]);
+
+        // A slower response must never replace the month selected more recently.
+        if (requestId !== latestBalanceRequest) {
+          return;
+        }
+
+        if (debtsResult.status === "fulfilled") {
+          displayDadDebts(debtsResult.value.dadDebts);
+        } else {
+          showDadDebtsError();
+        }
+
+        if (summaryResult.status === "rejected") {
+          throw summaryResult.reason;
+        }
+
+        displayResult(summaryResult.value, period);
 
       } catch (error) {
+        if (requestId !== latestBalanceRequest) {
+          return;
+        }
+
         console.error(
           "Monthly summary error:",
           error
@@ -1838,7 +2040,9 @@
         );
 
       } finally {
-        setLoading(false);
+        if (requestId === latestBalanceRequest) {
+          setLoading(false);
+        }
       }
     }
 
@@ -1873,14 +2077,23 @@
 
     elements.month.addEventListener(
       "change",
-      () => showError("")
+      getBalance
     );
+
+    elements.year.addEventListener("change", getBalance);
+    elements.previousMonth.addEventListener("click", () => changeMonth(-1));
+    elements.nextMonth.addEventListener("click", () => changeMonth(1));
+    elements.currentMonth.addEventListener("click", () => {
+      initializePeriodSelectors();
+      getBalance();
+    });
 
 
     window.addEventListener(
       "load",
       () => {
-        loadDadDebts();
+        initializePeriodSelectors();
+        getBalance();
 
         setTimeout(
           () => {

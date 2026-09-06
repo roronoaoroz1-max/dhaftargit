@@ -838,6 +838,92 @@
         transition-duration: 0.01ms !important;
       }
     }
+    .admin-tabs { flex-wrap: wrap; }
+    .history-card { margin-bottom: 22px; scroll-margin-top: 16px; }
+    .history-heading, .history-footer, .history-actions, .dialog-heading {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+    .history-heading h2, .dialog-heading h2 { margin: 0; }
+    .history-heading p { margin: 8px 0 0; color: var(--muted); }
+    .history-filters {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 14px;
+      margin-top: 22px;
+    }
+    .history-filters .field { min-width: 0; margin-bottom: 0; }
+    .history-actions { justify-content: flex-start; margin: 16px 0; }
+    .history-button {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 44px;
+      padding: 9px 15px;
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      color: var(--brand);
+      background: var(--brand-soft);
+      font-size: 0.875rem;
+      font-weight: 750;
+      text-decoration: none;
+      cursor: pointer;
+    }
+    .history-button:hover:not(:disabled) { border-color: var(--brand); }
+    .history-button:disabled { opacity: 0.55; cursor: default; }
+    .history-button.primary { background: #0f766e; color: white; }
+    .history-status { min-height: 1.6em; margin: 12px 0; color: var(--muted); font-size: 0.875rem; }
+    .history-status.is-error { color: var(--danger); }
+    .history-table-wrap { overflow-x: auto; border: 1px solid var(--line); border-radius: 14px; }
+    .history-table { width: 100%; min-width: 660px; border-collapse: collapse; font-size: 0.875rem; }
+    .history-table th, .history-table td { padding: 13px 12px; text-align: left; border-bottom: 1px solid var(--line); vertical-align: top; }
+    .history-table th { background: var(--surface-soft); color: var(--muted); font-weight: 750; }
+    .history-table tbody tr:last-child td { border-bottom: 0; }
+    .history-table .money { white-space: nowrap; font-weight: 750; color: var(--brand); }
+    .history-note { max-width: 220px; overflow-wrap: anywhere; white-space: pre-wrap; }
+    .history-badge { display: block; margin-top: 6px; font-size: 0.8125rem; color: var(--muted); }
+    .history-empty { padding: 24px !important; color: var(--muted); text-align: center !important; }
+    .history-footer { margin-top: 16px; color: var(--muted); font-size: 0.875rem; }
+    .history-pages { display: flex; align-items: center; flex-wrap: wrap; gap: 10px; }
+    .payment-dialog {
+      width: min(820px, calc(100% - 28px));
+      max-height: 90vh;
+      max-height: 90dvh;
+      padding: clamp(18px, 4vw, 30px);
+      border: 1px solid var(--line);
+      border-radius: 22px;
+      color: var(--ink);
+      background: var(--surface);
+      box-shadow: var(--shadow);
+      overflow-y: auto;
+    }
+    .payment-dialog::backdrop { background: rgba(0, 0, 0, 0.55); }
+    .payment-dialog h3 { margin: 24px 0 12px; }
+    .payment-detail-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; margin: 18px 0; }
+    .payment-detail-grid div { min-width: 0; }
+    .payment-detail-grid dt { color: var(--muted); font-size: 0.875rem; }
+    .payment-detail-grid dd { margin: 5px 0 0; overflow-wrap: anywhere; white-space: pre-wrap; }
+    .payment-detail-grid .wide { grid-column: 1 / -1; }
+    .payment-original { padding: 14px; border: 1px solid var(--line); border-radius: 14px; background: var(--surface-soft); }
+    .payment-original summary { cursor: pointer; font-weight: 750; }
+    .correction-fields { margin: 0; padding: 0; border: 0; min-width: 0; }
+    .correction-fields legend { margin: 20px 0 14px; font-size: 1.125rem; font-weight: 750; }
+    .change-list { padding: 0; list-style: none; }
+    .change-entry { padding: 16px 0; border-top: 1px solid var(--line); overflow-wrap: anywhere; }
+    .change-entry p { margin: 7px 0; white-space: pre-wrap; }
+    .change-meta { color: var(--muted); font-size: 0.875rem; }
+    .change-fields { margin: 10px 0 0; padding-left: 20px; }
+    .change-fields li { margin: 6px 0; white-space: pre-wrap; }
+    @media (max-width: 640px) {
+      .history-filters { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    }
+    @media (max-width: 420px) {
+      .history-filters, .payment-detail-grid { grid-template-columns: 1fr; }
+      .history-heading > .history-button { width: 100%; }
+    }
   </style>
 </head>
 
@@ -1042,7 +1128,68 @@
         aria-live="polite"
       ></div>
 
-      <div class="action-grid">
+        <section class="card history-card" id="paymentHistory" aria-labelledby="historyTitle">
+          <div class="history-heading">
+            <div>
+              <h2 id="historyTitle">Payment history</h2>
+              <p>Find household payments and review their corrections.</p>
+            </div>
+            <a class="history-button" href="#paymentTitle">Add payment</a>
+          </div>
+
+          <form id="historyFilters">
+            <div class="history-filters">
+              <div class="field">
+                <label for="historyPayer">Payer</label>
+                <select id="historyPayer"><option value="">All payers</option></select>
+              </div>
+              <div class="field">
+                <label for="historyMonth">Billing month</label>
+                <input id="historyMonth" type="month" aria-describedby="historyMonthHelp">
+                <span class="small-note" id="historyMonthHelp">Leave blank for all months.</span>
+              </div>
+              <div class="field">
+                <label for="historyAmount">Exact amount (MVR)</label>
+                <input id="historyAmount" type="number" min="0.01" step="0.01" inputmode="decimal" placeholder="Any amount">
+              </div>
+              <div class="field">
+                <label for="historyDateFrom">Payment date from</label>
+                <input id="historyDateFrom" type="date">
+              </div>
+              <div class="field">
+                <label for="historyDateTo">Payment date to</label>
+                <input id="historyDateTo" type="date">
+              </div>
+            </div>
+            <div class="history-actions">
+              <button class="history-button primary" id="historyApply" type="submit">Apply filters</button>
+              <button class="history-button" id="historyClear" type="button">Clear filters</button>
+              <button class="history-button" id="historyRefresh" type="button">Refresh</button>
+            </div>
+          </form>
+
+          <p class="history-status" id="historyStatus" role="status" aria-live="polite"></p>
+          <div class="history-table-wrap" tabindex="0" role="region" aria-label="Household payment records">
+            <table class="history-table">
+              <thead><tr>
+                <th scope="col">Payment date</th><th scope="col">Payer</th>
+                <th scope="col">Billing month</th><th scope="col">Amount</th>
+                <th scope="col">Note</th><th scope="col">Details</th>
+              </tr></thead>
+              <tbody id="historyRows"><tr><td colspan="6" class="history-empty">Loading payment history…</td></tr></tbody>
+            </table>
+          </div>
+          <div class="history-footer">
+            <span id="historyTotals"></span>
+            <nav class="history-pages" aria-label="Payment history pages">
+              <button class="history-button" id="historyPrevious" type="button" disabled>Previous</button>
+              <span id="historyPageLabel">Page 1</span>
+              <button class="history-button" id="historyNext" type="button" disabled>Next</button>
+            </nav>
+          </div>
+        </section>
+
+        <div class="action-grid">
 
         <!-- ADD PAYMENT -->
         <section
@@ -1463,6 +1610,50 @@
     </section>
   </main>
 
+  <dialog class="payment-dialog" id="paymentDialog" aria-labelledby="paymentDialogTitle">
+    <div class="dialog-heading">
+      <h2 id="paymentDialogTitle">Payment details</h2>
+      <button class="history-button" id="paymentDialogClose" type="button">Close</button>
+    </div>
+    <p class="history-status" id="paymentDetailStatus" role="status" aria-live="polite"></p>
+    <div id="paymentDetailContent" hidden>
+      <dl class="payment-detail-grid" id="paymentDetailValues"></dl>
+      <div class="history-actions">
+        <button class="history-button primary" id="startCorrection" type="button">Correct payment</button>
+        <button class="history-button" id="reloadPaymentDetail" type="button">Reload details</button>
+      </div>
+
+      <form id="paymentCorrectionForm" hidden>
+        <fieldset class="correction-fields" id="correctionFields">
+          <legend>Correct this payment</legend>
+          <div class="form-row">
+            <div class="field"><label for="correctionPayer">Payer</label><select id="correctionPayer" required></select></div>
+            <div class="field"><label for="correctionDate">Payment date</label><input id="correctionDate" type="date" required></div>
+          </div>
+          <div class="form-row">
+            <div class="field"><label for="correctionMonth">Billing month</label><input id="correctionMonth" type="month" required></div>
+            <div class="field"><label for="correctionAmount">Amount (MVR)</label><input id="correctionAmount" type="number" min="0.01" step="0.01" inputmode="decimal" required></div>
+          </div>
+          <div class="field"><label for="correctionNote">Payment note</label><textarea id="correctionNote" maxlength="250"></textarea></div>
+          <div class="field"><label for="correctionReason">Reason for correction</label><textarea id="correctionReason" maxlength="300" placeholder="Explain what was entered incorrectly." required></textarea></div>
+          <p class="small-note">The original values and your reason will remain in the correction history.</p>
+          <div class="history-actions">
+            <button class="history-button primary" id="saveCorrection" type="submit">Save correction</button>
+            <button class="history-button" id="cancelCorrection" type="button">Cancel</button>
+          </div>
+        </fieldset>
+      </form>
+
+      <details class="payment-original" id="originalPaymentBox" hidden>
+        <summary>Before the first recorded correction</summary>
+        <dl class="payment-detail-grid" id="originalPaymentValues"></dl>
+      </details>
+      <h3>Correction history</h3>
+      <ol class="change-list" id="paymentChanges"></ol>
+      <button class="history-button" id="earlierPaymentChanges" type="button" hidden>Load earlier corrections</button>
+    </div>
+  </dialog>
+
   <!-- Supabase browser library -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
@@ -1825,6 +2016,7 @@
     function showLoginBox(
       message = ""
     ) {
+      resetPaymentHistoryState();
       document.getElementById(
         "loginBox"
       ).hidden =
@@ -1871,7 +2063,8 @@
         loadOverview(),
         loadRentRates(),
         loadSelectedBill(),
-        loadSelectedRentRate()
+        loadSelectedRentRate(),
+        loadPaymentHistory(1)
       ]);
     }
 
@@ -2205,7 +2398,8 @@
           "Payment added successfully."
         );
 
-        await loadOverview();
+        // The insert is committed. A refresh error must not imply it failed.
+        await Promise.allSettled([loadOverview(), loadPaymentHistory(1)]);
 
       } catch (error) {
         showMessage(
@@ -2956,6 +3150,443 @@
         }
       }
     );
+  </script>
+  <script>
+    // STEP 2: all history and correction access is checked again in Supabase.
+    const paymentHistoryState = {
+      page: 1, pageCount: 1, filters: null, request: 0,
+      payers: ["Dhaftar", "Dad", "Inaad", "Yush", "Imaad"]
+    };
+    const paymentDetailState = {
+      id: null, data: null, request: 0, nextChangeId: null,
+      saving: false, attempt: null
+    };
+    const paymentFields = [
+      ["payer_name", "Payer"], ["payment_date", "Payment date"],
+      ["billing_month", "Billing month"], ["amount", "Amount"], ["note", "Note"]
+    ];
+
+    function paymentElement(id) {
+      return document.getElementById(id);
+    }
+
+    function paymentText(tag, text, className = "") {
+      const element = document.createElement(tag);
+      element.textContent = text;
+      if (className) element.className = className;
+      return element;
+    }
+
+    function currentHistoryMonth() {
+      const parts = new Intl.DateTimeFormat("en-US", {
+        timeZone: "Indian/Maldives", year: "numeric", month: "2-digit"
+      }).formatToParts(new Date());
+      return parts.find(part => part.type === "year").value + "-" +
+        parts.find(part => part.type === "month").value;
+    }
+
+    function paymentMoneyInput(value, optional = false) {
+      const text = String(value).trim().replace(/(\.\d*?)0+$/, "$1").replace(/\.$/, "");
+      if (!text && optional) return null;
+      if (!/^\d+(?:\.\d{1,2})?$/.test(text) || !Number.isFinite(Number(text)) || Number(text) <= 0) {
+        throw new Error("Enter a positive amount with no more than two decimal places.");
+      }
+      const [whole, fraction = ""] = text.split(".");
+      return whole.replace(/^0+(?=\d)/, "") + "." + fraction.padEnd(2, "0");
+    }
+
+    function paymentMonthDate(value, optional = false) {
+      if (!value && optional) return null;
+      if (!/^\d{4}-(0[1-9]|1[0-2])$/.test(value)) {
+        throw new Error("Choose a valid billing month.");
+      }
+      return value + "-01";
+    }
+
+    function paymentDisplayDate(value) {
+      if (!value) return "—";
+      const date = new Date(String(value).slice(0, 10) + "T00:00:00");
+      return Number.isNaN(date.getTime()) ? String(value) : date.toLocaleDateString("en-GB", {
+        day: "2-digit", month: "short", year: "numeric"
+      });
+    }
+
+    function paymentFieldValue(key, value) {
+      if (key === "amount") return formatMVR(value);
+      if (key === "payment_date") return paymentDisplayDate(value);
+      if (key === "billing_month") return value ? displayMonth(String(value).slice(0, 10)) : "—";
+      return value == null || value === "" ? "—" : String(value);
+    }
+
+    function paymentFeatureError(error) {
+      if (error?.code === "PGRST202" || error?.code === "42883") {
+        return "Payment history needs its one-time setup. Complete setup, then refresh.";
+      }
+      if (error?.code === "42501") return "Administrator access is required. Please sign in again.";
+      if (error?.code === "40001") return "This payment has changed. Use Reload details before correcting it.";
+      if (error?.code === "22003") return "This amount is too large for the payment record.";
+      return error?.message || "Unable to complete the request. Please try again.";
+    }
+
+    function paymentStatus(id, message, isError = false) {
+      const target = paymentElement(id);
+      target.textContent = message;
+      target.classList.toggle("is-error", isError);
+    }
+
+    function paymentPayerOptions(select, names, includeAll = false, selected = select.value) {
+      select.replaceChildren();
+      if (includeAll) select.appendChild(new Option("All payers", ""));
+      [...new Set(names.filter(Boolean))].forEach(name => select.appendChild(new Option(name, name)));
+      select.value = selected;
+    }
+
+    function readPaymentHistoryFilters() {
+      const from = paymentElement("historyDateFrom").value || null;
+      const to = paymentElement("historyDateTo").value || null;
+      if (from && to && from > to) throw new Error("The end date must be on or after the start date.");
+      return {
+        p_payer_name: paymentElement("historyPayer").value || null,
+        p_billing_month: paymentMonthDate(paymentElement("historyMonth").value, true),
+        p_date_from: from, p_date_to: to,
+        p_amount: paymentMoneyInput(paymentElement("historyAmount").value, true)
+      };
+    }
+
+    function paymentHistoryLoading(loading) {
+      ["historyApply", "historyClear", "historyRefresh"].forEach(id => {
+        paymentElement(id).disabled = loading;
+      });
+      paymentElement("historyPrevious").disabled = loading || paymentHistoryState.page <= 1;
+      paymentElement("historyNext").disabled = loading || paymentHistoryState.page >= paymentHistoryState.pageCount;
+      paymentElement("historyRows").setAttribute("aria-busy", String(loading));
+    }
+
+    function paymentHistoryEmpty(message) {
+      const row = document.createElement("tr");
+      const cell = paymentText("td", message, "history-empty");
+      cell.colSpan = 6;
+      row.appendChild(cell);
+      paymentElement("historyRows").replaceChildren(row);
+    }
+
+    function renderPaymentHistory(data) {
+      const rows = Array.isArray(data.rows) ? data.rows : [];
+      paymentHistoryState.page = Number(data.page) || 1;
+      paymentHistoryState.pageCount = Number(data.page_count) || 1;
+      paymentHistoryState.payers = [...new Set([
+        ...paymentHistoryState.payers, ...(Array.isArray(data.payers) ? data.payers : [])
+      ])];
+      paymentPayerOptions(paymentElement("historyPayer"), paymentHistoryState.payers, true);
+      const tbody = paymentElement("historyRows");
+      tbody.replaceChildren();
+      rows.forEach(payment => {
+        const row = document.createElement("tr");
+        row.append(
+          paymentText("td", paymentDisplayDate(payment.payment_date)),
+          paymentText("td", payment.payer_name),
+          paymentText("td", paymentFieldValue("billing_month", payment.billing_month)),
+          paymentText("td", formatMVR(payment.amount), "money"),
+          paymentText("td", payment.note || "—", "history-note")
+        );
+        const actions = document.createElement("td");
+        const view = paymentText("button", "View", "history-button");
+        view.type = "button";
+        view.setAttribute("aria-label", "View " + payment.payer_name + " payment dated " + paymentDisplayDate(payment.payment_date));
+        view.addEventListener("click", () => openPaymentDetails(payment.id));
+        actions.appendChild(view);
+        if (Number(payment.correction_count) > 0) {
+          actions.appendChild(paymentText("span", payment.correction_count + " correction(s)", "history-badge"));
+        }
+        row.appendChild(actions);
+        tbody.appendChild(row);
+      });
+      if (!rows.length) paymentHistoryEmpty("No payments match these filters.");
+      paymentElement("historyTotals").textContent =
+        Number(data.total_count || 0).toLocaleString() + " matching payment(s) · " + formatMVR(data.total_amount);
+      paymentElement("historyPageLabel").textContent =
+        "Page " + paymentHistoryState.page + " of " + paymentHistoryState.pageCount;
+    }
+
+    async function loadPaymentHistory(page = 1, filters = null) {
+      if (!currentUser) return;
+      const userId = currentUser.id;
+      const request = ++paymentHistoryState.request;
+      try {
+        const applied = filters || paymentHistoryState.filters || readPaymentHistoryFilters();
+        paymentHistoryState.filters = { ...applied };
+        paymentHistoryLoading(true);
+        paymentStatus("historyStatus", "Loading payment history…");
+        const { data, error } = await supabaseClient.rpc("dhaftar_payment_history_v1", {
+          ...applied, p_page: page, p_page_size: 10
+        });
+        if (request !== paymentHistoryState.request || currentUser?.id !== userId) return;
+        if (error) throw error;
+        if (!data || !Array.isArray(data.rows)) throw new Error("Payment history returned an unexpected response.");
+        renderPaymentHistory(data);
+        paymentStatus("historyStatus", "");
+      } catch (error) {
+        if (request !== paymentHistoryState.request || currentUser?.id !== userId) return;
+        paymentHistoryEmpty("Payment history is unavailable.");
+        paymentElement("historyTotals").textContent = "";
+        paymentStatus("historyStatus", paymentFeatureError(error), true);
+      } finally {
+        if (request === paymentHistoryState.request && currentUser?.id === userId) paymentHistoryLoading(false);
+      }
+    }
+
+    function renderPaymentValues(target, payment, includeId = false) {
+      target.replaceChildren();
+      const fields = includeId ? [["id", "Payment ID"], ...paymentFields] : paymentFields;
+      fields.forEach(([key, label]) => {
+        const group = document.createElement("div");
+        if (key === "note" || key === "id") group.className = "wide";
+        group.append(paymentText("dt", label), paymentText("dd", paymentFieldValue(key, payment[key])));
+        target.appendChild(group);
+      });
+    }
+
+    function appendPaymentChanges(changes, replace = false) {
+      const list = paymentElement("paymentChanges");
+      if (replace) list.replaceChildren();
+      changes.forEach(change => {
+        const entry = paymentText("li", "", "change-entry");
+        const timestamp = new Date(change.changed_at);
+        const when = Number.isNaN(timestamp.getTime()) ? "Unknown date" : new Intl.DateTimeFormat("en-GB", {
+          timeZone: "Indian/Maldives", dateStyle: "medium", timeStyle: "short"
+        }).format(timestamp);
+        entry.append(
+          paymentText("p", when + " · " + change.changed_by_name, "change-meta"),
+          paymentText("p", change.reason)
+        );
+        const fields = document.createElement("ul");
+        fields.className = "change-fields";
+        paymentFields.forEach(([key, label]) => {
+          const before = paymentFieldValue(key, change.old_data?.[key]);
+          const after = paymentFieldValue(key, change.new_data?.[key]);
+          if (before !== after) fields.appendChild(paymentText("li", label + ": " + before + " → " + after));
+        });
+        if (!fields.children.length) fields.appendChild(paymentText("li", "Payment metadata updated."));
+        entry.appendChild(fields);
+        list.appendChild(entry);
+      });
+      if (replace && !changes.length) list.appendChild(paymentText("li", "No corrections have been recorded.", "change-meta"));
+    }
+
+    function fillPaymentCorrection(payment) {
+      paymentPayerOptions(paymentElement("correctionPayer"), [...paymentHistoryState.payers, payment.payer_name], false, payment.payer_name);
+      paymentElement("correctionDate").value = String(payment.payment_date).slice(0, 10);
+      paymentElement("correctionMonth").value = String(payment.billing_month).slice(0, 7);
+      paymentElement("correctionAmount").value = payment.amount;
+      paymentElement("correctionNote").value = payment.note || "";
+      paymentElement("correctionReason").value = "";
+      paymentDetailState.attempt = null;
+    }
+
+    async function openPaymentDetails(paymentId) {
+      if (!currentUser || paymentDetailState.saving) return;
+      const userId = currentUser.id;
+      const request = ++paymentDetailState.request;
+      paymentDetailState.id = String(paymentId);
+      paymentDetailState.data = null;
+      paymentDetailState.attempt = null;
+      paymentDetailState.nextChangeId = null;
+      paymentElement("paymentDetailContent").hidden = true;
+      paymentElement("paymentCorrectionForm").hidden = true;
+      const dialog = paymentElement("paymentDialog");
+      if (!dialog.open) dialog.showModal();
+      paymentStatus("paymentDetailStatus", "Loading payment details…");
+      try {
+        const { data, error } = await supabaseClient.rpc("dhaftar_payment_detail_v1", {
+          p_payment_id: String(paymentId), p_before_change_id: null
+        });
+        if (request !== paymentDetailState.request || currentUser?.id !== userId || !dialog.open) return;
+        if (error) throw error;
+        if (!data?.payment || !data.version) throw new Error("Payment details returned an unexpected response.");
+        paymentDetailState.data = data;
+        paymentDetailState.nextChangeId = data.next_change_id;
+        renderPaymentValues(paymentElement("paymentDetailValues"), data.payment, true);
+        fillPaymentCorrection(data.payment);
+        paymentElement("originalPaymentBox").hidden = !data.original;
+        paymentElement("originalPaymentBox").open = false;
+        if (data.original) renderPaymentValues(paymentElement("originalPaymentValues"), data.original);
+        appendPaymentChanges(data.changes || [], true);
+        paymentElement("earlierPaymentChanges").hidden = !data.next_change_id;
+        paymentElement("paymentDetailContent").hidden = false;
+        paymentStatus("paymentDetailStatus", "");
+      } catch (error) {
+        if (request === paymentDetailState.request && currentUser?.id === userId) {
+          paymentStatus("paymentDetailStatus", paymentFeatureError(error) + " Close and reopen this payment to retry.", true);
+        }
+      }
+    }
+
+    async function loadEarlierPaymentChanges() {
+      if (!paymentDetailState.id || !paymentDetailState.nextChangeId || paymentDetailState.saving) return;
+      const id = paymentDetailState.id;
+      const request = paymentDetailState.request;
+      const button = paymentElement("earlierPaymentChanges");
+      button.disabled = true;
+      try {
+        const { data, error } = await supabaseClient.rpc("dhaftar_payment_detail_v1", {
+          p_payment_id: id, p_before_change_id: paymentDetailState.nextChangeId
+        });
+        if (id !== paymentDetailState.id || request !== paymentDetailState.request) return;
+        if (error) throw error;
+        appendPaymentChanges(data.changes || []);
+        paymentDetailState.nextChangeId = data.next_change_id;
+        button.hidden = !data.next_change_id;
+        paymentStatus("paymentDetailStatus", "");
+      } catch (error) {
+        if (request === paymentDetailState.request) paymentStatus("paymentDetailStatus", paymentFeatureError(error), true);
+      } finally {
+        button.disabled = false;
+      }
+    }
+
+    function newCorrectionRequestId() {
+      if (typeof crypto.randomUUID === "function") return crypto.randomUUID();
+      const bytes = crypto.getRandomValues(new Uint8Array(16));
+      bytes[6] = (bytes[6] & 15) | 64;
+      bytes[8] = (bytes[8] & 63) | 128;
+      const hex = [...bytes].map(value => value.toString(16).padStart(2, "0")).join("");
+      return hex.slice(0, 8) + "-" + hex.slice(8, 12) + "-" + hex.slice(12, 16) + "-" + hex.slice(16, 20) + "-" + hex.slice(20);
+    }
+
+    function readCorrectionPayload() {
+      const data = paymentDetailState.data;
+      if (!data?.payment || !data.version) throw new Error("Reload the payment details first.");
+      const reason = paymentElement("correctionReason").value.trim();
+      if (!reason) throw new Error("Enter a reason for the correction.");
+      const payload = {
+        p_payment_id: String(data.payment.id), p_expected_version: data.version,
+        p_payer_name: paymentElement("correctionPayer").value,
+        p_payment_date: paymentElement("correctionDate").value,
+        p_billing_month: paymentMonthDate(paymentElement("correctionMonth").value),
+        p_amount: paymentMoneyInput(paymentElement("correctionAmount").value),
+        p_note: paymentElement("correctionNote").value, p_reason: reason
+      };
+      const before = data.payment;
+      const changed = payload.p_payer_name !== before.payer_name ||
+        payload.p_payment_date !== String(before.payment_date).slice(0, 10) ||
+        payload.p_billing_month !== String(before.billing_month).slice(0, 10) ||
+        payload.p_amount !== paymentMoneyInput(before.amount) ||
+        payload.p_note !== (before.note || "");
+      if (!changed) throw new Error("Change at least one payment field before saving.");
+      return payload;
+    }
+
+    function setCorrectionSaving(saving) {
+      paymentDetailState.saving = saving;
+      paymentElement("correctionFields").disabled = saving;
+      ["paymentDialogClose", "startCorrection", "reloadPaymentDetail", "earlierPaymentChanges"].forEach(id => {
+        paymentElement(id).disabled = saving;
+      });
+      paymentElement("saveCorrection").textContent = saving ? "Saving…" : "Save correction";
+    }
+
+    async function submitPaymentCorrection(event) {
+      event.preventDefault();
+      if (paymentDetailState.saving || !currentUser) return;
+      const userId = currentUser.id;
+      let saved = false;
+      try {
+        const payload = readCorrectionPayload();
+        const fingerprint = JSON.stringify(payload);
+        if (paymentDetailState.attempt?.fingerprint !== fingerprint) {
+          paymentDetailState.attempt = { fingerprint, requestId: newCorrectionRequestId() };
+        }
+        setCorrectionSaving(true);
+        paymentStatus("paymentDetailStatus", "Saving correction…");
+        const { data, error } = await supabaseClient.rpc("dhaftar_correct_payment_v1", {
+          ...payload, p_request_id: paymentDetailState.attempt.requestId
+        });
+        if (currentUser?.id !== userId) return;
+        if (error) throw error;
+        if (!data?.saved) throw new Error("The correction could not be confirmed. Retry with the same values.");
+        saved = true;
+      } catch (error) {
+        if (currentUser?.id === userId) {
+          paymentStatus("paymentDetailStatus", paymentFeatureError(error), true);
+        }
+      } finally {
+        setCorrectionSaving(false);
+      }
+      if (saved && currentUser?.id === userId) {
+        paymentElement("paymentDialog").close();
+        showMessage("Payment corrected. The previous values are saved in its correction history.");
+        // Refresh failures are shown separately; the correction is already saved.
+        await Promise.allSettled([loadPaymentHistory(paymentHistoryState.page), loadOverview()]);
+      }
+    }
+
+    function resetPaymentHistoryState() {
+      paymentHistoryState.request++;
+      paymentHistoryState.filters = null;
+      paymentHistoryState.page = 1;
+      paymentHistoryState.pageCount = 1;
+      paymentDetailState.request++;
+      paymentDetailState.id = null;
+      paymentDetailState.data = null;
+      paymentDetailState.attempt = null;
+      paymentDetailState.nextChangeId = null;
+      if (paymentElement("paymentDialog").open) paymentElement("paymentDialog").close();
+      paymentElement("paymentCorrectionForm").reset();
+      paymentElement("paymentDetailContent").hidden = true;
+      paymentElement("paymentDetailValues").replaceChildren();
+      paymentElement("originalPaymentValues").replaceChildren();
+      paymentElement("paymentChanges").replaceChildren();
+      paymentHistoryEmpty("Sign in to view payment history.");
+      paymentElement("historyTotals").textContent = "";
+      paymentStatus("historyStatus", "");
+    }
+
+    paymentElement("historyMonth").value = currentHistoryMonth();
+    paymentPayerOptions(paymentElement("historyPayer"), paymentHistoryState.payers, true, "");
+    paymentElement("historyFilters").addEventListener("submit", event => {
+      event.preventDefault();
+      try {
+        loadPaymentHistory(1, readPaymentHistoryFilters());
+      } catch (error) {
+        paymentStatus("historyStatus", paymentFeatureError(error), true);
+      }
+    });
+    paymentElement("historyClear").addEventListener("click", () => {
+      paymentElement("historyFilters").reset();
+      loadPaymentHistory(1, readPaymentHistoryFilters());
+    });
+    paymentElement("historyRefresh").addEventListener("click", () => loadPaymentHistory(paymentHistoryState.page));
+    paymentElement("historyPrevious").addEventListener("click", () => loadPaymentHistory(paymentHistoryState.page - 1));
+    paymentElement("historyNext").addEventListener("click", () => loadPaymentHistory(paymentHistoryState.page + 1));
+    paymentElement("paymentDialogClose").addEventListener("click", () => paymentElement("paymentDialog").close());
+    paymentElement("paymentDialog").addEventListener("cancel", event => {
+      if (paymentDetailState.saving) event.preventDefault();
+    });
+    paymentElement("paymentDialog").addEventListener("close", () => {
+      paymentDetailState.request++;
+      paymentDetailState.id = null;
+      paymentDetailState.data = null;
+      paymentDetailState.attempt = null;
+    });
+    paymentElement("startCorrection").addEventListener("click", () => {
+      paymentElement("paymentCorrectionForm").hidden = false;
+      paymentElement("correctionPayer").focus();
+    });
+    paymentElement("cancelCorrection").addEventListener("click", () => {
+      paymentElement("paymentCorrectionForm").hidden = true;
+    });
+    paymentElement("reloadPaymentDetail").addEventListener("click", () => openPaymentDetails(paymentDetailState.id));
+    paymentElement("earlierPaymentChanges").addEventListener("click", loadEarlierPaymentChanges);
+    paymentElement("paymentCorrectionForm").addEventListener("submit", submitPaymentCorrection);
+    if (typeof supabaseClient !== "undefined") {
+      supabaseClient.auth.onAuthStateChange((event) => {
+        if (event === "SIGNED_OUT") {
+          currentUser = null;
+          currentProfile = null;
+          showLoginBox();
+        }
+      });
+    }
   </script>
 </body>
 </html>

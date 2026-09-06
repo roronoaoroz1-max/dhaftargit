@@ -924,6 +924,19 @@
       .history-filters, .payment-detail-grid { grid-template-columns: 1fr; }
       .history-heading > .history-button { width: 100%; }
     }
+
+    .quick-fields { min-width: 0; margin: 0; padding: 0; border: 0; }
+    .quick-payment { margin: 0 0 18px; padding: 16px; border: 1px solid var(--line); border-radius: 14px; background: var(--surface-soft); }
+    .quick-payment strong { color: var(--ink); font-size: 0.9rem; }
+    .quick-status { margin: 8px 0 12px; color: var(--brand); font-size: 0.875rem; line-height: 1.5; }
+    .quick-status.is-error { color: var(--danger); }
+    .quick-actions { display: flex; flex-wrap: wrap; gap: 8px; }
+    .quick-note { margin: 12px 0 0; color: var(--muted); font-size: 0.8rem; line-height: 1.5; }
+    .quick-button { display: inline-flex; align-items: center; justify-content: center; min-height: 44px; padding: 9px 13px; border: 1px solid var(--line); border-radius: 12px; color: var(--brand); background: var(--brand-soft); font-size: 0.875rem; font-weight: 750; cursor: pointer; }
+    .quick-button:hover:not(:disabled) { border-color: var(--brand); }
+    .quick-button:disabled { opacity: 0.55; cursor: default; }
+    .quick-button:focus-visible { outline: 2px solid var(--brand); outline-offset: 3px; }
+    #repaymentForm { scroll-margin-top: 20px; }
   </style>
 </head>
 
@@ -1216,6 +1229,7 @@
           </div>
 
           <form id="paymentForm">
+            <fieldset id="paymentFields" class="quick-fields">
 
             <div class="form-row">
 
@@ -1268,6 +1282,15 @@
             </div>
 
             <div class="field">
+              <div class="quick-payment" aria-labelledby="householdQuickTitle">
+                <strong id="householdQuickTitle">Dhaftar monthly balance</strong>
+                <p id="householdBalanceStatus" class="quick-status" role="status" aria-live="polite">Choose a billing month to see its remaining balance.</p>
+                <div class="quick-actions">
+                  <button class="history-button" id="useHouseholdBalance" type="button" disabled>Use remaining balance</button>
+                  <button class="history-button" id="refreshHouseholdBalance" type="button">Refresh balance</button>
+                </div>
+                <p class="quick-note">This is the dashboard balance for the selected month. Choose the payer and review the amount actually received before saving.</p>
+              </div>
               <label for="paymentAmount">
                 Amount (MVR)
               </label>
@@ -1279,6 +1302,7 @@
                 step="0.01"
                 inputmode="decimal"
                 placeholder="0.00"
+                aria-describedby="householdBalanceStatus"
                 required
               >
             </div>
@@ -1310,6 +1334,7 @@
               </span>
             </button>
 
+            </fieldset>
           </form>
         </section>
 
@@ -2017,6 +2042,7 @@
       message = ""
     ) {
       resetPaymentHistoryState();
+      resetHouseholdQuick();
       document.getElementById(
         "loginBox"
       ).hidden =
@@ -2064,7 +2090,8 @@
         loadRentRates(),
         loadSelectedBill(),
         loadSelectedRentRate(),
-        loadPaymentHistory(1)
+        loadPaymentHistory(1),
+        loadHouseholdBalance()
       ]);
     }
 
@@ -2303,117 +2330,76 @@
 
 
     async function submitPayment() {
-      const amountInput =
-        document.getElementById(
-          "paymentAmount"
-        );
-
-      const amount =
-        Number(
-          amountInput.value
-        );
-
-      if (
-        !Number.isFinite(amount) ||
-        amount <= 0
-      ) {
-        showMessage(
-          "Enter a valid payment amount.",
-          true
-        );
-
+      const state = householdQuickState;
+      if (state.saving || !currentUser) return;
+      const form = paymentElement("paymentForm");
+      if (!form.reportValidity()) return;
+      const amountInput = paymentElement("paymentAmount");
+      const cents = quickMoneyCents(amountInput.value);
+      if (!(cents > 0)) {
+        showMessage("Enter a valid payment amount.", true);
         amountInput.focus();
         return;
       }
-
-      const button =
-        document.getElementById(
-          "paymentButton"
-        );
-
-      setButtonLoading(
-        button,
-        true,
-        "Adding…"
-      );
-
+      const month = householdMonth();
+      const userId = currentUser.id;
+      const epoch = state.epoch;
+      const payload = {
+        payer_name: paymentElement("payerName").value,
+        payment_date: paymentElement("paymentDate").value,
+        billing_month: month,
+        amount: cents / 100,
+        note: paymentElement("paymentNote").value.trim(),
+        created_by: userId
+      };
+      state.request++;
+      state.edit++;
+      state.loading = false;
+      state.saving = true;
+      paymentElement("paymentFields").disabled = true;
+      const button = paymentElement("paymentButton");
+      setButtonLoading(button, true, "Adding…");
+      syncHouseholdQuickButtons();
       showMessage("");
-
+      let saved = false;
       try {
-        const billingMonth =
-          billingDate(
-            document.getElementById(
-              "paymentMonth"
-            ).value,
-            document.getElementById(
-              "paymentYear"
-            ).value
-          );
-
-        const {
-          error
-        } =
-          await supabaseClient
-            .from(
-              "dhaftar_payments"
-            )
-            .insert({
-              payer_name:
-                document.getElementById(
-                  "payerName"
-                ).value,
-
-              payment_date:
-                document.getElementById(
-                  "paymentDate"
-                ).value,
-
-              billing_month:
-                billingMonth,
-
-              amount,
-
-              note:
-                document.getElementById(
-                  "paymentNote"
-                ).value.trim(),
-
-              created_by:
-                currentUser.id
-            });
-
-        if (error) {
-          throw error;
+        // An unchanged shortcut amount is rechecked before the insert.
+        if (state.autoFilled?.month === month && state.autoFilled.cents === cents) {
+          const fresh = await readHouseholdBalance(month);
+          if (epoch !== state.epoch || currentUser?.id !== userId) return;
+          state.cents = fresh;
+          state.month = month;
+          householdQuickStatus(describeHouseholdBalance(fresh, month));
+          if (fresh !== cents) {
+            amountInput.value = fresh > 0 ? (fresh / 100).toFixed(2) : "";
+            state.autoFilled = fresh > 0 ? { month, cents: fresh } : null;
+            showMessage("The monthly balance changed. Review the updated amount before saving again.", true);
+            return;
+          }
         }
-
-        amountInput.value =
-          "";
-
-        document.getElementById(
-          "paymentNote"
-        ).value =
-          "";
-
-        showMessage(
-          "Payment added successfully."
-        );
-
+        if (epoch !== state.epoch || currentUser?.id !== userId) return;
+        const { error } = await supabaseClient.from("dhaftar_payments").insert(payload);
+        if (error) throw error;
+        saved = true;
+        if (epoch !== state.epoch || currentUser?.id !== userId) return;
+        amountInput.value = "";
+        paymentElement("paymentNote").value = "";
+        state.autoFilled = null;
+        showMessage("Payment added successfully.");
         // The insert is committed. A refresh error must not imply it failed.
         await Promise.allSettled([loadOverview(), loadPaymentHistory(1)]);
-
       } catch (error) {
-        showMessage(
-          error.message ||
-          "Payment could not be added.",
-          true
-        );
-
+        if (epoch === state.epoch && currentUser?.id === userId) {
+          showMessage(saved ? "Payment saved. Refresh the page to update the balances." : (error.message || "Payment could not be added."), true);
+        }
       } finally {
-        setButtonLoading(
-          button,
-          false,
-          "Adding…"
-        );
+        if (epoch === state.epoch) {
+          state.saving = false;
+          paymentElement("paymentFields").disabled = false;
+          setButtonLoading(button, false, "Adding…");
+          syncHouseholdQuickButtons();
+          if (saved) await loadHouseholdBalance();
+        }
       }
     }
 
@@ -3152,6 +3138,137 @@
     );
   </script>
   <script>
+
+    function quickMoneyCents(value) {
+      if (!["number", "string"].includes(typeof value) || String(value).trim() === "") return null;
+      const amount = Number(value);
+      const cents = Math.round(amount * 100);
+      return Number.isFinite(amount) && Number.isSafeInteger(cents) ? cents : null;
+    }
+
+    function quickToday() {
+      const parts = new Intl.DateTimeFormat("en-CA", {
+        timeZone: "Indian/Maldives", year: "numeric", month: "2-digit", day: "2-digit"
+      }).formatToParts(new Date());
+      const part = type => parts.find(item => item.type === type).value;
+      return part("year") + "-" + part("month") + "-" + part("day");
+    }
+
+    // STEP 3: shortcuts prepare a draft; only the form's submit saves it.
+    const householdQuickState = {
+      request: 0, edit: 0, epoch: 0, loading: false, saving: false,
+      cents: null, month: null, autoFilled: null
+    };
+
+    function householdMonth() {
+      return billingDate(paymentElement("paymentMonth").value, paymentElement("paymentYear").value);
+    }
+
+    function householdQuickStatus(message, isError = false) {
+      const status = paymentElement("householdBalanceStatus");
+      status.textContent = message;
+      status.classList.toggle("is-error", isError);
+    }
+
+    function syncHouseholdQuickButtons() {
+      const state = householdQuickState;
+      paymentElement("useHouseholdBalance").disabled = !currentUser || state.loading || state.saving || !(state.cents > 0);
+      paymentElement("refreshHouseholdBalance").disabled = !currentUser || state.loading || state.saving;
+      paymentElement("useHouseholdBalance").textContent = state.loading ? "Checking balance…" : "Use remaining balance";
+    }
+
+    function resetHouseholdQuick() {
+      const state = householdQuickState;
+      state.request++;
+      state.edit++;
+      state.epoch++;
+      state.loading = false;
+      state.saving = false;
+      state.cents = null;
+      state.month = null;
+      state.autoFilled = null;
+      paymentElement("paymentAmount").value = "";
+      paymentElement("paymentNote").value = "";
+      paymentElement("paymentFields").disabled = false;
+      setButtonLoading(paymentElement("paymentButton"), false, "Adding…");
+      householdQuickStatus("Choose a billing month to see its remaining balance.");
+      syncHouseholdQuickButtons();
+    }
+
+    async function readHouseholdBalance(month) {
+      const { data, error } = await supabaseClient.rpc("get_dhaftar_summary", { p_billing_month: month });
+      if (error) throw new Error("Could not load the monthly balance. Try refreshing, or enter the amount received manually.");
+      const cents = quickMoneyCents(data?.remainingBalance);
+      if (cents === null) throw new Error("The monthly balance is unavailable. Enter the amount received manually.");
+      return cents;
+    }
+
+    function describeHouseholdBalance(cents, month) {
+      if (cents > 0) return displayMonth(month) + " · Remaining " + formatMVR(cents / 100);
+      if (cents < 0) return displayMonth(month) + " · Credit " + formatMVR(-cents / 100) + ". No positive balance to fill.";
+      return displayMonth(month) + " · No positive balance to fill. Check that all bills have been entered.";
+    }
+
+    async function loadHouseholdBalance(prefill = false) {
+      const state = householdQuickState;
+      if (!currentUser || state.saving) return;
+      const userId = currentUser.id;
+      const request = ++state.request;
+      const edit = state.edit;
+      const month = householdMonth();
+      state.loading = true;
+      householdQuickStatus("Checking " + displayMonth(month) + "…");
+      syncHouseholdQuickButtons();
+      try {
+        const cents = await readHouseholdBalance(month);
+        if (request !== state.request || currentUser?.id !== userId || householdMonth() !== month) return;
+        state.cents = cents;
+        state.month = month;
+        householdQuickStatus(describeHouseholdBalance(cents, month));
+        if (prefill && edit === state.edit) {
+          if (cents > 0) {
+            paymentElement("paymentAmount").value = (cents / 100).toFixed(2);
+            paymentElement("paymentDate").value = quickToday();
+            state.autoFilled = { month, cents };
+            householdQuickStatus(describeHouseholdBalance(cents, month) + ". Amount and today's date filled. Review before saving.");
+            paymentElement("paymentAmount").focus();
+          } else if (state.autoFilled) {
+            paymentElement("paymentAmount").value = "";
+            state.autoFilled = null;
+          }
+        }
+      } catch (error) {
+        if (request !== state.request || currentUser?.id !== userId) return;
+        state.cents = null;
+        state.month = null;
+        householdQuickStatus(error.message, true);
+      } finally {
+        if (request === state.request) {
+          state.loading = false;
+          syncHouseholdQuickButtons();
+        }
+      }
+    }
+
+    function householdMonthChanged() {
+      const state = householdQuickState;
+      state.edit++;
+      if (state.autoFilled) paymentElement("paymentAmount").value = "";
+      state.autoFilled = null;
+      state.cents = null;
+      state.month = null;
+      void loadHouseholdBalance();
+    }
+
+    paymentElement("useHouseholdBalance").addEventListener("click", () => { void loadHouseholdBalance(true); });
+    paymentElement("refreshHouseholdBalance").addEventListener("click", () => { void loadHouseholdBalance(); });
+    ["paymentMonth", "paymentYear"].forEach(id => paymentElement(id).addEventListener("change", householdMonthChanged));
+    paymentElement("paymentAmount").addEventListener("input", () => {
+      householdQuickState.edit++;
+      householdQuickState.autoFilled = null;
+    });
+    paymentElement("paymentDate").addEventListener("input", () => { householdQuickState.edit++; });
+
     // STEP 2: all history and correction access is checked again in Supabase.
     const paymentHistoryState = {
       page: 1, pageCount: 1, filters: null, request: 0,
@@ -3516,7 +3633,7 @@
         paymentElement("paymentDialog").close();
         showMessage("Payment corrected. The previous values are saved in its correction history.");
         // Refresh failures are shown separately; the correction is already saved.
-        await Promise.allSettled([loadPaymentHistory(paymentHistoryState.page), loadOverview()]);
+        await Promise.allSettled([loadPaymentHistory(paymentHistoryState.page), loadOverview(), loadHouseholdBalance()]);
       }
     }
 

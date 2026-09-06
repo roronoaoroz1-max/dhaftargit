@@ -1026,6 +1026,19 @@
         transition-duration: 0.01ms !important;
       }
     }
+
+    .quick-fields { min-width: 0; margin: 0; padding: 0; border: 0; }
+    .quick-payment { margin: 0 0 18px; padding: 16px; border: 1px solid var(--line); border-radius: 14px; background: var(--surface-soft); }
+    .quick-payment strong { color: var(--ink); font-size: 0.9rem; }
+    .quick-status { margin: 8px 0 12px; color: var(--brand); font-size: 0.875rem; line-height: 1.5; }
+    .quick-status.is-error { color: var(--danger); }
+    .quick-actions { display: flex; flex-wrap: wrap; gap: 8px; }
+    .quick-note { margin: 12px 0 0; color: var(--muted); font-size: 0.8rem; line-height: 1.5; }
+    .quick-button { display: inline-flex; align-items: center; justify-content: center; min-height: 44px; padding: 9px 13px; border: 1px solid var(--line); border-radius: 12px; color: var(--brand); background: var(--brand-soft); font-size: 0.875rem; font-weight: 750; cursor: pointer; }
+    .quick-button:hover:not(:disabled) { border-color: var(--brand); }
+    .quick-button:disabled { opacity: 0.55; cursor: default; }
+    .quick-button:focus-visible { outline: 2px solid var(--brand); outline-offset: 3px; }
+    #repaymentForm { scroll-margin-top: 20px; }
   </style>
 </head>
 
@@ -1295,6 +1308,7 @@
                   <th>Remaining</th>
                   <th>Status</th>
                   <th>Next payment</th>
+                  <th>Action</th>
                 </tr>
               </thead>
 
@@ -2005,6 +2019,7 @@
           </div>
 
           <form id="repaymentForm">
+            <fieldset id="repaymentFields" class="quick-fields">
             <div class="field">
               <label for="repaymentLoan">
                 Loan
@@ -2014,6 +2029,13 @@
                 id="repaymentLoan"
                 required
               ></select>
+            </div>
+
+            <div class="quick-payment" aria-labelledby="installmentQuickTitle">
+              <strong id="installmentQuickTitle">Quick installment</strong>
+              <p id="installmentQuickStatus" class="quick-status" role="status" aria-live="polite">Choose a loan to prepare a repayment.</p>
+              <button class="quick-button" id="useInstallmentAmount" type="button" disabled>Use installment amount</button>
+              <p class="quick-note">Uses one standard installment, capped at the remaining loan balance. Review the actual amount received, including any partial payments, before saving.</p>
             </div>
 
             <div class="form-row">
@@ -2030,12 +2052,13 @@
               </div>
 
               <div class="field">
-                <label for="repaymentAmount">
+                <label for="repaymentAmount" id="repaymentAmountLabel">
                   Amount
                 </label>
 
                 <input
                   id="repaymentAmount"
+                  aria-describedby="installmentQuickStatus"
                   type="number"
                   min="0.01"
                   step="0.01"
@@ -2082,6 +2105,7 @@
               Repayments automatically reduce the remaining loan and
               increase the source account’s available cash through the view.
             </p>
+            </fieldset>
           </form>
         </section>
 
@@ -2102,6 +2126,135 @@
     let accountBalances = [];
     let repayments = [];
     let transactions = [];
+
+
+    function quickMoneyCents(value) {
+      if (!["number", "string"].includes(typeof value) || String(value).trim() === "") return null;
+      const amount = Number(value);
+      const cents = Math.round(amount * 100);
+      return Number.isFinite(amount) && Number.isSafeInteger(cents) ? cents : null;
+    }
+
+    function quickToday() {
+      const parts = new Intl.DateTimeFormat("en-CA", {
+        timeZone: "Indian/Maldives", year: "numeric", month: "2-digit", day: "2-digit"
+      }).formatToParts(new Date());
+      const part = type => parts.find(item => item.type === type).value;
+      return part("year") + "-" + part("month") + "-" + part("day");
+    }
+
+    const repaymentQuickState = { request: 0, epoch: 0, loading: false, saving: false, autoFilled: null };
+
+    function repaymentElement(id) { return document.getElementById(id); }
+
+    function installmentQuickStatus(message, isError = false) {
+      const status = repaymentElement("installmentQuickStatus");
+      status.textContent = message;
+      status.classList.toggle("is-error", isError);
+    }
+
+    function isPayableLoan(loan) {
+      return Boolean(loan) && quickMoneyCents(loan.remaining_amount) > 0 &&
+        !["cancelled", "paid"].includes(normalize(loan.calculated_status || loan.status));
+    }
+
+    function installmentSuggestion(loan, installment) {
+      const remaining = quickMoneyCents(loan?.remaining_amount);
+      const standard = quickMoneyCents(installment);
+      if (!isPayableLoan(loan) || !(standard > 0)) return null;
+      return Math.min(standard, remaining);
+    }
+
+    function syncRepaymentQuickButton() {
+      const state = repaymentQuickState;
+      const button = repaymentElement("useInstallmentAmount");
+      button.disabled = !currentUser || state.loading || state.saving || !repaymentElement("repaymentLoan").value;
+      button.textContent = state.loading ? "Checking installment…" : "Use installment amount";
+    }
+
+    function updateRepaymentQuickHint() {
+      const loanId = repaymentElement("repaymentLoan").value;
+      const loan = loanBalances.find(row => String(row.loan_id) === loanId);
+      repaymentElement("repaymentAmountLabel").textContent = loan ? "Amount (" + (loan.currency || "MVR") + ")" : "Amount";
+      if (!repaymentQuickState.loading && !repaymentQuickState.autoFilled) {
+        installmentQuickStatus(loan ? "Remaining " + formatMoney(loan.remaining_amount, loan.currency) + ". Use the shortcut or enter the amount received." : "Choose a loan to prepare a repayment.");
+      }
+      syncRepaymentQuickButton();
+    }
+
+    function repaymentDraftChanged(clearAmount = false) {
+      repaymentQuickState.request++;
+      repaymentQuickState.loading = false;
+      repaymentQuickState.autoFilled = null;
+      if (clearAmount) repaymentElement("repaymentAmount").value = "";
+      updateRepaymentQuickHint();
+    }
+
+    async function readRepaymentLoan(loanId) {
+      const { data, error } = await supabaseClient.from("loan_balances").select("*").eq("loan_id", loanId).single();
+      if (error || !data) throw new Error("Could not refresh the loan balance. Try again before saving.");
+      if (!isPayableLoan(data)) throw new Error("This loan has no payable balance or is no longer active. Choose another loan.");
+      return data;
+    }
+
+    async function prefillInstallment(loanId = repaymentElement("repaymentLoan").value) {
+      const state = repaymentQuickState;
+      if (state.saving || !currentUser) return;
+      const select = repaymentElement("repaymentLoan");
+      loanId = String(loanId || "");
+      if (!loanId || ![...select.options].some(option => option.value === loanId)) {
+        installmentQuickStatus("Choose a valid loan first.", true);
+        select.focus();
+        return;
+      }
+      if (select.value !== loanId) {
+        select.value = loanId;
+        repaymentDraftChanged(true);
+      }
+      const request = ++state.request;
+      const userId = currentUser.id;
+      const stillCurrent = () => request === state.request && currentUser?.id === userId && select.value === loanId;
+      state.loading = true;
+      state.autoFilled = null;
+      installmentQuickStatus("Checking the latest balance and installment…");
+      syncRepaymentQuickButton();
+      repaymentElement("repaymentForm").scrollIntoView({ behavior: "smooth", block: "start" });
+      try {
+        const loan = await readRepaymentLoan(loanId);
+        if (!stillCurrent()) return;
+        const index = loanBalances.findIndex(row => String(row.loan_id) === loanId);
+        if (index !== -1) loanBalances[index] = loan;
+        repaymentElement("repaymentAmountLabel").textContent = "Amount (" + (loan.currency || "MVR") + ")";
+        // Some installations omit installment_amount from the balance view.
+        let installment = loan.installment_amount;
+        if (installment === undefined) {
+          const { data, error } = await supabaseClient.from("loans").select("installment_amount").eq("id", loanId).single();
+          if (!stillCurrent()) return;
+          if (error || !data) throw new Error("Could not load the standard installment. Enter the amount received manually.");
+          installment = data.installment_amount;
+        }
+        if (!stillCurrent()) return;
+        const cents = installmentSuggestion(loan, installment);
+        if (cents === null) {
+          installmentQuickStatus("No standard installment is set for this loan. Remaining " + formatMoney(loan.remaining_amount, loan.currency) + ". Enter the amount received manually.");
+          repaymentElement("repaymentAmount").focus();
+          return;
+        }
+        repaymentElement("repaymentAmount").value = (cents / 100).toFixed(2);
+        repaymentElement("repaymentDate").value = quickToday();
+        state.autoFilled = { loanId, cents, installmentCents: quickMoneyCents(installment) };
+        const capped = cents < quickMoneyCents(installment);
+        installmentQuickStatus((capped ? "Final balance " : "Standard installment ") + formatMoney(cents / 100, loan.currency) + " filled with today's date. Review, then select Add repayment.");
+        repaymentElement("repaymentAmount").focus();
+      } catch (error) {
+        if (stillCurrent()) installmentQuickStatus(error.message || "Could not prepare the installment. Enter the amount manually.", true);
+      } finally {
+        if (request === state.request) {
+          state.loading = false;
+          syncRepaymentQuickButton();
+        }
+      }
+    }
 
     const privateBalanceValues = {
       dadCash: 0,
@@ -2990,15 +3143,7 @@
       );
 
       loanBalances
-        .filter(
-          (loan) =>
-            Number(
-              loan.remaining_amount
-            ) > 0 &&
-            normalize(
-              loan.calculated_status
-            ) !== "cancelled"
-        )
+        .filter(isPayableLoan)
         .forEach((loan) => {
           const option =
             document.createElement(
@@ -3034,6 +3179,8 @@
         repaymentSelect.value =
           previous;
       }
+      if (repaymentSelect.value !== previous) repaymentDraftChanged(true);
+      else updateRepaymentQuickHint();
     }
 
 
@@ -3253,7 +3400,7 @@
       if (!loanBalances.length) {
         return emptyTable(
           tbody,
-          7,
+          8,
           "No loans found."
         );
       }
@@ -3309,6 +3456,20 @@
               )
             )
           );
+
+          const action = cell("");
+          if (isPayableLoan(loan)) {
+            const button = document.createElement("button");
+            button.type = "button";
+            button.className = "quick-button";
+            button.dataset.loanId = String(loan.loan_id);
+            button.textContent = "Record installment";
+            button.setAttribute("aria-label", "Record installment from " + loan.borrower_name + " to " + loan.lender_name);
+            action.appendChild(button);
+          } else {
+            action.textContent = "—";
+          }
+          row.appendChild(action);
 
           tbody.appendChild(
             row
@@ -4209,129 +4370,70 @@
 
     async function submitRepayment(event) {
       event.preventDefault();
-
-      const button =
-        document.getElementById(
-          "repaymentButton"
-        );
-
-      setButtonLoading(
-        button,
-        true,
-        "Adding…"
-      );
-
+      const state = repaymentQuickState;
+      if (state.saving || !currentUser || !event.target.reportValidity()) return;
+      const cents = quickMoneyCents(repaymentElement("repaymentAmount").value);
+      const loanId = repaymentElement("repaymentLoan").value;
+      if (!(cents > 0) || !loanId) {
+        showMessage("Choose a loan and enter a valid repayment amount.", true);
+        return;
+      }
+      const epoch = state.epoch;
+      const userId = currentUser.id;
+      const payload = {
+        loan_id: loanId,
+        payment_date: repaymentElement("repaymentDate").value,
+        amount: cents / 100,
+        payment_method: clean(repaymentElement("repaymentMethod").value),
+        notes: clean(repaymentElement("repaymentNotes").value)
+      };
+      state.request++;
+      state.loading = false;
+      state.saving = true;
+      repaymentElement("repaymentFields").disabled = true;
+      const button = repaymentElement("repaymentButton");
+      setButtonLoading(button, true, "Adding…");
+      syncRepaymentQuickButton();
       showMessage("");
-
+      let saved = false;
       try {
-        const amount =
-          Number(
-            document.getElementById(
-              "repaymentAmount"
-            ).value
-          );
-
-        const loanId =
-          document.getElementById(
-            "repaymentLoan"
-          ).value;
-
-        const loan =
-          loanBalances.find(
-            (row) =>
-              row.loan_id ===
-              loanId
-          );
-
-        if (!loan) {
-          throw new Error(
-            "Choose a valid loan."
-          );
+        const loan = await readRepaymentLoan(loanId);
+        if (epoch !== state.epoch || currentUser?.id !== userId) return;
+        const remaining = quickMoneyCents(loan.remaining_amount);
+        if (cents > remaining) {
+          if (state.autoFilled?.loanId === loanId && state.autoFilled.cents === cents) {
+            const updated = Math.min(state.autoFilled.installmentCents, remaining);
+            repaymentElement("repaymentAmount").value = (updated / 100).toFixed(2);
+            state.autoFilled.cents = updated;
+            installmentQuickStatus("Balance changed. Suggested amount updated to " + formatMoney(updated / 100, loan.currency) + ". Review before saving.", true);
+          }
+          throw new Error("The repayment exceeds the latest remaining balance of " + formatMoney(remaining / 100, loan.currency) + ". Review the amount before saving again.");
         }
-
-        if (
-          !Number.isFinite(amount) ||
-          amount <= 0
-        ) {
-          throw new Error(
-            "Enter a valid repayment amount."
-          );
-        }
-
-        if (
-          amount >
-          Number(
-            loan.remaining_amount
-          )
-        ) {
-          throw new Error(
-            "The repayment cannot exceed the remaining loan balance."
-          );
-        }
-
-        const {
-          error
-        } =
-          await supabaseClient
-            .from(
-              "loan_payments"
-            )
-            .insert({
-              loan_id:
-                loanId,
-
-              payment_date:
-                document.getElementById(
-                  "repaymentDate"
-                ).value,
-
-              amount,
-
-              payment_method:
-                clean(
-                  document.getElementById(
-                    "repaymentMethod"
-                  ).value
-                ),
-
-              notes:
-                clean(
-                  document.getElementById(
-                    "repaymentNotes"
-                  ).value
-                )
-            });
-
-        if (error) {
-          throw error;
-        }
-
+        const { error } = await supabaseClient.from("loan_payments").insert(payload);
+        if (error) throw error;
+        saved = true;
+        if (epoch !== state.epoch || currentUser?.id !== userId) return;
         event.target.reset();
-
-        document.getElementById(
-          "repaymentDate"
-        ).value =
-          localToday();
-
-        showMessage(
-          "Loan repayment added successfully."
-        );
-
-        await loadData();
-
+        repaymentElement("repaymentDate").value = quickToday();
+        state.autoFilled = null;
+        updateRepaymentQuickHint();
+        showMessage("Loan repayment added successfully.");
+        // Refresh failures must never suggest repeating a committed payment.
+        const [refresh] = await Promise.allSettled([loadData()]);
+        if (refresh.status === "rejected" && epoch === state.epoch && currentUser?.id === userId) {
+          showMessage("Repayment saved. Balances could not refresh; reload the page before adding another repayment.", true);
+        }
       } catch (error) {
-        showMessage(
-          error.message ||
-          "Repayment could not be added.",
-          true
-        );
-
+        if (epoch === state.epoch && currentUser?.id === userId) {
+          showMessage(saved ? "Repayment saved. Reload the page to update the balances." : (error.message || "Repayment could not be added."), true);
+        }
       } finally {
-        setButtonLoading(
-          button,
-          false,
-          "Adding…"
-        );
+        if (epoch === state.epoch) {
+          state.saving = false;
+          repaymentElement("repaymentFields").disabled = false;
+          setButtonLoading(button, false, "Adding…");
+          syncRepaymentQuickButton();
+        }
       }
     }
 
@@ -4439,6 +4541,25 @@
         submitRepayment
       );
 
+
+    repaymentElement("useInstallmentAmount").addEventListener("click", () => { void prefillInstallment(); });
+    repaymentElement("repaymentLoan").addEventListener("change", () => repaymentDraftChanged(true));
+    ["repaymentAmount", "repaymentDate"].forEach(id => repaymentElement(id).addEventListener("input", () => repaymentDraftChanged()));
+    repaymentElement("loanRows").addEventListener("click", event => {
+      const button = event.target.closest("button[data-loan-id]");
+      if (button) void prefillInstallment(button.dataset.loanId);
+    });
+    supabaseClient.auth.onAuthStateChange(event => {
+      if (event !== "SIGNED_OUT") return;
+      currentUser = null;
+      currentProfile = null;
+      repaymentQuickState.request++;
+      repaymentQuickState.epoch++;
+      repaymentQuickState.autoFilled = null;
+      repaymentElement("repaymentForm").reset();
+      repaymentElement("amanahApp").hidden = true;
+      window.location.replace("admin.html");
+    });
 
     window.addEventListener(
       "load",

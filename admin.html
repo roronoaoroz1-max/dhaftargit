@@ -937,6 +937,31 @@
     .quick-button:disabled { opacity: 0.55; cursor: default; }
     .quick-button:focus-visible { outline: 2px solid var(--brand); outline-offset: 3px; }
     #repaymentForm { scroll-margin-top: 20px; }
+
+    .monthly-bills-card { margin-bottom: 22px; }
+    .monthly-bills-period { max-width: 520px; }
+    .monthly-bill-row { display: grid; grid-template-columns: minmax(100px, 0.6fr) minmax(140px, 0.85fr) minmax(0, 1.5fr); align-items: start; gap: 18px; padding: 17px 0; border-bottom: 1px solid var(--line); }
+    .monthly-bill-row .field { min-width: 0; margin: 0; }
+    .monthly-bill-row textarea { min-height: 50px; height: 50px; }
+    .monthly-bill-name { padding-top: 4px; }
+    .monthly-bill-name h3 { margin: 0 0 8px; font-size: 0.95rem; }
+    .monthly-bill-state { color: var(--muted); font-size: 0.8rem; line-height: 1.5; }
+    .monthly-bill-state.is-edited { color: var(--brand); }
+    .monthly-bill-state.is-error { color: var(--danger); }
+    .monthly-bills-summary { display: flex; justify-content: space-between; align-items: center; gap: 16px; flex-wrap: wrap; margin-top: 20px; padding: 18px; border-radius: 14px; background: var(--brand-soft); }
+    .monthly-bills-summary span, .monthly-bills-summary p { color: var(--muted); font-size: 0.85rem; margin: 0; }
+    .monthly-bills-summary strong { display: block; margin-top: 7px; color: var(--brand); font-size: 1.4rem; }
+    .monthly-bills-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; margin-top: 18px; }
+    .monthly-bills-actions .primary-button { width: auto; min-width: 210px; margin: 0; padding: 14px 20px; }
+    @media (max-width: 640px) {
+      .monthly-bill-row { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+      .monthly-bill-name { grid-column: 1 / -1; display: flex; justify-content: space-between; align-items: baseline; gap: 12px; }
+      .monthly-bill-name h3 { margin: 0; }
+    }
+    @media (max-width: 420px) {
+      .monthly-bill-row { grid-template-columns: minmax(0, 1fr); }
+      .monthly-bills-actions > button { width: 100% !important; }
+    }
   </style>
 </head>
 
@@ -1202,6 +1227,116 @@
           </div>
         </section>
 
+        <!-- MONTHLY BILLS -->
+        <section class="card action-card monthly-bills-card" aria-labelledby="billTitle">
+          <div class="card-heading">
+            <div class="card-icon" aria-hidden="true">↻</div>
+            <div>
+              <h2 id="billTitle">Monthly bills</h2>
+              <p>Enter the full bill amounts for one month and save them together.</p>
+            </div>
+          </div>
+          <form id="billForm" aria-describedby="monthlyBillsHelp">
+            <fieldset id="billPeriodFields" class="quick-fields">
+              <div class="form-row monthly-bills-period">
+                <div class="field">
+                  <label for="billMonth">Billing month</label>
+                  <select id="billMonth"></select>
+                </div>
+                <div class="field">
+                  <label for="billYear">Year</label>
+                  <select id="billYear"></select>
+                </div>
+              </div>
+            </fieldset>
+            <p id="monthlyBillsHelp" class="quick-note">Blank amounts are skipped; saved bills stay as they are. Enter 0.00 for no charge. Rent follows the existing rent-rate settings below.</p>
+            <p id="monthlyBillsStatus" class="quick-status" role="status" aria-live="polite">Choose a month to load its bills.</p>
+            <fieldset id="billRowsFields" class="quick-fields" disabled>
+              <div class="monthly-bill-row">
+                <div class="monthly-bill-name">
+                  <h3>Water</h3>
+                  <span id="monthlyBill-water-status" class="monthly-bill-state">Not loaded</span>
+                </div>
+                <div class="field">
+                  <label for="monthlyBill-water-amount">Water amount (MVR)</label>
+                  <input id="monthlyBill-water-amount" type="number" min="0" step="0.01" inputmode="decimal" placeholder="Not entered" aria-describedby="monthlyBill-water-status monthlyBillsHelp">
+                </div>
+                <div class="field">
+                  <label for="monthlyBill-water-notes">Water note</label>
+                  <textarea id="monthlyBill-water-notes" rows="1" maxlength="250" placeholder="Optional"></textarea>
+                </div>
+              </div>
+              <div class="monthly-bill-row">
+                <div class="monthly-bill-name">
+                  <h3>Electricity</h3>
+                  <span id="monthlyBill-electricity-status" class="monthly-bill-state">Not loaded</span>
+                </div>
+                <div class="field">
+                  <label for="monthlyBill-electricity-amount">Electricity amount (MVR)</label>
+                  <input id="monthlyBill-electricity-amount" type="number" min="0" step="0.01" inputmode="decimal" placeholder="Not entered" aria-describedby="monthlyBill-electricity-status monthlyBillsHelp">
+                </div>
+                <div class="field">
+                  <label for="monthlyBill-electricity-notes">Electricity note</label>
+                  <textarea id="monthlyBill-electricity-notes" rows="1" maxlength="250" placeholder="Optional"></textarea>
+                </div>
+              </div>
+              <div class="monthly-bill-row">
+                <div class="monthly-bill-name">
+                  <h3>WiFi</h3>
+                  <span id="monthlyBill-wifi-status" class="monthly-bill-state">Not loaded</span>
+                </div>
+                <div class="field">
+                  <label for="monthlyBill-wifi-amount">WiFi amount (MVR)</label>
+                  <input id="monthlyBill-wifi-amount" type="number" min="0" step="0.01" inputmode="decimal" placeholder="Not entered" aria-describedby="monthlyBill-wifi-status monthlyBillsHelp">
+                </div>
+                <div class="field">
+                  <label for="monthlyBill-wifi-notes">WiFi note</label>
+                  <textarea id="monthlyBill-wifi-notes" rows="1" maxlength="250" placeholder="Optional"></textarea>
+                </div>
+              </div>
+              <div class="monthly-bill-row">
+                <div class="monthly-bill-name">
+                  <h3>TV</h3>
+                  <span id="monthlyBill-tv-status" class="monthly-bill-state">Not loaded</span>
+                </div>
+                <div class="field">
+                  <label for="monthlyBill-tv-amount">TV amount (MVR)</label>
+                  <input id="monthlyBill-tv-amount" type="number" min="0" step="0.01" inputmode="decimal" placeholder="Not entered" aria-describedby="monthlyBill-tv-status monthlyBillsHelp">
+                </div>
+                <div class="field">
+                  <label for="monthlyBill-tv-notes">TV note</label>
+                  <textarea id="monthlyBill-tv-notes" rows="1" maxlength="250" placeholder="Optional"></textarea>
+                </div>
+              </div>
+              <div class="monthly-bill-row">
+                <div class="monthly-bill-name">
+                  <h3>Other</h3>
+                  <span id="monthlyBill-other-status" class="monthly-bill-state">Not loaded</span>
+                </div>
+                <div class="field">
+                  <label for="monthlyBill-other-amount">Other amount (MVR)</label>
+                  <input id="monthlyBill-other-amount" type="number" min="0" step="0.01" inputmode="decimal" placeholder="Not entered" aria-describedby="monthlyBill-other-status monthlyBillsHelp">
+                </div>
+                <div class="field">
+                  <label for="monthlyBill-other-notes">Other note</label>
+                  <textarea id="monthlyBill-other-notes" rows="1" maxlength="250" placeholder="Optional"></textarea>
+                </div>
+              </div>
+            </fieldset>
+            <div class="monthly-bills-summary" aria-live="polite" aria-atomic="true">
+              <div><span>Full bills total after saving · excludes rent</span><strong id="monthlyBillsTotal">MVR —</strong></div>
+              <p id="monthlyBillsCount">Bills not loaded</p>
+            </div>
+            <div class="monthly-bills-actions">
+              <button class="primary-button" id="billButton" type="submit" disabled>
+                <span class="spinner" aria-hidden="true"></span>
+                <span class="button-label">Save monthly bills</span>
+              </button>
+              <button class="history-button" id="reloadMonthlyBills" type="button">Reload saved bills</button>
+            </div>
+          </form>
+        </section>
+
         <div class="action-grid">
 
         <!-- ADD PAYMENT -->
@@ -1335,116 +1470,6 @@
             </button>
 
             </fieldset>
-          </form>
-        </section>
-
-        <!-- UPDATE BILL -->
-        <section
-          class="card action-card"
-          aria-labelledby="billTitle"
-        >
-          <div class="card-heading">
-            <div
-              class="card-icon"
-              aria-hidden="true"
-            >
-              ↻
-            </div>
-
-            <div>
-              <h2 id="billTitle">
-                Update bill
-              </h2>
-
-              <p>
-                Add or replace a bill amount for a month.
-              </p>
-            </div>
-          </div>
-
-          <form id="billForm">
-
-            <div class="form-row">
-
-              <div class="field">
-                <label for="billType">
-                  Bill type
-                </label>
-
-                <select id="billType">
-                  <option value="Water">Water</option>
-                  <option value="Electricity">Electricity</option>
-                  <option value="WiFi">WiFi</option>
-                  <option value="TV">TV</option>
-                  <option value="Other">Other</option>
-                </select>
-              </div>
-
-              <div class="field">
-                <label for="billMonth">
-                  Billing month
-                </label>
-
-                <select id="billMonth"></select>
-              </div>
-
-            </div>
-
-            <div class="form-row">
-
-              <div class="field">
-                <label for="billYear">
-                  Year
-                </label>
-
-                <select id="billYear"></select>
-              </div>
-
-              <div class="field">
-                <label for="billAmount">
-                  Full bill amount (MVR)
-                </label>
-
-                <input
-                  type="number"
-                  id="billAmount"
-                  min="0"
-                  step="0.01"
-                  inputmode="decimal"
-                  placeholder="0.00"
-                  required
-                >
-              </div>
-
-            </div>
-
-            <div class="field">
-              <label for="billNotes">
-                Notes
-              </label>
-
-              <textarea
-                id="billNotes"
-                maxlength="250"
-                placeholder="Optional bill note"
-              ></textarea>
-            </div>
-
-            <button
-              class="primary-button"
-              id="billButton"
-              type="submit"
-            >
-              <span
-                class="spinner"
-                aria-hidden="true"
-              ></span>
-
-              <span class="button-label">
-                Save bill
-              </span>
-            </button>
-
           </form>
         </section>
 
@@ -2043,6 +2068,7 @@
     ) {
       resetPaymentHistoryState();
       resetHouseholdQuick();
+      resetMonthlyBills();
       document.getElementById(
         "loginBox"
       ).hidden =
@@ -2088,7 +2114,7 @@
       await Promise.all([
         loadOverview(),
         loadRentRates(),
-        loadSelectedBill(),
+        loadMonthlyBills(),
         loadSelectedRentRate(),
         loadPaymentHistory(1),
         loadHouseholdBalance()
@@ -2400,177 +2426,6 @@
           syncHouseholdQuickButtons();
           if (saved) await loadHouseholdBalance();
         }
-      }
-    }
-
-
-    async function loadSelectedBill() {
-      if (!currentUser) {
-        return;
-      }
-
-      const billType =
-        document.getElementById(
-          "billType"
-        ).value;
-
-      const selectedMonth =
-        billingDate(
-          document.getElementById(
-            "billMonth"
-          ).value,
-          document.getElementById(
-            "billYear"
-          ).value
-        );
-
-      const {
-        data,
-        error
-      } =
-        await supabaseClient
-          .from("dhaftar_bills")
-          .select(
-            "amount, notes"
-          )
-          .eq(
-            "bill_type",
-            billType
-          )
-          .eq(
-            "billing_month",
-            selectedMonth
-          )
-          .maybeSingle();
-
-      if (error) {
-        console.error(
-          "Load bill error:",
-          error
-        );
-
-        return;
-      }
-
-      document.getElementById(
-        "billAmount"
-      ).value =
-        data?.amount ?? "";
-
-      document.getElementById(
-        "billNotes"
-      ).value =
-        data?.notes ?? "";
-    }
-
-
-    async function submitBill() {
-      const amountInput =
-        document.getElementById(
-          "billAmount"
-        );
-
-      const amount =
-        Number(
-          amountInput.value
-        );
-
-      if (
-        !Number.isFinite(amount) ||
-        amount < 0
-      ) {
-        showMessage(
-          "Enter a valid bill amount.",
-          true
-        );
-
-        amountInput.focus();
-        return;
-      }
-
-      const button =
-        document.getElementById(
-          "billButton"
-        );
-
-      setButtonLoading(
-        button,
-        true,
-        "Saving…"
-      );
-
-      showMessage("");
-
-      try {
-        const selectedMonth =
-          billingDate(
-            document.getElementById(
-              "billMonth"
-            ).value,
-            document.getElementById(
-              "billYear"
-            ).value
-          );
-
-        const {
-          error
-        } =
-          await supabaseClient
-            .from(
-              "dhaftar_bills"
-            )
-            .upsert(
-              {
-                bill_type:
-                  document.getElementById(
-                    "billType"
-                  ).value,
-
-                billing_month:
-                  selectedMonth,
-
-                amount,
-
-                notes:
-                  document.getElementById(
-                    "billNotes"
-                  ).value.trim(),
-
-                created_by:
-                  currentUser.id,
-
-                updated_by:
-                  currentUser.id
-              },
-              {
-                onConflict:
-                  "bill_type,billing_month"
-              }
-            );
-
-        if (error) {
-          throw error;
-        }
-
-        showMessage(
-          "Bill saved successfully."
-        );
-
-        await loadOverview();
-
-      } catch (error) {
-        showMessage(
-          error.message ||
-          "Bill could not be saved.",
-          true
-        );
-
-      } finally {
-        setButtonLoading(
-          button,
-          false,
-          "Saving…"
-        );
       }
     }
 
@@ -3058,7 +2913,7 @@
         "submit",
         (event) => {
           event.preventDefault();
-          submitBill();
+          submitMonthlyBills();
         }
       );
 
@@ -3087,7 +2942,6 @@
 
 
     [
-      "billType",
       "billMonth",
       "billYear"
     ].forEach((id) => {
@@ -3095,7 +2949,7 @@
         .getElementById(id)
         .addEventListener(
           "change",
-          loadSelectedBill
+          changeMonthlyBillPeriod
         );
     });
 
@@ -3117,6 +2971,7 @@
       "load",
       async () => {
         loadSelectors();
+        initializeMonthlyBillPeriod();
 
         try {
           const isAdmin =
@@ -3704,6 +3559,345 @@
         }
       });
     }
+  </script>
+  <script>
+    // STEP 4: one bulk upsert for edited monthly bills; rent keeps its effective-date rules.
+    const MONTHLY_BILL_TYPES = [
+      { type: "Water", key: "water" }, { type: "Electricity", key: "electricity" },
+      { type: "WiFi", key: "wifi" }, { type: "TV", key: "tv" }, { type: "Other", key: "other" }
+    ];
+    const monthlyBillState = {
+      request: 0, epoch: 0, loading: false, saving: false, loadedMonth: null,
+      baseline: new Map(), conflicts: new Set()
+    };
+
+    function monthlyBillField(key, part) {
+      return paymentElement("monthlyBill-" + key + "-" + part);
+    }
+
+    function monthlyBillMonth() {
+      return billingDate(paymentElement("billMonth").value, paymentElement("billYear").value);
+    }
+
+    function selectMonthlyBillPeriod(month) {
+      paymentElement("billMonth").value = MONTHS[Number(month.slice(5, 7)) - 1];
+      paymentElement("billYear").value = month.slice(0, 4);
+    }
+
+    function initializeMonthlyBillPeriod() {
+      selectMonthlyBillPeriod(quickToday());
+    }
+
+    function monthlyBillStatus(message, isError = false) {
+      const element = paymentElement("monthlyBillsStatus");
+      element.textContent = message;
+      element.classList.toggle("is-error", isError);
+    }
+
+    function monthlyBillCents(value) {
+      if (value === null || value === undefined || String(value).trim() === "") return null;
+      const text = String(value).trim();
+      const cents = quickMoneyCents(value);
+      if (!/^(?:\d+(?:\.\d*)?|\.\d+)$/.test(text) || cents === null || cents < 0 || Math.abs(Number(value) * 100 - cents) > 0.000001) {
+        throw new Error("Enter an amount of 0 or more with at most two decimal places.");
+      }
+      return cents;
+    }
+
+    function sameMonthlyBill(left, right) {
+      if (!left || !right) return !left && !right;
+      return left.cents === right.cents && left.notes === right.notes;
+    }
+
+    function normalizeMonthlyBills(rows, month) {
+      if (!Array.isArray(rows)) throw new Error("Saved bill amounts could not be read.");
+      const result = new Map();
+      for (const row of rows) {
+        if (!MONTHLY_BILL_TYPES.some(item => item.type === row.bill_type)) continue;
+        if (row.billing_month !== month || result.has(row.bill_type)) {
+          throw new Error("The saved bills contain an unexpected or duplicate entry. Review the records before editing this month.");
+        }
+        const cents = monthlyBillCents(row.amount);
+        if (cents === null) throw new Error(row.bill_type + " has no valid saved amount. Review that record first.");
+        result.set(row.bill_type, {
+          type: row.bill_type, cents, notes: String(row.notes ?? "").trim(), created_by: row.created_by
+        });
+      }
+      return result;
+    }
+
+    async function readMonthlyBills(month) {
+      const { data, error } = await supabaseClient.from("dhaftar_bills")
+        .select("bill_type,billing_month,amount,notes,created_by")
+        .eq("billing_month", month);
+      if (error) throw new Error("Could not load this month's saved bills. Try Reload saved bills.");
+      return normalizeMonthlyBills(data, month);
+    }
+
+    function monthlyBillHasEdits() {
+      if (!monthlyBillState.loadedMonth) return false;
+      return MONTHLY_BILL_TYPES.some(item => {
+        const input = monthlyBillField(item.key, "amount");
+        if (input.validity?.badInput) return true;
+        let cents;
+        try { cents = monthlyBillCents(input.value); } catch (_) { return true; }
+        const saved = monthlyBillState.baseline.get(item.type);
+        return cents !== (saved?.cents ?? null) || monthlyBillField(item.key, "notes").value.trim() !== (saved?.notes ?? "");
+      });
+    }
+
+    function collectMonthlyBillChanges() {
+      const changes = [];
+      for (const item of MONTHLY_BILL_TYPES) {
+        const input = monthlyBillField(item.key, "amount");
+        const saved = monthlyBillState.baseline.get(item.type);
+        let cents;
+        try {
+          if (input.validity?.badInput) throw new Error("Enter a valid amount.");
+          cents = monthlyBillCents(input.value);
+        } catch (error) {
+          error.message = item.type + ": " + error.message;
+          error.fieldId = input.id;
+          throw error;
+        }
+        const notes = monthlyBillField(item.key, "notes").value.trim();
+        if (cents === null) {
+          if (notes !== (saved?.notes ?? "")) {
+            const error = new Error(item.type + ": enter an amount to save the changed note. Blank amounts are skipped.");
+            error.fieldId = input.id;
+            throw error;
+          }
+          continue;
+        }
+        if (notes.length > 250) {
+          const error = new Error(item.type + ": keep the note within 250 characters.");
+          error.fieldId = monthlyBillField(item.key, "notes").id;
+          throw error;
+        }
+        const change = { type: item.type, key: item.key, cents, notes };
+        if (!sameMonthlyBill(change, saved)) changes.push(change);
+      }
+      return changes;
+    }
+
+    function fillMonthlyBillFields(keepTypes = new Set()) {
+      for (const item of MONTHLY_BILL_TYPES) {
+        if (keepTypes.has(item.type)) continue;
+        const saved = monthlyBillState.baseline.get(item.type);
+        monthlyBillField(item.key, "amount").value = saved ? (saved.cents / 100).toFixed(2) : "";
+        monthlyBillField(item.key, "notes").value = saved?.notes ?? "";
+      }
+    }
+
+    function syncMonthlyBillControls() {
+      const state = monthlyBillState;
+      const ready = Boolean(state.loadedMonth) && state.loadedMonth === monthlyBillMonth();
+      paymentElement("billPeriodFields").disabled = state.saving;
+      paymentElement("billRowsFields").disabled = !currentUser || state.loading || state.saving || !ready;
+      paymentElement("reloadMonthlyBills").disabled = !currentUser || state.loading || state.saving;
+      paymentElement("billButton").disabled = !currentUser || state.loading || state.saving || !ready || !monthlyBillHasEdits();
+    }
+
+    function renderMonthlyBillSummary() {
+      const state = monthlyBillState;
+      if (!state.loadedMonth) {
+        for (const item of MONTHLY_BILL_TYPES) {
+          const label = monthlyBillField(item.key, "status");
+          label.textContent = state.loading ? "Loading…" : "Not loaded";
+          label.classList.remove("is-edited", "is-error");
+        }
+        paymentElement("monthlyBillsTotal").textContent = "MVR —";
+        paymentElement("monthlyBillsCount").textContent = "Bills not loaded";
+        syncMonthlyBillControls();
+        return;
+      }
+      let total = 0, count = 0, changed = 0, invalid = false;
+      for (const item of MONTHLY_BILL_TYPES) {
+        const saved = state.baseline.get(item.type);
+        const input = monthlyBillField(item.key, "amount");
+        const label = monthlyBillField(item.key, "status");
+        const notes = monthlyBillField(item.key, "notes").value.trim();
+        let rowInvalid = false, edited = false;
+        try {
+          if (input.validity?.badInput) throw new Error("Enter a valid amount.");
+          const cents = monthlyBillCents(input.value);
+          if (cents === null) {
+            if (notes !== (saved?.notes ?? "")) throw new Error("Enter an amount to save this note.");
+            label.textContent = saved ? "Skipped · keeping " + formatMVR(saved.cents / 100) : "Not entered";
+          } else {
+            edited = !sameMonthlyBill({ cents, notes }, saved);
+            label.textContent = edited ? (saved ? "Edited" : "New bill") : (cents === 0 ? "Saved · no charge" : "Saved");
+            if (edited) changed++;
+          }
+          const afterSaving = cents ?? saved?.cents;
+          if (afterSaving !== undefined) { total += afterSaving; count++; }
+          if (state.conflicts.has(item.type) && edited) {
+            label.textContent = saved ? "Review · now saved " + formatMVR(saved.cents / 100) : "Review · saved bill was removed";
+          }
+        } catch (error) {
+          invalid = rowInvalid = true;
+          label.textContent = error.message;
+        }
+        label.classList.toggle("is-edited", edited);
+        label.classList.toggle("is-error", rowInvalid || (edited && state.conflicts.has(item.type)));
+      }
+      paymentElement("monthlyBillsTotal").textContent = invalid || !Number.isSafeInteger(total) ? "MVR —" : formatMVR(total / 100);
+      paymentElement("monthlyBillsCount").textContent = count + " of 5 bills after saving · " + changed + (changed === 1 ? " change" : " changes") + (invalid ? " · Check amounts and notes" : "");
+      syncMonthlyBillControls();
+    }
+
+    function resetMonthlyBills() {
+      const state = monthlyBillState;
+      state.request++;
+      state.epoch++;
+      state.loading = false;
+      state.saving = false;
+      state.loadedMonth = null;
+      state.baseline = new Map();
+      state.conflicts.clear();
+      fillMonthlyBillFields();
+      setButtonLoading(paymentElement("billButton"), false, "Saving…");
+      monthlyBillStatus("Choose a month to load its bills.");
+      renderMonthlyBillSummary();
+    }
+
+    async function loadMonthlyBills() {
+      const state = monthlyBillState;
+      if (!currentUser || state.saving) return;
+      const month = monthlyBillMonth();
+      const request = ++state.request;
+      const userId = currentUser.id;
+      state.loading = true;
+      state.loadedMonth = null;
+      state.baseline = new Map();
+      state.conflicts.clear();
+      fillMonthlyBillFields();
+      monthlyBillStatus("Loading bills for " + displayMonth(month) + "…");
+      renderMonthlyBillSummary();
+      try {
+        const records = await readMonthlyBills(month);
+        if (request !== state.request || currentUser?.id !== userId || monthlyBillMonth() !== month) return;
+        state.baseline = records;
+        state.loadedMonth = month;
+        fillMonthlyBillFields();
+        monthlyBillStatus(displayMonth(month) + " loaded. Edit the bills you have received, then save once.");
+      } catch (error) {
+        if (request === state.request && currentUser?.id === userId) monthlyBillStatus(error.message, true);
+      } finally {
+        if (request === state.request) {
+          state.loading = false;
+          renderMonthlyBillSummary();
+        }
+      }
+    }
+
+    async function changeMonthlyBillPeriod() {
+      const state = monthlyBillState;
+      if (state.saving) {
+        if (state.loadedMonth) selectMonthlyBillPeriod(state.loadedMonth);
+        return;
+      }
+      if (monthlyBillHasEdits() && !window.confirm("Discard unsaved bill entries for " + displayMonth(state.loadedMonth) + " and change month?")) {
+        selectMonthlyBillPeriod(state.loadedMonth);
+        return;
+      }
+      await loadMonthlyBills();
+    }
+
+    async function reloadMonthlyBills() {
+      if (monthlyBillState.saving || monthlyBillState.loading) return;
+      if (monthlyBillHasEdits() && !window.confirm("Discard unsaved bill entries and reload the saved amounts?")) return;
+      await loadMonthlyBills();
+    }
+
+    async function submitMonthlyBills() {
+      const state = monthlyBillState;
+      if (!currentUser || state.saving || state.loading) return;
+      const month = monthlyBillMonth();
+      if (state.loadedMonth !== month) {
+        monthlyBillStatus("Load this month's saved bills before making changes.", true);
+        return;
+      }
+      if (!paymentElement("billForm").reportValidity()) return;
+      let changes;
+      try { changes = collectMonthlyBillChanges(); }
+      catch (error) {
+        monthlyBillStatus(error.message, true);
+        if (error.fieldId) paymentElement(error.fieldId).focus();
+        return;
+      }
+      if (!changes.length) {
+        fillMonthlyBillFields();
+        renderMonthlyBillSummary();
+        monthlyBillStatus("No bills changed. Blank amounts were skipped.");
+        return;
+      }
+      const epoch = state.epoch;
+      const userId = currentUser.id;
+      state.saving = true;
+      state.conflicts.clear();
+      const button = paymentElement("billButton");
+      setButtonLoading(button, true, "Saving…");
+      syncMonthlyBillControls();
+      monthlyBillStatus("Checking the latest saved bills…");
+      let saved = false;
+      try {
+        // This fresh comparison catches changes since loading, but is not a server-side row lock.
+        const fresh = await readMonthlyBills(month);
+        if (epoch !== state.epoch || currentUser?.id !== userId) return;
+        const writes = changes.filter(change => !sameMonthlyBill(change, fresh.get(change.type)));
+        const conflicts = writes.filter(change => !sameMonthlyBill(state.baseline.get(change.type), fresh.get(change.type)));
+        state.baseline = fresh;
+        fillMonthlyBillFields(new Set(changes.map(change => change.type)));
+        if (conflicts.length) {
+          state.conflicts = new Set(conflicts.map(change => change.type));
+          monthlyBillStatus("Saved bills changed: " + conflicts.map(change => change.type).join(", ") + ". Your entries are kept. Review them, then choose Save monthly bills again to apply them.", true);
+          return;
+        }
+        if (!writes.length) {
+          fillMonthlyBillFields();
+          monthlyBillStatus("These bill amounts and notes are already saved.");
+          return;
+        }
+        const payload = writes.map(change => ({
+          bill_type: change.type, billing_month: month, amount: change.cents / 100, notes: change.notes,
+          created_by: fresh.get(change.type)?.created_by ?? userId, updated_by: userId
+        }));
+        monthlyBillStatus("Saving " + writes.length + (writes.length === 1 ? " bill…" : " bills…"));
+        const { data, error } = await supabaseClient.from("dhaftar_bills")
+          .upsert(payload, { onConflict: "bill_type,billing_month" })
+          .select("bill_type,billing_month,amount,notes,created_by");
+        if (error) throw error;
+        saved = true;
+        if (epoch !== state.epoch || currentUser?.id !== userId) return;
+        const returned = normalizeMonthlyBills(data, month);
+        if (returned.size !== writes.length || writes.some(change => !sameMonthlyBill(change, returned.get(change.type)))) {
+          throw new Error("The returned bill amounts did not match the entries.");
+        }
+        for (const [type, record] of returned) state.baseline.set(type, record);
+        fillMonthlyBillFields();
+        monthlyBillStatus(writes.length + (writes.length === 1 ? " bill saved" : " bills saved") + " for " + displayMonth(month) + ".");
+        // These refreshes are separate from the completed save.
+        await Promise.allSettled([loadHouseholdBalance(), loadOverview()]);
+      } catch (error) {
+        if (epoch !== state.epoch || currentUser?.id !== userId) return;
+        if (saved) {
+          state.loadedMonth = null;
+          monthlyBillStatus("The save completed, but the returned amounts could not be verified. Reload saved bills to review them before editing again.", true);
+        } else {
+          monthlyBillStatus("Could not confirm the save. Your entries are kept. " + (error.message || "Try saving again; the latest amounts will be checked first."), true);
+        }
+      } finally {
+        if (epoch === state.epoch) {
+          state.saving = false;
+          setButtonLoading(button, false, "Saving…");
+          renderMonthlyBillSummary();
+        }
+      }
+    }
+
+    paymentElement("reloadMonthlyBills").addEventListener("click", reloadMonthlyBills);
+    paymentElement("billRowsFields").addEventListener("input", renderMonthlyBillSummary);
   </script>
 </body>
 </html>

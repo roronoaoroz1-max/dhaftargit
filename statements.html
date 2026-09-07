@@ -98,11 +98,12 @@
         <fieldset id="statementFields">
           <div class="filters">
             <div><label for="statementPerson">Amanah person</label><select id="statementPerson"><option value="">Household payments only</option></select></div>
-            <div><label for="statementPayer">Household payer</label><select id="statementPayer"><option value="">Do not include household payments</option><option>Dhaftar</option><option>Dad</option><option>Inaad</option><option>Yush</option><option>Imaad</option></select></div>
+            <div><label for="statementPayer">Household payer</label><select id="statementPayer"><option value="">Do not include household payments</option><option>Imaad</option><option>Dad</option><option>Inaad</option><option>Yush</option></select></div>
             <div><label for="statementFrom">Payment dates from</label><input id="statementFrom" type="date" required></div>
             <div><label for="statementTo">Payment dates to</label><input id="statementTo" type="date" required></div>
           </div>
           <p id="personMatchHelp" class="note filter-note">Choose the matching household payer if their name differs from their Amanah name.</p>
+          <p class="note">Dhaftar is the household name. Its payments belong to Imaad, including earlier entries labelled Dhaftar.</p>
           <p class="note">Dates filter household payments and loan repayments. Loan balances show the current position when the statement is generated.</p>
           <div class="actions"><button id="generateStatement" class="primary" type="submit">Generate statement</button><button id="reloadStatementPeople" type="button">Reload people</button></div>
         </fieldset>
@@ -122,8 +123,79 @@
   <script src="supabase-client.js"></script>
   <script>
     "use strict";
+    // Dhaftar is the household code; Imaad is the person. Keep stored codes
+    // compatible with the existing summary RPC and payer column constraints.
+    function householdPersonName(name) {
+      return name === "Dhaftar" || name === "Imaad" ? "Imaad" : name;
+    }
+
+    function householdPayerNames(names) {
+      return [...new Set(names.filter(name => typeof name === "string" && name.trim()).map(householdPersonName))];
+    }
+
+    function householdPaymentCode(name, existing = null) {
+      if (name !== "Imaad") return name;
+      return existing === "Dhaftar" || existing === "Imaad" ? existing : "Dhaftar";
+    }
+
+    function householdHistoryCents(value) {
+      if (!["string", "number"].includes(typeof value) || String(value).trim() === "") throw new Error("A household payment amount is missing.");
+      const amount = Number(value), cents = Math.round(amount * 100);
+      if (!Number.isFinite(amount) || !Number.isSafeInteger(cents) || Math.abs(amount * 100 - cents) > 0.00001) throw new Error("A household payment amount is invalid.");
+      return cents;
+    }
+
+    // Read every matching entry for both stored names, then merge by payment ID.
+    // This works with the existing Step 2 RPC without changing saved records.
+    async function readHouseholdPersonHistory(filters, check = () => {}) {
+      const payer = householdPersonName(filters.p_payer_name);
+      const codes = payer === "Imaad" ? ["Dhaftar", "Imaad"] : [payer];
+      const rows = [], seen = new Set(), payers = [];
+      let combinedCents = 0;
+      const add = (left, right) => {
+        const result = left + right;
+        if (!Number.isSafeInteger(result)) throw new Error("The household payment total is too large.");
+        return result;
+      };
+      for (const code of codes) {
+        let expected = null, total = null, loaded = 0, loadedCents = 0;
+        for (let page = 1; ; page++) {
+          check();
+          const { data, error } = await supabaseClient.rpc("dhaftar_payment_history_v1", {
+            ...filters, p_payer_name: code, p_page: page, p_page_size: 50
+          });
+          check();
+          if (error) throw error;
+          if (!data || !Array.isArray(data.rows) || !Number.isSafeInteger(data.total_count) || data.total_count < 0 || data.page !== page) throw new Error("Household payment history returned an incomplete response.");
+          if (expected === null) {
+            expected = data.total_count;
+            total = householdHistoryCents(data.total_amount);
+            if (rows.length + expected > 10000) throw new Error("There are too many household payments. Choose a shorter period.");
+            if (Array.isArray(data.payers)) payers.push(...data.payers);
+          }
+          if (data.total_count !== expected || householdHistoryCents(data.total_amount) !== total || data.page_count !== Math.max(1, Math.ceil(expected / 50))) throw new Error("Household payments changed while loading. Refresh and try again.");
+          if (data.rows.length !== Math.min(50, expected - loaded)) throw new Error("Some household payments could not be loaded.");
+          for (const row of data.rows) {
+            const id = String(row.id ?? ""), cents = householdHistoryCents(row.amount);
+            if (!id || seen.has(id) || row.payer_name !== code || cents <= 0) throw new Error("A household payment does not match the selected person.");
+            if ((filters.p_date_from && row.payment_date < filters.p_date_from) || (filters.p_date_to && row.payment_date > filters.p_date_to) || (filters.p_billing_month && row.billing_month !== filters.p_billing_month) || (filters.p_amount != null && cents !== householdHistoryCents(filters.p_amount))) throw new Error("A household payment does not match the selected filters.");
+            seen.add(id);
+            rows.push({ ...row, id });
+            loaded++;
+            loadedCents = add(loadedCents, cents);
+          }
+          if (loaded === expected) break;
+        }
+        if (loadedCents !== total) throw new Error("Household payments changed while loading. Refresh and try again.");
+        combinedCents = add(combinedCents, total);
+      }
+      check();
+      rows.sort((a, b) => String(b.payment_date).localeCompare(String(a.payment_date)) || b.id.localeCompare(a.id));
+      return { rows, total_count: rows.length, total_amount: combinedCents / 100, payers: householdPayerNames(payers) };
+    }
+
     const STATEMENT_LIMIT = 10000;
-    const statementState = { user: null, people: [], payers: ["Dhaftar", "Dad", "Inaad", "Yush", "Imaad"], request: 0, directoryRequest: 0, loading: false, report: null, accessRequest: 0, pendingUserId: null };
+    const statementState = { user: null, people: [], payers: ["Imaad", "Dad", "Inaad", "Yush"], request: 0, directoryRequest: 0, loading: false, report: null, accessRequest: 0, pendingUserId: null };
     const st = id => document.getElementById(id);
 
     function statementText(tag, text, className = "") {
@@ -221,31 +293,21 @@
     }
 
     async function readHouseholdStatement(filters, check) {
-      const rows = [], seen = new Set();
-      let expected = null, total = null;
-      for (let page = 1; ; page++) {
-        check();
-        const { data, error } = await supabaseClient.rpc("dhaftar_payment_history_v1", {
-          p_payer_name: filters.payer, p_billing_month: null, p_date_from: filters.from, p_date_to: filters.to,
-          p_amount: null, p_page: page, p_page_size: 50
-        });
-        check();
-        if (error) throw new Error("Household payment history could not load. Check that the Step 2 payment-history setup is installed, then try again.");
-        if (!data || !Array.isArray(data.rows) || !Number.isSafeInteger(data.total_count) || data.total_count < 0 || data.page !== page) throw new Error("Household payment history returned an incomplete response.");
-        if (expected === null) { expected = data.total_count; total = statementCents(data.total_amount); }
-        if (expected > STATEMENT_LIMIT) throw new Error("There are too many household payments. Choose a shorter period.");
-        if (data.total_count !== expected || statementCents(data.total_amount) !== total || data.page_count !== Math.max(1, Math.ceil(expected / 50))) throw new Error("Household payments changed while loading. Generate the statement again.");
-        if (data.rows.length !== Math.min(50, expected - rows.length)) throw new Error("Some household payments could not be loaded.");
-        for (const row of data.rows) {
-          const date = statementDate(row.payment_date), id = String(row.id ?? "");
-          const cents = statementCents(row.amount);
-          if (!id || seen.has(id) || row.payer_name !== filters.payer || date < filters.from || date > filters.to || cents <= 0) throw new Error("A household payment does not match the selected statement.");
-          seen.add(id);
-          rows.push({ ...row, id, payment_date: date, billing_month: statementDate(row.billing_month), cents });
-        }
-        if (rows.length === expected) break;
+      let data;
+      try {
+        data = await readHouseholdPersonHistory({
+          p_payer_name: filters.payer, p_billing_month: null,
+          p_date_from: filters.from, p_date_to: filters.to, p_amount: null
+        }, check);
+      } catch (error) {
+        if (error?.code === "PGRST202" || error?.code === "42883") throw new Error("Household payment history could not load. Check that the Step 2 payment-history setup is installed, then try again.");
+        throw error;
       }
-      if (rows.reduce((sum, row) => addStatementCents(sum, row.cents), 0) !== total) throw new Error("Household payments changed while loading. Generate the statement again.");
+      const rows = data.rows.map(row => {
+        const date = statementDate(row.payment_date), cents = statementCents(row.amount);
+        if (householdPersonName(row.payer_name) !== filters.payer || date < filters.from || date > filters.to || cents <= 0) throw new Error("A household payment does not match the selected statement.");
+        return { ...row, payment_date: date, billing_month: statementDate(row.billing_month), cents };
+      });
       return rows.sort((a, b) => a.payment_date.localeCompare(b.payment_date) || a.id.localeCompare(b.id));
     }
 
@@ -354,7 +416,7 @@
       st("reportPeriod").textContent = "Payment dates: " + statementDisplayDate(f.from) + " – " + statementDisplayDate(f.to) + " (inclusive)";
       st("reportIdentity").textContent = "Amanah person: " + (f.person ? f.person.name + " · " + f.person.id : "not included") + " | Household payer: " + (f.payer || "not included");
       st("reportGenerated").textContent = "Generated " + new Date(report.generatedAt).toLocaleString("en-GB", { timeZone: "Indian/Maldives" }) + " · Maldives time (UTC+5). Based on currently recorded entries.";
-      st("householdScope").textContent = f.payer ? "Payments recorded under " + f.payer + ". Payment dates determine inclusion; the billing month is shown for reference." : "Household payments were not included in this statement.";
+      st("householdScope").textContent = f.payer ? (f.payer === "Imaad" ? "Imaad’s household payments, including entries labelled Dhaftar." : "Payments recorded under " + f.payer + ".") + " Payment dates determine inclusion; the billing month is shown for reference." : "Household payments were not included in this statement.";
       if (f.payer) {
         statementMetric("householdMetrics", "Household payments in period", statementMoney(report.householdTotal));
         statementMetric("householdMetrics", "Payments recorded", String(report.household.length));
@@ -460,7 +522,7 @@
         ["Scope", "Payment dates are inclusive. Loan balances are current at generation time, not period-end balances. Household debt is not calculated. Currencies are not converted."], [],
         ["HOUSEHOLD PAYMENTS IN PERIOD"], ["Included", Boolean(f.payer) ? "Yes" : "No"], ["Payment ID", "Payment date", "Billing month", "Payer", "Currency", "Amount", "Note", "Corrections"]
       ];
-      for (const p of report.household) rows.push([p.id, p.payment_date, p.billing_month, p.payer_name, "MVR", p.cents / 100, p.note, p.correction_count || 0]);
+      for (const p of report.household) rows.push([p.id, p.payment_date, p.billing_month, householdPersonName(p.payer_name), "MVR", p.cents / 100, p.note, p.correction_count || 0]);
       if (f.payer) rows.push(["Household total", "MVR", report.householdTotal / 100]);
       rows.push([], ["CURRENT LOAN POSITION"], ["Included", f.person ? "Yes" : "No"], ["Currency", "Outstanding borrowed", "Outstanding lent", "Repayments made in period", "Repayments received in period"]);
       for (const c of report.currencies) rows.push([c.currency, c.borrowed / 100, c.lent / 100, c.paid / 100, c.received / 100]);
@@ -528,7 +590,7 @@
       }
       const history = results[1].status === "fulfilled" ? results[1].value : null;
       if (history && !history.error && Array.isArray(history.data?.payers)) {
-        statementState.payers = [...new Set([...statementState.payers, ...history.data.payers.filter(name => typeof name === "string" && name.trim())])];
+        statementState.payers = householdPayerNames([...statementState.payers, ...history.data.payers]);
       } else {
         warnings.push("The saved payer list could not load. The usual household payer names are available.");
       }
@@ -555,7 +617,7 @@
       statementState.directoryRequest++;
       clearStatement();
       statementState.people = [];
-      statementState.payers = ["Dhaftar", "Dad", "Inaad", "Yush", "Imaad"];
+      statementState.payers = ["Imaad", "Dad", "Inaad", "Yush"];
       st("statementPerson").replaceChildren(new Option("Household payments only", ""));
       st("statementPayer").replaceChildren(new Option("Do not include household payments", ""));
       st("statementControls").hidden = true;
@@ -579,7 +641,7 @@
       const today = statementToday();
       st("statementFrom").value = today.slice(0, 7) + "-01";
       st("statementTo").value = today;
-      st("statementPayer").value = "Dhaftar";
+      st("statementPayer").value = "Imaad";
       try {
         if (typeof supabaseClient === "undefined") throw new Error("The Dhaftar connection could not load. Check supabase-client.js and refresh.");
         supabaseClient.auth.onAuthStateChange((event, session) => {

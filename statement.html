@@ -1,0 +1,634 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#0f766e">
+  <meta name="description" content="Private Dhaftar statements for household payments, loans and repayments.">
+  <title>Individual statements · Dhaftar</title>
+  <link rel="icon" href="assets/app-icon.png">
+  <style>
+    :root { color-scheme: light; --ink:#16302d; --muted:#647773; --brand:#0f766e; --soft:#e7f7f3; --surface:#fff; --canvas:#f3f7f5; --line:#dfe9e5; --danger:#b42318; }
+    :root[data-theme="dark"] { color-scheme: dark; --ink:#e8f3ef; --muted:#9eb5ae; --brand:#4dd4c4; --soft:#133d38; --surface:#142320; --canvas:#0b1513; --line:#29413c; --danger:#ff8f87; }
+    * { box-sizing:border-box; }
+    [hidden] { display:none !important; }
+    body { margin:0; background:var(--canvas); color:var(--ink); font:16px/1.5 system-ui,-apple-system,"Segoe UI",sans-serif; }
+    main { width:min(1180px,100% - 36px); margin:28px auto 60px; }
+    header, .heading, .actions { display:flex; justify-content:space-between; align-items:center; gap:16px; flex-wrap:wrap; }
+    .brand { display:flex; align-items:center; gap:12px; color:var(--brand); font-weight:850; text-decoration:none; letter-spacing:0.06em; }
+    .brand img { width:42px; height:42px; object-fit:contain; }
+    h1 { font-size:clamp(1.8rem,4vw,2.6rem); line-height:1.2; margin:0 0 10px; }
+    h2 { margin:0 0 12px; font-size:1.2rem; }
+    h3 { margin:0 0 12px; font-size:1rem; }
+    p { margin:0 0 12px; }
+    .intro, .note, .meta { color:var(--muted); }
+    .eyebrow { color:var(--brand); font-size:0.78rem; font-weight:800; letter-spacing:0.06em; text-transform:uppercase; }
+    .page-heading { margin:30px 0 22px; }
+    nav { display:flex; gap:8px; flex-wrap:wrap; margin:24px 0; }
+    button, .button, nav a { min-height:44px; padding:10px 16px; border:1px solid var(--line); border-radius:12px; font:inherit; font-size:0.9rem; font-weight:750; color:var(--brand); background:var(--surface); cursor:pointer; text-decoration:none; display:inline-flex; align-items:center; justify-content:center; }
+    button:hover:not(:disabled), .button:hover { border-color:var(--brand); }
+    button:disabled { opacity:.5; cursor:default; }
+    button.primary, nav a[aria-current] { color:white; background:#0f766e; border-color:#0f766e; }
+    :focus-visible { outline:3px solid var(--brand); outline-offset:3px; }
+    .card { background:var(--surface); border:1px solid var(--line); border-radius:20px; padding:clamp(20px,3vw,30px); margin:0 0 22px; }
+    fieldset { border:0; padding:0; margin:0; min-width:0; }
+    .filters { display:grid; grid-template-columns:1fr 1fr 0.75fr 0.75fr; gap:16px; }
+    label { display:block; font-size:0.85rem; font-weight:750; margin:0 0 7px; }
+    select, input { width:100%; min-width:0; min-height:48px; padding:10px 12px; border-radius:10px; border:1px solid var(--line); background:var(--surface); color:var(--ink); font:inherit; }
+    .note { font-size:.85rem; line-height:1.6; }
+    .filter-note { margin-top:14px; }
+    .actions { justify-content:flex-start; margin-top:18px; }
+    .status { min-height:24px; margin:16px 0; color:var(--muted); }
+    .status.error { color:var(--danger); }
+    .report-heading { border-bottom:2px solid var(--brand); padding-bottom:18px; margin-bottom:24px; }
+    .report-heading h2 { font-size:1.65rem; overflow-wrap:anywhere; }
+    .report-section { margin-top:30px; }
+    .metrics { display:grid; grid-template-columns:repeat(auto-fit,minmax(185px,1fr)); gap:12px; margin:16px 0; }
+    .metric { border:1px solid var(--line); background:var(--soft); border-radius:12px; padding:16px; }
+    .metric span { display:block; color:var(--muted); font-size:.8rem; }
+    .metric strong { display:block; margin-top:5px; color:var(--brand); font-size:1.25rem; }
+    .table-wrap { overflow:auto; border:1px solid var(--line); border-radius:12px; margin:14px 0; }
+    table { border-collapse:collapse; width:100%; font-size:.86rem; }
+    th, td { padding:12px; text-align:left; vertical-align:top; border-bottom:1px solid var(--line); }
+    th { color:var(--muted); font-weight:750; background:var(--canvas); }
+    tbody tr:last-child td { border-bottom:0; }
+    .money { font-variant-numeric:tabular-nums; white-space:nowrap; }
+    .long { white-space:pre-wrap; overflow-wrap:anywhere; max-width:300px; min-width:120px; }
+    .empty { padding:18px; color:var(--muted); }
+    .fine { font-size:.78rem; color:var(--muted); }
+    .table-wrap td small { display:block; margin-top:4px; color:var(--muted); overflow-wrap:anywhere; }
+    @media (max-width:760px) { .filters { grid-template-columns:1fr 1fr; } }
+    @media (max-width:440px) { main { width:calc(100% - 24px); margin-top:16px; } .filters { grid-template-columns:1fr; } .actions button { flex:1 1 100%; } }
+    @page { size:A4; margin:14mm; }
+    @media print {
+      :root { color-scheme:light; --ink:#111; --muted:#555; --brand:#155b51; --soft:#fff; --surface:#fff; --canvas:#fff; --line:#ccc; }
+      body { background:white; color:#111; font-size:10pt; }
+      main { width:100%; margin:0; }
+      .no-print { display:none !important; }
+      .card { border:0; border-radius:0; padding:0; margin:0; }
+      .report-heading h2 { font-size:20pt; }
+      .metrics { grid-template-columns:repeat(3,1fr); }
+      .metric { break-inside:avoid; padding:10px; }
+      .metric strong { font-size:12pt; }
+      h2, h3 { break-after:avoid; }
+      .table-wrap { overflow:visible; border:0; }
+      table { font-size:8pt; table-layout:fixed; }
+      th, td { padding:6px; overflow-wrap:anywhere; }
+      .money { white-space:normal; }
+      .long { min-width:0; max-width:none; }
+      thead { display:table-header-group; }
+      tr { break-inside:avoid; }
+      #statementReport[hidden] { display:none !important; }
+    }
+  </style>
+</head>
+<body>
+  <main>
+    <header class="no-print">
+      <a class="brand" href="index.html"><img src="assets/logo.png" alt="">DHAFTAR</a>
+      <div class="actions"><button id="themeButton" type="button" aria-label="Switch theme">Switch theme</button><button id="logoutButton" type="button" hidden>Log out</button></div>
+    </header>
+    <div class="page-heading no-print"><p class="eyebrow">Private administrator</p><h1>Individual statements</h1><p class="intro">Review a person's recorded payments and loans, then print or download their statement.</p></div>
+    <nav class="no-print" aria-label="Administrator sections"><a href="admin.html">Dhaftar</a><a href="amanah.html">Amanah</a><a href="statements.html" aria-current="page">Statements</a></nav>
+    <p id="accessStatus" class="status no-print" role="status">Checking administrator access…</p>
+    <a id="signInLink" class="button no-print" href="admin.html" hidden>Sign in to Dhaftar</a>
+    <section id="statementControls" class="card no-print" aria-labelledby="statementFilterTitle" hidden>
+      <h2 id="statementFilterTitle">Prepare a statement</h2>
+      <form id="statementForm">
+        <fieldset id="statementFields">
+          <div class="filters">
+            <div><label for="statementPerson">Amanah person</label><select id="statementPerson"><option value="">Household payments only</option></select></div>
+            <div><label for="statementPayer">Household payer</label><select id="statementPayer"><option value="">Do not include household payments</option><option>Dhaftar</option><option>Dad</option><option>Inaad</option><option>Yush</option><option>Imaad</option></select></div>
+            <div><label for="statementFrom">Payment dates from</label><input id="statementFrom" type="date" required></div>
+            <div><label for="statementTo">Payment dates to</label><input id="statementTo" type="date" required></div>
+          </div>
+          <p id="personMatchHelp" class="note filter-note">Choose the matching household payer if their name differs from their Amanah name.</p>
+          <p class="note">Dates filter household payments and loan repayments. Loan balances show the current position when the statement is generated.</p>
+          <div class="actions"><button id="generateStatement" class="primary" type="submit">Generate statement</button><button id="reloadStatementPeople" type="button">Reload people</button></div>
+        </fieldset>
+      </form>
+      <p id="statementStatus" class="status" role="status" aria-live="polite">Choose a person or household payer to begin.</p>
+      <div class="actions"><button id="printStatement" type="button" disabled>Print / Save PDF</button><button id="downloadStatement" type="button" disabled>Download CSV</button></div>
+    </section>
+    <article id="statementReport" class="card" aria-labelledby="reportTitle" hidden>
+      <div class="report-heading"><p class="eyebrow">Dhaftar · Individual statement</p><h2 id="reportTitle"></h2><p id="reportPeriod" class="meta"></p><p id="reportIdentity" class="meta"></p><p id="reportGenerated" class="fine"></p></div>
+      <section class="report-section" aria-labelledby="householdTitle"><h2 id="householdTitle">Household payments in the period</h2><p id="householdScope" class="note"></p><div id="householdMetrics" class="metrics"></div><div class="table-wrap"><table><thead><tr><th scope="col">Payment date</th><th scope="col">Billing month</th><th scope="col">Amount</th><th scope="col">Note</th></tr></thead><tbody id="householdRows"></tbody></table></div></section>
+      <section class="report-section" aria-labelledby="loanPositionTitle"><h2 id="loanPositionTitle">Current loan position</h2><p id="loanPositionScope" class="note"></p><div id="loanMetrics" class="metrics"></div><div class="table-wrap"><table><thead><tr><th scope="col">Loan / parties</th><th scope="col">Loan date</th><th scope="col">Principal</th><th scope="col">Repaid to date</th><th scope="col">Remaining</th><th scope="col">Status</th></tr></thead><tbody id="statementLoanRows"></tbody></table></div></section>
+      <section class="report-section" aria-labelledby="repaymentTitle"><h2 id="repaymentTitle">Loan repayments in the period</h2><div id="repaymentMetrics" class="metrics"></div><div class="table-wrap"><table><thead><tr><th scope="col">Payment date</th><th scope="col">From → to / loan</th><th scope="col">Amount</th><th scope="col">Method / note</th></tr></thead><tbody id="statementRepaymentRows"></tbody></table></div></section>
+      <p class="note">Household payments are not a calculation of this person's household debt. Loan balances are current, including repayments outside the selected period. Currencies are shown separately without conversion. Cancelled and paid loans are excluded from outstanding totals; their recorded repayments remain listed. Credit balances appear on individual loan rows.</p>
+    </article>
+  </main>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="supabase-client.js"></script>
+  <script>
+    "use strict";
+    const STATEMENT_LIMIT = 10000;
+    const statementState = { user: null, people: [], payers: ["Dhaftar", "Dad", "Inaad", "Yush", "Imaad"], request: 0, directoryRequest: 0, loading: false, report: null, accessRequest: 0, pendingUserId: null };
+    const st = id => document.getElementById(id);
+
+    function statementText(tag, text, className = "") {
+      const element = document.createElement(tag);
+      element.textContent = text;
+      if (className) element.className = className;
+      return element;
+    }
+
+    function statementStatus(message, error = false) {
+      st("statementStatus").textContent = message;
+      st("statementStatus").classList.toggle("error", error);
+    }
+
+    function statementToday() {
+      const parts = new Intl.DateTimeFormat("en-CA", { timeZone: "Indian/Maldives", year: "numeric", month: "2-digit", day: "2-digit" }).formatToParts(new Date());
+      return ["year", "month", "day"].map(type => parts.find(part => part.type === type).value).join("-");
+    }
+
+    function statementDate(value) {
+      const text = String(value ?? "");
+      if (!/^\d{4}-\d{2}-\d{2}$/.test(text)) throw new Error("Choose valid start and end dates.");
+      const parsed = new Date(text + "T00:00:00Z");
+      if (!Number.isFinite(parsed.getTime()) || parsed.toISOString().slice(0, 10) !== text) throw new Error("A record contains an invalid date.");
+      return text;
+    }
+
+    function statementDisplayDate(value) {
+      return new Date(statementDate(value) + "T00:00:00Z").toLocaleDateString("en-GB", { timeZone: "UTC", day: "2-digit", month: "short", year: "numeric" });
+    }
+
+    function statementCents(value) {
+      if (!["number", "string"].includes(typeof value) || !/^-?\d+(?:\.\d+)?$/.test(String(value).trim())) throw new Error("A record has a missing or invalid amount. Review it before generating a statement.");
+      const amount = Number(value), cents = Math.round(amount * 100);
+      if (!Number.isFinite(amount) || !Number.isSafeInteger(cents) || Math.abs(amount * 100 - cents) > 0.00001) throw new Error("An amount cannot be represented accurately to two decimal places.");
+      return cents;
+    }
+
+    function addStatementCents(left, right) {
+      const result = left + right;
+      if (!Number.isSafeInteger(result)) throw new Error("This statement total is too large to calculate accurately.");
+      return result;
+    }
+
+    function statementMoney(cents, currency = "MVR") {
+      return currency + " " + (cents / 100).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    }
+
+    function statementCurrency(value) {
+      const currency = String(value ?? "").trim().toUpperCase();
+      if (!/^[A-Z]{3}$/.test(currency)) throw new Error("A loan has no valid currency. Review it in Amanah first.");
+      return currency;
+    }
+
+    function statementCancelled() {
+      const error = new Error("Statement selection changed.");
+      error.name = "AbortError";
+      return error;
+    }
+
+    function clearStatement() {
+      statementState.request++;
+      statementState.loading = false;
+      statementState.report = null;
+      st("statementReport").hidden = true;
+      ["reportTitle", "reportPeriod", "reportIdentity", "reportGenerated", "householdScope", "loanPositionScope"].forEach(id => st(id).textContent = "");
+      ["householdRows", "statementLoanRows", "statementRepaymentRows", "householdMetrics", "loanMetrics", "repaymentMetrics"].forEach(id => st(id).replaceChildren());
+      st("printStatement").disabled = true;
+      st("downloadStatement").disabled = true;
+      st("generateStatement").disabled = !statementState.user;
+      st("generateStatement").textContent = "Generate statement";
+    }
+
+    // Advance by the rows actually returned, so a smaller server page limit cannot truncate a report.
+    async function readAllStatementRows(query, idField, check = () => {}) {
+      const rows = [], seen = new Set();
+      let expected = null;
+      while (true) {
+        check();
+        const { data, error, count } = await query(rows.length, rows.length + 199);
+        check();
+        if (error) throw new Error(error.message || "Could not load the statement records.");
+        if (!Array.isArray(data) || !Number.isSafeInteger(count) || count < 0) throw new Error("The record count could not be verified. Try generating again.");
+        if (count > STATEMENT_LIMIT) throw new Error("This statement contains too many records. Choose a shorter payment period.");
+        if (expected === null) expected = count;
+        if (count !== expected) throw new Error("Records changed while loading. Generate the statement again.");
+        for (const row of data) {
+          const key = String(row[idField] ?? "");
+          if (!key || seen.has(key)) throw new Error("Records changed or duplicate entries were returned. Generate the statement again.");
+          seen.add(key); rows.push(row);
+        }
+        if (rows.length === expected) return rows;
+        if (!data.length || rows.length > expected) throw new Error("Some records could not be loaded. No partial statement will be shown.");
+      }
+    }
+
+    async function readHouseholdStatement(filters, check) {
+      const rows = [], seen = new Set();
+      let expected = null, total = null;
+      for (let page = 1; ; page++) {
+        check();
+        const { data, error } = await supabaseClient.rpc("dhaftar_payment_history_v1", {
+          p_payer_name: filters.payer, p_billing_month: null, p_date_from: filters.from, p_date_to: filters.to,
+          p_amount: null, p_page: page, p_page_size: 50
+        });
+        check();
+        if (error) throw new Error("Household payment history could not load. Check that the Step 2 payment-history setup is installed, then try again.");
+        if (!data || !Array.isArray(data.rows) || !Number.isSafeInteger(data.total_count) || data.total_count < 0 || data.page !== page) throw new Error("Household payment history returned an incomplete response.");
+        if (expected === null) { expected = data.total_count; total = statementCents(data.total_amount); }
+        if (expected > STATEMENT_LIMIT) throw new Error("There are too many household payments. Choose a shorter period.");
+        if (data.total_count !== expected || statementCents(data.total_amount) !== total || data.page_count !== Math.max(1, Math.ceil(expected / 50))) throw new Error("Household payments changed while loading. Generate the statement again.");
+        if (data.rows.length !== Math.min(50, expected - rows.length)) throw new Error("Some household payments could not be loaded.");
+        for (const row of data.rows) {
+          const date = statementDate(row.payment_date), id = String(row.id ?? "");
+          const cents = statementCents(row.amount);
+          if (!id || seen.has(id) || row.payer_name !== filters.payer || date < filters.from || date > filters.to || cents <= 0) throw new Error("A household payment does not match the selected statement.");
+          seen.add(id);
+          rows.push({ ...row, id, payment_date: date, billing_month: statementDate(row.billing_month), cents });
+        }
+        if (rows.length === expected) break;
+      }
+      if (rows.reduce((sum, row) => addStatementCents(sum, row.cents), 0) !== total) throw new Error("Household payments changed while loading. Generate the statement again.");
+      return rows.sort((a, b) => a.payment_date.localeCompare(b.payment_date) || a.id.localeCompare(b.id));
+    }
+
+    async function readLoanStatement(filters, check) {
+      const fields = "id,lender_id,borrower_id,principal_amount,currency,loan_date,date_is_estimated,status,notes";
+      const [borrowed, lent] = await Promise.all([
+        readAllStatementRows((from, to) => supabaseClient.from("loans").select(fields, { count: "exact" }).eq("borrower_id", filters.person.id).order("id").range(from, to), "id", check),
+        readAllStatementRows((from, to) => supabaseClient.from("loans").select(fields, { count: "exact" }).eq("lender_id", filters.person.id).order("id").range(from, to), "id", check)
+      ]);
+      check();
+      const loanMap = new Map();
+      for (const loan of [...borrowed, ...lent]) {
+        const id = String(loan.id), borrower = String(loan.borrower_id), lender = String(loan.lender_id);
+        if (borrower !== filters.person.id && lender !== filters.person.id) throw new Error("A returned loan belongs to another person.");
+        const record = { ...loan, id, borrower_id: borrower, lender_id: lender };
+        const previous = loanMap.get(id);
+        if (previous && JSON.stringify(previous) !== JSON.stringify(record)) throw new Error("Loan details changed while loading. Generate again.");
+        loanMap.set(id, record);
+      }
+      if (loanMap.size > STATEMENT_LIMIT) throw new Error("This person has too many loans to include in one statement.");
+      const ids = [...loanMap.keys()], balances = new Map(), repayments = [], repaymentIds = new Set();
+      // Small ID batches avoid an excessively long request URL.
+      for (let offset = 0; offset < ids.length; offset += 40) {
+        const group = ids.slice(offset, offset + 40);
+        const [balanceRows, paymentRows] = await Promise.all([
+          readAllStatementRows((from, to) => supabaseClient.from("loan_balances").select("*", { count: "exact" }).in("loan_id", group).order("loan_id").range(from, to), "loan_id", check),
+          readAllStatementRows((from, to) => supabaseClient.from("loan_payments").select("id,loan_id,payment_date,amount,payment_method,notes", { count: "exact" }).in("loan_id", group).gte("payment_date", filters.from).lte("payment_date", filters.to).order("payment_date").order("id").range(from, to), "id", check)
+        ]);
+        check();
+        if (balanceRows.length !== group.length) throw new Error("A loan balance is unavailable. No incomplete balance will be shown.");
+        for (const row of balanceRows) {
+          const id = String(row.loan_id);
+          if (!group.includes(id) || balances.has(id)) throw new Error("Loan balance records are inconsistent.");
+          balances.set(id, row);
+        }
+        for (const row of paymentRows) {
+          const date = statementDate(row.payment_date), cents = statementCents(row.amount), loanId = String(row.loan_id);
+          if (!group.includes(loanId) || date < filters.from || date > filters.to || cents <= 0) throw new Error("A loan repayment does not match the selected statement.");
+          if (repaymentIds.has(String(row.id))) throw new Error("Repayments changed while loading. Generate the statement again.");
+          repaymentIds.add(String(row.id));
+          repayments.push({ ...row, id: String(row.id), loan_id: loanId, payment_date: date, cents });
+          if (repayments.length > STATEMENT_LIMIT) throw new Error("There are too many repayments. Choose a shorter period.");
+        }
+      }
+      const loans = [...loanMap.values()].map(loan => {
+        const balance = balances.get(loan.id);
+        const currency = statementCurrency(loan.currency);
+        if (statementCurrency(balance.currency) !== currency) throw new Error("A loan's currency changed while loading. Generate again.");
+        const principal = statementCents(loan.principal_amount), repaid = statementCents(balance.total_repaid), remaining = statementCents(balance.remaining_amount);
+        if (statementCents(balance.principal_amount) !== principal) throw new Error("A loan principal changed while loading. Generate again.");
+        if (principal <= 0 || repaid < 0) throw new Error("A loan contains an invalid amount.");
+        const status = String(balance.calculated_status || loan.status || "").trim().toLowerCase();
+        if (!status) throw new Error("A loan's status is unavailable.");
+        return { ...loan, currency, principal, repaid, remaining, status, loan_date: loan.loan_date ? statementDate(loan.loan_date) : null };
+      }).sort((a, b) => String(a.loan_date || "").localeCompare(String(b.loan_date || "")) || a.id.localeCompare(b.id));
+      return { loans, repayments: repayments.sort((a, b) => a.payment_date.localeCompare(b.payment_date) || a.id.localeCompare(b.id)) };
+    }
+
+    function summarizeStatement(filters, household, loanData) {
+      const currencies = new Map(), loanMap = new Map(loanData.loans.map(loan => [loan.id, loan]));
+      const group = code => {
+        if (!currencies.has(code)) currencies.set(code, { currency: code, borrowed: 0, lent: 0, paid: 0, received: 0 });
+        return currencies.get(code);
+      };
+      for (const loan of loanData.loans) {
+        const total = group(loan.currency);
+        if (!["cancelled", "paid"].includes(loan.status) && loan.remaining > 0) {
+          if (loan.borrower_id === filters.person.id) total.borrowed = addStatementCents(total.borrowed, loan.remaining);
+          if (loan.lender_id === filters.person.id) total.lent = addStatementCents(total.lent, loan.remaining);
+        }
+      }
+      for (const payment of loanData.repayments) {
+        const loan = loanMap.get(payment.loan_id);
+        if (!loan) throw new Error("A repayment has no matching loan.");
+        const total = group(loan.currency);
+        if (loan.borrower_id === filters.person.id) total.paid = addStatementCents(total.paid, payment.cents);
+        if (loan.lender_id === filters.person.id) total.received = addStatementCents(total.received, payment.cents);
+      }
+      return {
+        filters, household, loans: loanData.loans, repayments: loanData.repayments,
+        householdTotal: household.reduce((sum, row) => addStatementCents(sum, row.cents), 0),
+        currencies: [...currencies.values()].sort((a, b) => a.currency.localeCompare(b.currency)),
+        generatedAt: new Date().toISOString(),
+        people: new Map(statementState.people.map(person => [person.id, person.name]))
+      };
+    }
+
+    function statementPersonName(report, id) {
+      return report.people.get(id) || "Person " + id;
+    }
+
+    function statementEmpty(id, columns, message) {
+      const row = document.createElement("tr"), cell = statementText("td", message, "empty");
+      cell.colSpan = columns; row.appendChild(cell); st(id).replaceChildren(row);
+    }
+
+    function statementMetric(id, label, value) {
+      const card = statementText("div", "", "metric");
+      card.append(statementText("span", label), statementText("strong", value));
+      st(id).appendChild(card);
+    }
+
+    function renderStatement(report) {
+      const f = report.filters;
+      st("reportTitle").textContent = f.person?.name || f.payer;
+      st("reportPeriod").textContent = "Payment dates: " + statementDisplayDate(f.from) + " – " + statementDisplayDate(f.to) + " (inclusive)";
+      st("reportIdentity").textContent = "Amanah person: " + (f.person ? f.person.name + " · " + f.person.id : "not included") + " | Household payer: " + (f.payer || "not included");
+      st("reportGenerated").textContent = "Generated " + new Date(report.generatedAt).toLocaleString("en-GB", { timeZone: "Indian/Maldives" }) + " · Maldives time (UTC+5). Based on currently recorded entries.";
+      st("householdScope").textContent = f.payer ? "Payments recorded under " + f.payer + ". Payment dates determine inclusion; the billing month is shown for reference." : "Household payments were not included in this statement.";
+      if (f.payer) {
+        statementMetric("householdMetrics", "Household payments in period", statementMoney(report.householdTotal));
+        statementMetric("householdMetrics", "Payments recorded", String(report.household.length));
+      }
+      for (const payment of report.household) {
+        const row = document.createElement("tr"), note = statementText("td", payment.note || "—", "long");
+        note.appendChild(statementText("small", "Payment " + payment.id + (Number(payment.correction_count) > 0 ? " · Corrected " + payment.correction_count + " time(s)" : "")));
+        row.append(statementText("td", statementDisplayDate(payment.payment_date)), statementText("td", payment.billing_month.slice(0, 7)), statementText("td", statementMoney(payment.cents), "money"), note);
+        st("householdRows").appendChild(row);
+      }
+      if (!report.household.length) statementEmpty("householdRows", 4, f.payer ? "No household payments recorded in this period." : "Not included.");
+      st("loanPositionScope").textContent = f.person ? "All loans for " + f.person.name + ", with balances at generation time. These are not balances at the end of the selected payment period." : "No Amanah person was selected; loan records are not included.";
+      for (const currency of report.currencies) {
+        statementMetric("loanMetrics", "Outstanding borrowed · " + currency.currency, statementMoney(currency.borrowed, currency.currency));
+        statementMetric("loanMetrics", "Outstanding lent · " + currency.currency, statementMoney(currency.lent, currency.currency));
+        statementMetric("repaymentMetrics", "Repayments made in period · " + currency.currency, statementMoney(currency.paid, currency.currency));
+        statementMetric("repaymentMetrics", "Repayments received in period · " + currency.currency, statementMoney(currency.received, currency.currency));
+      }
+      const loanMap = new Map(report.loans.map(loan => [loan.id, loan]));
+      for (const loan of report.loans) {
+        const row = document.createElement("tr");
+        const parties = statementText("td", statementPersonName(report, loan.lender_id) + " → " + statementPersonName(report, loan.borrower_id), "long");
+        parties.appendChild(statementText("small", "Lender → borrower · Loan " + loan.id));
+        if (loan.notes) parties.appendChild(statementText("small", loan.notes));
+        row.append(parties, statementText("td", loan.loan_date ? statementDisplayDate(loan.loan_date) + (loan.date_is_estimated ? " (estimated)" : "") : "Date not recorded"), statementText("td", statementMoney(loan.principal, loan.currency), "money"), statementText("td", statementMoney(loan.repaid, loan.currency), "money"), statementText("td", loan.remaining < 0 ? "Credit " + statementMoney(-loan.remaining, loan.currency) : statementMoney(loan.remaining, loan.currency), "money"), statementText("td", loan.status));
+        st("statementLoanRows").appendChild(row);
+      }
+      if (!report.loans.length) statementEmpty("statementLoanRows", 6, f.person ? "No loans recorded for this person." : "Not included.");
+      for (const payment of report.repayments) {
+        const loan = loanMap.get(payment.loan_id), row = document.createElement("tr");
+        const parties = statementText("td", statementPersonName(report, loan.borrower_id) + " → " + statementPersonName(report, loan.lender_id), "long");
+        parties.appendChild(statementText("small", "Loan " + loan.id));
+        const note = statementText("td", [payment.payment_method, payment.notes].filter(Boolean).join(" · ") || "—", "long");
+        note.appendChild(statementText("small", "Repayment " + payment.id));
+        row.append(statementText("td", statementDisplayDate(payment.payment_date)), parties, statementText("td", statementMoney(payment.cents, loan.currency), "money"), note);
+        st("statementRepaymentRows").appendChild(row);
+      }
+      if (!report.repayments.length) statementEmpty("statementRepaymentRows", 4, f.person ? "No loan repayments recorded in this period." : "Not included.");
+      st("statementReport").hidden = false;
+    }
+
+    function statementFilters() {
+      const id = st("statementPerson").value;
+      const person = id ? statementState.people.find(person => person.id === id) : null;
+      const payer = st("statementPayer").value;
+      if (id && !person) throw new Error("Choose a person from the current list.");
+      if (payer && !statementState.payers.includes(payer)) throw new Error("Choose a household payer from the list.");
+      if (!person && !payer) throw new Error("Choose an Amanah person or household payer.");
+      const from = statementDate(st("statementFrom").value), to = statementDate(st("statementTo").value);
+      if (from > to) throw new Error("The end date must be on or after the start date.");
+      return { person: person ? { id: person.id, name: person.name } : null, payer, from, to };
+    }
+
+    async function generateStatement(event) {
+      event?.preventDefault();
+      if (!statementState.user || statementState.loading || !st("statementForm").reportValidity()) return;
+      let filters;
+      try { filters = statementFilters(); } catch (error) { statementStatus(error.message, true); return; }
+      clearStatement();
+      const request = ++statementState.request, userId = statementState.user.id;
+      const check = () => { if (request !== statementState.request || statementState.user?.id !== userId) throw statementCancelled(); };
+      statementState.loading = true;
+      st("generateStatement").disabled = true;
+      st("generateStatement").textContent = "Generating…";
+      statementStatus("Loading the complete statement…");
+      try {
+        const [household, loanData] = await Promise.all([
+          filters.payer ? readHouseholdStatement(filters, check) : Promise.resolve([]),
+          filters.person ? readLoanStatement(filters, check) : Promise.resolve({ loans: [], repayments: [] })
+        ]);
+        check();
+        const report = summarizeStatement(filters, household, loanData);
+        renderStatement(report);
+        statementState.report = report;
+        st("printStatement").disabled = false;
+        st("downloadStatement").disabled = false;
+        statementStatus("Statement ready. " + household.length + " household payment(s), " + loanData.loans.length + " loan(s), and " + loanData.repayments.length + " repayment(s).");
+      } catch (error) {
+        if (request !== statementState.request || statementState.user?.id !== userId) return;
+        clearStatement();
+        statementStatus(error.message || "The statement could not be generated.", true);
+      } finally {
+        if (request === statementState.request) {
+          statementState.loading = false;
+          st("generateStatement").disabled = false;
+          st("generateStatement").textContent = "Generate statement";
+        }
+      }
+    }
+
+    function csvStatementCell(value) {
+      let text = String(value ?? "");
+      // Treat user-entered names, notes and identifiers as text in spreadsheet apps.
+      if (typeof value !== "number" && /^[\s\u0000-\u001f]*[=+@-]/.test(text)) text = "'" + text;
+      return '"' + text.replace(/"/g, '""') + '"';
+    }
+
+    function statementCsv(report) {
+      const f = report.filters;
+      const rows = [
+        ["Dhaftar individual statement"], ["Amanah person", f.person?.name || "Not included", f.person?.id || ""],
+        ["Household payer", f.payer || "Not included"], ["Payment dates from", f.from, "To", f.to], ["Generated at (UTC)", report.generatedAt],
+        ["Scope", "Payment dates are inclusive. Loan balances are current at generation time, not period-end balances. Household debt is not calculated. Currencies are not converted."], [],
+        ["HOUSEHOLD PAYMENTS IN PERIOD"], ["Included", Boolean(f.payer) ? "Yes" : "No"], ["Payment ID", "Payment date", "Billing month", "Payer", "Currency", "Amount", "Note", "Corrections"]
+      ];
+      for (const p of report.household) rows.push([p.id, p.payment_date, p.billing_month, p.payer_name, "MVR", p.cents / 100, p.note, p.correction_count || 0]);
+      if (f.payer) rows.push(["Household total", "MVR", report.householdTotal / 100]);
+      rows.push([], ["CURRENT LOAN POSITION"], ["Included", f.person ? "Yes" : "No"], ["Currency", "Outstanding borrowed", "Outstanding lent", "Repayments made in period", "Repayments received in period"]);
+      for (const c of report.currencies) rows.push([c.currency, c.borrowed / 100, c.lent / 100, c.paid / 100, c.received / 100]);
+      rows.push(["Loan ID", "Lender", "Borrower", "Loan date", "Estimated date", "Currency", "Principal", "Repaid to date", "Remaining (negative = credit)", "Status", "Note"]);
+      const loanMap = new Map(report.loans.map(loan => [loan.id, loan]));
+      for (const loan of report.loans) rows.push([loan.id, statementPersonName(report, loan.lender_id), statementPersonName(report, loan.borrower_id), loan.loan_date || "Not recorded", loan.date_is_estimated ? "Yes" : "No", loan.currency, loan.principal / 100, loan.repaid / 100, loan.remaining / 100, loan.status, loan.notes]);
+      rows.push([], ["LOAN REPAYMENTS IN PERIOD"], ["Repayment ID", "Payment date", "Loan ID", "From", "To", "Currency", "Amount", "Method", "Note"]);
+      for (const p of report.repayments) {
+        const loan = loanMap.get(p.loan_id);
+        rows.push([p.id, p.payment_date, p.loan_id, statementPersonName(report, loan.borrower_id), statementPersonName(report, loan.lender_id), loan.currency, p.cents / 100, p.payment_method, p.notes]);
+      }
+      rows.push([], ["Balance notes", "Cancelled/paid loans and credit balances are excluded from positive outstanding totals. Their recorded repayments remain listed. No currency conversion is applied."]);
+      return "\uFEFF" + rows.map(row => row.map(csvStatementCell).join(",")).join("\r\n");
+    }
+
+    function currentStatementForExport() {
+      const report = statementState.report;
+      if (!statementState.user || !report || statementState.loading) return null;
+      try {
+        if (JSON.stringify(statementFilters()) !== JSON.stringify(report.filters)) { clearStatement(); statementStatus("Generate a statement for the new selection first."); return null; }
+      } catch (_) { clearStatement(); return null; }
+      return report;
+    }
+
+    function downloadStatementCsv() {
+      const report = currentStatementForExport();
+      if (!report) return;
+      const name = (report.filters.person?.name || report.filters.payer).replace(/[^a-z0-9]+/gi, "-").replace(/^-|-$/g, "").slice(0, 50) || "person";
+      const blob = new Blob([statementCsv(report)], { type: "text/csv;charset=utf-8" });
+      const url = URL.createObjectURL(blob), link = document.createElement("a");
+      link.href = url;
+      link.download = "dhaftar-statement-" + name + "-" + report.filters.from + "-to-" + report.filters.to + ".csv";
+      document.body.appendChild(link); link.click(); link.remove();
+      setTimeout(() => URL.revokeObjectURL(url), 1000);
+    }
+
+    function matchStatementPayer() {
+      const person = statementState.people.find(person => person.id === st("statementPerson").value);
+      if (!person) { st("personMatchHelp").textContent = "Choose a household payer to prepare a household statement."; return; }
+      const normalized = person.name.trim().toLowerCase();
+      const matches = statementState.payers.filter(payer => payer.trim().toLowerCase() === normalized);
+      st("statementPayer").value = matches.length === 1 ? matches[0] : "";
+      st("personMatchHelp").textContent = matches.length === 1 ? "Matched household payer: " + matches[0] + ". Review this match before generating." : "No unique household payer name matches. Choose the person's household payer to include those payments.";
+    }
+
+    async function loadStatementDirectory() {
+      if (!statementState.user) return;
+      clearStatement();
+      const request = ++statementState.directoryRequest, userId = statementState.user.id;
+      const check = () => { if (request !== statementState.directoryRequest || statementState.user?.id !== userId) throw statementCancelled(); };
+      const selectedPerson = st("statementPerson").value, selectedPayer = st("statementPayer").value;
+      st("statementFields").disabled = true;
+      statementStatus("Loading people and household payer names…");
+      const results = await Promise.allSettled([
+        readAllStatementRows((from, to) => supabaseClient.from("people").select("id,name,relationship", { count: "exact" }).order("name").order("id").range(from, to), "id", check),
+        supabaseClient.rpc("dhaftar_payment_history_v1", { p_page: 1, p_page_size: 1 })
+      ]);
+      if (request !== statementState.directoryRequest || statementState.user?.id !== userId) return;
+      const warnings = [];
+      statementState.people = [];
+      if (results[0].status === "fulfilled") {
+        statementState.people = results[0].value.map(person => ({ id: String(person.id), name: String(person.name || "Unnamed person"), relationship: String(person.relationship || "") }));
+      } else {
+        warnings.push("Amanah people could not load. Household statements are still available. Use Reload people to try again.");
+      }
+      const history = results[1].status === "fulfilled" ? results[1].value : null;
+      if (history && !history.error && Array.isArray(history.data?.payers)) {
+        statementState.payers = [...new Set([...statementState.payers, ...history.data.payers.filter(name => typeof name === "string" && name.trim())])];
+      } else {
+        warnings.push("The saved payer list could not load. The usual household payer names are available.");
+      }
+      const peopleSelect = st("statementPerson");
+      peopleSelect.replaceChildren(new Option("Household payments only", ""));
+      for (const person of statementState.people) {
+        const duplicate = statementState.people.filter(other => other.name.trim().toLowerCase() === person.name.trim().toLowerCase()).length > 1;
+        peopleSelect.appendChild(new Option(person.name + (person.relationship ? " · " + person.relationship : "") + (duplicate ? " · " + person.id.slice(0, 8) : ""), person.id));
+      }
+      peopleSelect.value = statementState.people.some(person => person.id === selectedPerson) ? selectedPerson : "";
+      peopleSelect.disabled = results[0].status !== "fulfilled";
+      const payerSelect = st("statementPayer");
+      payerSelect.replaceChildren(new Option("Do not include household payments", ""));
+      for (const payer of statementState.payers) payerSelect.appendChild(new Option(payer, payer));
+      payerSelect.value = statementState.payers.includes(selectedPayer) ? selectedPayer : "";
+      st("statementFields").disabled = false;
+      statementStatus(warnings.join(" ") || "Choose a person or household payer, then generate a statement.", warnings.length > 0);
+    }
+
+    function closeStatementAccess(message) {
+      statementState.accessRequest++;
+      statementState.pendingUserId = null;
+      statementState.user = null;
+      statementState.directoryRequest++;
+      clearStatement();
+      statementState.people = [];
+      statementState.payers = ["Dhaftar", "Dad", "Inaad", "Yush", "Imaad"];
+      st("statementPerson").replaceChildren(new Option("Household payments only", ""));
+      st("statementPayer").replaceChildren(new Option("Do not include household payments", ""));
+      st("statementControls").hidden = true;
+      st("logoutButton").hidden = true;
+      st("signInLink").hidden = false;
+      st("accessStatus").textContent = message;
+    }
+
+    function setStatementTheme(theme) {
+      document.documentElement.dataset.theme = theme;
+      st("themeButton").textContent = theme === "dark" ? "Light mode" : "Dark mode";
+      st("themeButton").setAttribute("aria-label", "Switch to " + (theme === "dark" ? "light" : "dark") + " mode");
+      try { localStorage.setItem("dhaftar-theme", theme); } catch (_) {}
+    }
+
+    async function startStatements() {
+      const accessRequest = ++statementState.accessRequest;
+      let theme = "light";
+      try { theme = localStorage.getItem("dhaftar-theme") || (window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light"); } catch (_) {}
+      setStatementTheme(theme === "dark" ? "dark" : "light");
+      const today = statementToday();
+      st("statementFrom").value = today.slice(0, 7) + "-01";
+      st("statementTo").value = today;
+      st("statementPayer").value = "Dhaftar";
+      try {
+        if (typeof supabaseClient === "undefined") throw new Error("The Dhaftar connection could not load. Check supabase-client.js and refresh.");
+        supabaseClient.auth.onAuthStateChange((event, session) => {
+          if (event === "SIGNED_OUT") closeStatementAccess("Signed out. Sign in to view statements.");
+          else if ((statementState.user?.id || statementState.pendingUserId) && session?.user?.id && session.user.id !== (statementState.user?.id || statementState.pendingUserId)) {
+            closeStatementAccess("Your sign-in changed. Sign in again to view statements.");
+          }
+        });
+        const { data, error } = await supabaseClient.auth.getSession();
+        if (accessRequest !== statementState.accessRequest) return;
+        if (error) throw error;
+        if (!data.session) { closeStatementAccess("Sign in as an administrator to view statements."); return; }
+        statementState.pendingUserId = data.session.user.id;
+        const { data: profile, error: profileError } = await supabaseClient.from("profiles").select("id,role,email").eq("id", data.session.user.id).single();
+        if (accessRequest !== statementState.accessRequest) return;
+        if (profileError) throw profileError;
+        if (!profile || profile.role !== "admin") throw new Error("Administrator access is required.");
+        statementState.user = data.session.user;
+        statementState.pendingUserId = null;
+        st("accessStatus").textContent = "Signed in as " + (profile.email || data.session.user.email || "administrator");
+        st("statementControls").hidden = false;
+        st("logoutButton").hidden = false;
+        st("signInLink").hidden = true;
+        await loadStatementDirectory();
+      } catch (error) {
+        if (accessRequest === statementState.accessRequest) closeStatementAccess(error.message || "Statements could not be opened. Sign in again.");
+      }
+    }
+
+    st("statementForm").addEventListener("submit", generateStatement);
+    st("statementPerson").addEventListener("change", () => { matchStatementPayer(); clearStatement(); statementStatus("Selection changed. Generate a new statement."); });
+    ["statementPayer", "statementFrom", "statementTo"].forEach(id => st(id).addEventListener("input", () => { clearStatement(); statementStatus("Selection changed. Generate a new statement."); }));
+    st("reloadStatementPeople").addEventListener("click", () => { void loadStatementDirectory(); });
+    st("downloadStatement").addEventListener("click", downloadStatementCsv);
+    st("printStatement").addEventListener("click", () => { if (currentStatementForExport()) window.print(); });
+    st("themeButton").addEventListener("click", () => setStatementTheme(document.documentElement.dataset.theme === "dark" ? "light" : "dark"));
+    st("logoutButton").addEventListener("click", async () => {
+      st("logoutButton").disabled = true;
+      try {
+        const { error } = await supabaseClient.auth.signOut();
+        if (error) throw error;
+        closeStatementAccess("Signed out.");
+        window.location.replace("admin.html");
+      } catch (error) {
+        statementStatus(error.message || "Could not sign out. Try again.", true);
+        st("logoutButton").disabled = false;
+      }
+    });
+    void startStatements();
+  </script>
+</body>
+</html>

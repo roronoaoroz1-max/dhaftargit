@@ -1171,7 +1171,7 @@
           <div class="history-heading">
             <div>
               <h2 id="historyTitle">Payment history</h2>
-              <p>Find household payments and review their corrections.</p>
+              <p>Find household payments and review their corrections. Payments labelled Dhaftar belong to Imaad.</p>
             </div>
             <a class="history-button" href="#paymentTitle">Add payment</a>
           </div>
@@ -1359,7 +1359,7 @@
               </h2>
 
               <p>
-                Record a household payment for a selected month.
+                Record a household payment for a selected month. Dhaftar is the household name; Imaad pays its share.
               </p>
             </div>
           </div>
@@ -1375,11 +1375,10 @@
                 </label>
 
                 <select id="payerName">
-                  <option value="Dhaftar">Dhaftar</option>
+                  <option value="Imaad">Imaad</option>
                   <option value="Dad">Dad</option>
                   <option value="Inaad">Inaad</option>
                   <option value="Yush">Yush</option>
-                  <option value="Imaad">Imaad</option>
                 </select>
               </div>
 
@@ -1419,13 +1418,13 @@
 
             <div class="field">
               <div class="quick-payment" aria-labelledby="householdQuickTitle">
-                <strong id="householdQuickTitle">Dhaftar monthly balance</strong>
+                <strong id="householdQuickTitle">Imaad’s household balance</strong>
                 <p id="householdBalanceStatus" class="quick-status" role="status" aria-live="polite">Choose a billing month to see its remaining balance.</p>
                 <div class="quick-actions">
                   <button class="history-button" id="useHouseholdBalance" type="button" disabled>Use remaining balance</button>
                   <button class="history-button" id="refreshHouseholdBalance" type="button">Refresh balance</button>
                 </div>
-                <p class="quick-note">This is the dashboard balance for the selected month. Choose the payer and review the amount actually received before saving.</p>
+                <p class="quick-note">This is Imaad’s household share for the selected month. Review the payment amount before saving.</p>
               </div>
               <label for="paymentAmount">
                 Amount (MVR)
@@ -1493,7 +1492,7 @@
               </h2>
 
               <p>
-                Set the full rent and Dhaftar share from a selected month onward.
+                Set the full rent and Imaad’s household share from a selected month onward.
               </p>
             </div>
           </div>
@@ -1540,7 +1539,7 @@
 
               <div class="field">
                 <label for="rentAmount">
-                  Dhaftar rent share (MVR)
+                  Imaad’s rent share (MVR)
                 </label>
 
                 <input
@@ -2372,7 +2371,7 @@
       const userId = currentUser.id;
       const epoch = state.epoch;
       const payload = {
-        payer_name: paymentElement("payerName").value,
+        payer_name: householdPaymentCode(paymentElement("payerName").value),
         payment_date: paymentElement("paymentDate").value,
         billing_month: month,
         amount: cents / 100,
@@ -2528,7 +2527,7 @@
         shareAmount < 0
       ) {
         showMessage(
-          "Enter a valid Dhaftar rent share.",
+          "Enter a valid rent share for Imaad.",
           true
         );
 
@@ -2995,6 +2994,77 @@
   </script>
   <script>
 
+    // Dhaftar is the household code; Imaad is the person. Keep stored codes
+    // compatible with the existing summary RPC and payer column constraints.
+    function householdPersonName(name) {
+      return name === "Dhaftar" || name === "Imaad" ? "Imaad" : name;
+    }
+
+    function householdPayerNames(names) {
+      return [...new Set(names.filter(name => typeof name === "string" && name.trim()).map(householdPersonName))];
+    }
+
+    function householdPaymentCode(name, existing = null) {
+      if (name !== "Imaad") return name;
+      return existing === "Dhaftar" || existing === "Imaad" ? existing : "Dhaftar";
+    }
+
+    function householdHistoryCents(value) {
+      if (!["string", "number"].includes(typeof value) || String(value).trim() === "") throw new Error("A household payment amount is missing.");
+      const amount = Number(value), cents = Math.round(amount * 100);
+      if (!Number.isFinite(amount) || !Number.isSafeInteger(cents) || Math.abs(amount * 100 - cents) > 0.00001) throw new Error("A household payment amount is invalid.");
+      return cents;
+    }
+
+    // Read every matching entry for both stored names, then merge by payment ID.
+    // This works with the existing Step 2 RPC without changing saved records.
+    async function readHouseholdPersonHistory(filters, check = () => {}) {
+      const payer = householdPersonName(filters.p_payer_name);
+      const codes = payer === "Imaad" ? ["Dhaftar", "Imaad"] : [payer];
+      const rows = [], seen = new Set(), payers = [];
+      let combinedCents = 0;
+      const add = (left, right) => {
+        const result = left + right;
+        if (!Number.isSafeInteger(result)) throw new Error("The household payment total is too large.");
+        return result;
+      };
+      for (const code of codes) {
+        let expected = null, total = null, loaded = 0, loadedCents = 0;
+        for (let page = 1; ; page++) {
+          check();
+          const { data, error } = await supabaseClient.rpc("dhaftar_payment_history_v1", {
+            ...filters, p_payer_name: code, p_page: page, p_page_size: 50
+          });
+          check();
+          if (error) throw error;
+          if (!data || !Array.isArray(data.rows) || !Number.isSafeInteger(data.total_count) || data.total_count < 0 || data.page !== page) throw new Error("Household payment history returned an incomplete response.");
+          if (expected === null) {
+            expected = data.total_count;
+            total = householdHistoryCents(data.total_amount);
+            if (rows.length + expected > 10000) throw new Error("There are too many household payments. Choose a shorter period.");
+            if (Array.isArray(data.payers)) payers.push(...data.payers);
+          }
+          if (data.total_count !== expected || householdHistoryCents(data.total_amount) !== total || data.page_count !== Math.max(1, Math.ceil(expected / 50))) throw new Error("Household payments changed while loading. Refresh and try again.");
+          if (data.rows.length !== Math.min(50, expected - loaded)) throw new Error("Some household payments could not be loaded.");
+          for (const row of data.rows) {
+            const id = String(row.id ?? ""), cents = householdHistoryCents(row.amount);
+            if (!id || seen.has(id) || row.payer_name !== code || cents <= 0) throw new Error("A household payment does not match the selected person.");
+            if ((filters.p_date_from && row.payment_date < filters.p_date_from) || (filters.p_date_to && row.payment_date > filters.p_date_to) || (filters.p_billing_month && row.billing_month !== filters.p_billing_month) || (filters.p_amount != null && cents !== householdHistoryCents(filters.p_amount))) throw new Error("A household payment does not match the selected filters.");
+            seen.add(id);
+            rows.push({ ...row, id });
+            loaded++;
+            loadedCents = add(loadedCents, cents);
+          }
+          if (loaded === expected) break;
+        }
+        if (loadedCents !== total) throw new Error("Household payments changed while loading. Refresh and try again.");
+        combinedCents = add(combinedCents, total);
+      }
+      check();
+      rows.sort((a, b) => String(b.payment_date).localeCompare(String(a.payment_date)) || b.id.localeCompare(a.id));
+      return { rows, total_count: rows.length, total_amount: combinedCents / 100, payers: householdPayerNames(payers) };
+    }
+
     function quickMoneyCents(value) {
       if (!["number", "string"].includes(typeof value) || String(value).trim() === "") return null;
       const amount = Number(value);
@@ -3060,8 +3130,8 @@
     }
 
     function describeHouseholdBalance(cents, month) {
-      if (cents > 0) return displayMonth(month) + " · Remaining " + formatMVR(cents / 100);
-      if (cents < 0) return displayMonth(month) + " · Credit " + formatMVR(-cents / 100) + ". No positive balance to fill.";
+      if (cents > 0) return displayMonth(month) + " · Imaad owes " + formatMVR(cents / 100);
+      if (cents < 0) return displayMonth(month) + " · Imaad’s credit " + formatMVR(-cents / 100) + ". No positive balance to fill.";
       return displayMonth(month) + " · No positive balance to fill. Check that all bills have been entered.";
     }
 
@@ -3128,7 +3198,7 @@
     // STEP 2: all history and correction access is checked again in Supabase.
     const paymentHistoryState = {
       page: 1, pageCount: 1, filters: null, request: 0,
-      payers: ["Dhaftar", "Dad", "Inaad", "Yush", "Imaad"]
+      payers: ["Imaad", "Dad", "Inaad", "Yush"]
     };
     const paymentDetailState = {
       id: null, data: null, request: 0, nextChangeId: null,
@@ -3185,6 +3255,7 @@
     }
 
     function paymentFieldValue(key, value) {
+      if (key === "payer_name") return householdPersonName(value) || "—";
       if (key === "amount") return formatMVR(value);
       if (key === "payment_date") return paymentDisplayDate(value);
       if (key === "billing_month") return value ? displayMonth(String(value).slice(0, 10)) : "—";
@@ -3210,8 +3281,8 @@
     function paymentPayerOptions(select, names, includeAll = false, selected = select.value) {
       select.replaceChildren();
       if (includeAll) select.appendChild(new Option("All payers", ""));
-      [...new Set(names.filter(Boolean))].forEach(name => select.appendChild(new Option(name, name)));
-      select.value = selected;
+      householdPayerNames(names).forEach(name => select.appendChild(new Option(name, name)));
+      select.value = householdPersonName(selected);
     }
 
     function readPaymentHistoryFilters() {
@@ -3247,9 +3318,9 @@
       const rows = Array.isArray(data.rows) ? data.rows : [];
       paymentHistoryState.page = Number(data.page) || 1;
       paymentHistoryState.pageCount = Number(data.page_count) || 1;
-      paymentHistoryState.payers = [...new Set([
+      paymentHistoryState.payers = householdPayerNames([
         ...paymentHistoryState.payers, ...(Array.isArray(data.payers) ? data.payers : [])
-      ])];
+      ]);
       paymentPayerOptions(paymentElement("historyPayer"), paymentHistoryState.payers, true);
       const tbody = paymentElement("historyRows");
       tbody.replaceChildren();
@@ -3257,7 +3328,7 @@
         const row = document.createElement("tr");
         row.append(
           paymentText("td", paymentDisplayDate(payment.payment_date)),
-          paymentText("td", payment.payer_name),
+          paymentText("td", householdPersonName(payment.payer_name)),
           paymentText("td", paymentFieldValue("billing_month", payment.billing_month)),
           paymentText("td", formatMVR(payment.amount), "money"),
           paymentText("td", payment.note || "—", "history-note")
@@ -3265,7 +3336,7 @@
         const actions = document.createElement("td");
         const view = paymentText("button", "View", "history-button");
         view.type = "button";
-        view.setAttribute("aria-label", "View " + payment.payer_name + " payment dated " + paymentDisplayDate(payment.payment_date));
+        view.setAttribute("aria-label", "View " + householdPersonName(payment.payer_name) + " payment dated " + paymentDisplayDate(payment.payment_date));
         view.addEventListener("click", () => openPaymentDetails(payment.id));
         actions.appendChild(view);
         if (Number(payment.correction_count) > 0) {
@@ -3290,9 +3361,20 @@
         paymentHistoryState.filters = { ...applied };
         paymentHistoryLoading(true);
         paymentStatus("historyStatus", "Loading payment history…");
-        const { data, error } = await supabaseClient.rpc("dhaftar_payment_history_v1", {
-          ...applied, p_page: page, p_page_size: 10
-        });
+        let data, error;
+        if (householdPersonName(applied.p_payer_name) === "Imaad") {
+          const check = () => {
+            if (request !== paymentHistoryState.request || currentUser?.id !== userId) throw new Error("Payment history request cancelled.");
+          };
+          const combined = await readHouseholdPersonHistory(applied, check);
+          const pageCount = Math.max(1, Math.ceil(combined.total_count / 10));
+          const selectedPage = Math.min(Math.max(1, page), pageCount);
+          data = { ...combined, rows: combined.rows.slice((selectedPage - 1) * 10, selectedPage * 10), page: selectedPage, page_count: pageCount };
+        } else {
+          ({ data, error } = await supabaseClient.rpc("dhaftar_payment_history_v1", {
+            ...applied, p_page: page, p_page_size: 10
+          }));
+        }
         if (request !== paymentHistoryState.request || currentUser?.id !== userId) return;
         if (error) throw error;
         if (!data || !Array.isArray(data.rows)) throw new Error("Payment history returned an unexpected response.");
@@ -3433,7 +3515,7 @@
       if (!reason) throw new Error("Enter a reason for the correction.");
       const payload = {
         p_payment_id: String(data.payment.id), p_expected_version: data.version,
-        p_payer_name: paymentElement("correctionPayer").value,
+        p_payer_name: householdPaymentCode(paymentElement("correctionPayer").value, data.payment.payer_name),
         p_payment_date: paymentElement("correctionDate").value,
         p_billing_month: paymentMonthDate(paymentElement("correctionMonth").value),
         p_amount: paymentMoneyInput(paymentElement("correctionAmount").value),

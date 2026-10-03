@@ -953,6 +953,40 @@
     .monthly-bills-summary strong { display: block; margin-top: 7px; color: var(--brand); font-size: 1.4rem; }
     .monthly-bills-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; margin-top: 18px; }
     .monthly-bills-actions .primary-button { width: auto; min-width: 210px; margin: 0; padding: 14px 20px; }
+
+    .bill-status-card { margin-bottom: 22px; }
+    .bill-status-heading { display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; flex-wrap: wrap; }
+    .bill-status-heading h2 { margin: 0 0 7px; }
+    .bill-status-heading p { margin: 0; color: var(--muted); line-height: 1.55; }
+    .bill-status-summary { min-width: 145px; padding: 12px 14px; border: 1px solid var(--line); border-radius: 14px; background: var(--brand-soft); text-align: right; }
+    .bill-status-summary span { display: block; color: var(--muted); font-size: 0.72rem; font-weight: 700; }
+    .bill-status-summary strong { display: block; margin-top: 5px; color: var(--brand); font-size: 1.05rem; }
+    .bill-status-toolbar { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; margin: 16px 0; }
+    .bill-status-toolbar .quick-status { margin: 0; }
+    .bill-status-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+    .bill-status-item { min-width: 0; padding: 16px; border: 1px solid var(--line); border-radius: 16px; background: var(--surface-soft); }
+    .bill-status-top { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; }
+    .bill-status-name { margin: 0; color: var(--ink); font-size: 0.95rem; font-weight: 850; }
+    .bill-status-caption { margin: 5px 0 0; color: var(--muted); font-size: 0.74rem; line-height: 1.45; }
+    .bill-status-badge { flex: 0 0 auto; display: inline-flex; align-items: center; min-height: 28px; padding: 5px 9px; border-radius: 999px; background: var(--surface); color: var(--muted); font-size: 0.72rem; font-weight: 850; }
+    .bill-status-badge.paid { background: rgba(29, 145, 89, 0.12); color: var(--success); }
+    .bill-status-badge.partial { background: rgba(213, 143, 25, 0.14); color: var(--warning); }
+    .bill-status-badge.unpaid { background: rgba(197, 65, 65, 0.10); color: var(--danger); }
+    .bill-status-money { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; margin-top: 14px; }
+    .bill-status-money div { padding: 10px; border: 1px solid var(--line); border-radius: 12px; background: var(--surface); }
+    .bill-status-money span { display: block; color: var(--muted); font-size: 0.68rem; }
+    .bill-status-money strong { display: block; margin-top: 4px; color: var(--ink); font-size: 0.82rem; overflow-wrap: anywhere; }
+    .bill-status-phone { margin-top: 12px; }
+    .bill-status-phone label { font-size: 0.74rem; }
+    .bill-status-phone-row { display: flex; gap: 8px; align-items: flex-end; }
+    .bill-status-phone-row input { min-width: 0; }
+    .bill-status-phone-row .quick-button { flex: 0 0 auto; }
+    .bill-status-actions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 14px; }
+    .bill-status-actions .quick-button { min-height: 38px; }
+    .bill-status-paid-date { margin: 10px 0 0; color: var(--muted); font-size: 0.72rem; }
+    @media (max-width: 760px) {
+      .bill-status-grid { grid-template-columns: minmax(0, 1fr); }
+    }
     @media (max-width: 640px) {
       .monthly-bill-row { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
       .monthly-bill-name { grid-column: 1 / -1; display: flex; justify-content: space-between; align-items: baseline; gap: 12px; }
@@ -1336,6 +1370,29 @@
               <button class="history-button" id="reloadMonthlyBills" type="button">Reload saved bills</button>
             </div>
           </form>
+        </section>
+
+        <!-- BILL PAYMENT STATUS -->
+        <section class="card action-card bill-status-card" aria-labelledby="billPaymentStatusTitle">
+          <div class="bill-status-heading">
+            <div>
+              <h2 id="billPaymentStatusTitle">Monthly bill payment status</h2>
+              <p>Track whether the full bill has actually been paid to the landlord or service provider. This is separate from household contribution payments.</p>
+            </div>
+            <div class="bill-status-summary" aria-live="polite">
+              <span id="billPaymentStatusMonth">Selected month</span>
+              <strong id="billPaymentStatusCount">—</strong>
+            </div>
+          </div>
+
+          <div class="bill-status-toolbar">
+            <p id="billPaymentStatusMessage" class="quick-status" role="status" aria-live="polite">Choose a billing month to load payment status.</p>
+            <button class="history-button" id="refreshBillPaymentStatus" type="button">Refresh status</button>
+          </div>
+
+          <div id="billPaymentStatusGrid" class="bill-status-grid">
+            <div class="history-empty">Loading bill payment status…</div>
+          </div>
         </section>
 
         <div class="action-grid">
@@ -2069,6 +2126,7 @@
       resetPaymentHistoryState();
       resetHouseholdQuick();
       resetMonthlyBills();
+      if (typeof resetBillPaymentStatus === "function") resetBillPaymentStatus();
       document.getElementById(
         "loginBox"
       ).hidden =
@@ -2115,6 +2173,7 @@
         loadOverview(),
         loadRentRates(),
         loadMonthlyBills(),
+        loadBillPaymentStatus(),
         loadSelectedRentRate(),
         loadPaymentHistory(1),
         loadHouseholdBalance()
@@ -2601,7 +2660,8 @@
 
         await Promise.all([
           loadRentRates(),
-          loadOverview()
+          loadOverview(),
+          loadBillPaymentStatus()
         ]);
 
       } catch (error) {
@@ -3884,7 +3944,10 @@
         selectMonthlyBillPeriod(state.loadedMonth);
         return;
       }
-      await loadMonthlyBills();
+      await Promise.all([
+        loadMonthlyBills(),
+        loadBillPaymentStatus()
+      ]);
     }
 
     async function reloadMonthlyBills() {
@@ -3961,7 +4024,7 @@
         fillMonthlyBillFields();
         monthlyBillStatus(writes.length + (writes.length === 1 ? " bill saved" : " bills saved") + " for " + displayMonth(month) + ".");
         // These refreshes are separate from the completed save.
-        await Promise.allSettled([loadHouseholdBalance(), loadOverview()]);
+        await Promise.allSettled([loadHouseholdBalance(), loadOverview(), loadBillPaymentStatus()]);
       } catch (error) {
         if (epoch !== state.epoch || currentUser?.id !== userId) return;
         if (saved) {
@@ -3981,6 +4044,407 @@
 
     paymentElement("reloadMonthlyBills").addEventListener("click", reloadMonthlyBills);
     paymentElement("billRowsFields").addEventListener("input", renderMonthlyBillSummary);
+  </script>
+
+  <script>
+    const BILL_PAYMENT_STATUS_ITEMS = [
+      { key: "rent", label: "Rent", caption: "Full amount paid to landlord", marker: "__payment_status__rent", source: "rent" },
+      { key: "electricity", label: "Electricity", caption: "Full electricity bill", marker: "__payment_status__electricity", billType: "Electricity" },
+      { key: "water", label: "Water", caption: "Full water bill", marker: "__payment_status__water", billType: "Water" },
+      { key: "wifi", label: "WiFi", caption: "Full WiFi bill", marker: "__payment_status__wifi", billType: "WiFi" },
+      { key: "malPhone", label: "Mal's phone bill", caption: "Monthly phone bill", marker: "__payment_status__mal_phone", manualDue: true },
+      { key: "myPhone", label: "My phone bill", caption: "Monthly phone bill", marker: "__payment_status__my_phone", manualDue: true },
+      { key: "tv", label: "TV", caption: "Full TV bill", marker: "__payment_status__tv", billType: "TV" }
+    ];
+
+    const billPaymentStatusState = {
+      request: 0,
+      saving: new Set(),
+      month: null,
+      rows: new Map(),
+      due: new Map()
+    };
+
+    function billPaymentStatusMessage(message, isError = false) {
+      const element = paymentElement("billPaymentStatusMessage");
+      element.textContent = message;
+      element.classList.toggle("is-error", isError);
+    }
+
+    function billStatusParseNotes(value) {
+      if (!value) return {};
+      try {
+        const data = JSON.parse(String(value));
+        return data && typeof data === "object" && !Array.isArray(data) ? data : {};
+      } catch (_) {
+        return {};
+      }
+    }
+
+    function billStatusRecord(item) {
+      return billPaymentStatusState.rows.get(item.marker) || null;
+    }
+
+    function billStatusPaidCents(item) {
+      const meta = billStatusParseNotes(billStatusRecord(item)?.notes);
+      const cents = Number(meta.paidCents);
+      return Number.isSafeInteger(cents) && cents >= 0 ? cents : 0;
+    }
+
+    function billStatusPaidOn(item) {
+      const meta = billStatusParseNotes(billStatusRecord(item)?.notes);
+      return /^\d{4}-\d{2}-\d{2}$/.test(String(meta.paidOn || "")) ? meta.paidOn : "";
+    }
+
+    async function readBillStatusRent(month) {
+      const { data, error } = await supabaseClient
+        .from("dhaftar_rent_rates")
+        .select("full_rent_amount,effective_from")
+        .lte("effective_from", month)
+        .order("effective_from", { ascending: false })
+        .limit(1);
+
+      if (error) throw new Error("Could not load the full rent amount.");
+      const row = Array.isArray(data) ? data[0] : null;
+      return Math.max(0, quickMoneyCents(row?.full_rent_amount) || 0);
+    }
+
+    async function readBillPaymentStatus(month) {
+      const markers = BILL_PAYMENT_STATUS_ITEMS.map(item => item.marker);
+      const [billResult, markerResult, rentCents] = await Promise.all([
+        supabaseClient
+          .from("dhaftar_bills")
+          .select("bill_type,billing_month,amount,notes,created_by")
+          .eq("billing_month", month)
+          .in("bill_type", ["Water", "Electricity", "WiFi", "TV"]),
+        supabaseClient
+          .from("dhaftar_bills")
+          .select("bill_type,billing_month,amount,notes,created_by")
+          .eq("billing_month", month)
+          .in("bill_type", markers),
+        readBillStatusRent(month)
+      ]);
+
+      if (billResult.error) throw new Error("Could not load the saved bill amounts.");
+      if (markerResult.error) throw new Error("Could not load the bill payment status.");
+
+      const billMap = new Map();
+      for (const row of billResult.data || []) {
+        const cents = quickMoneyCents(row.amount);
+        if (cents !== null && cents >= 0) billMap.set(row.bill_type, cents);
+      }
+
+      const rowMap = new Map();
+      for (const row of markerResult.data || []) {
+        if (rowMap.has(row.bill_type)) throw new Error("Duplicate bill payment status found for this month.");
+        rowMap.set(row.bill_type, row);
+      }
+
+      const due = new Map();
+      for (const item of BILL_PAYMENT_STATUS_ITEMS) {
+        if (item.source === "rent") {
+          due.set(item.key, rentCents);
+        } else if (item.billType) {
+          due.set(item.key, billMap.get(item.billType) ?? null);
+        } else {
+          const meta = billStatusParseNotes(rowMap.get(item.marker)?.notes);
+          const manual = Number(meta.dueCents);
+          due.set(item.key, Number.isSafeInteger(manual) && manual >= 0 ? manual : null);
+        }
+      }
+
+      return { rows: rowMap, due };
+    }
+
+    function billStatusStateFor(item) {
+      const dueCents = billPaymentStatusState.due.get(item.key);
+      const paidCents = billStatusPaidCents(item);
+
+      if (dueCents === null || dueCents === undefined) {
+        return { kind: "missing", label: "Amount not set", dueCents: null, paidCents };
+      }
+      if (dueCents === 0) {
+        return { kind: "paid", label: "No charge", dueCents, paidCents: 0 };
+      }
+      if (paidCents >= dueCents) {
+        return { kind: "paid", label: "Paid", dueCents, paidCents };
+      }
+      if (paidCents > 0) {
+        return { kind: "partial", label: "Part paid", dueCents, paidCents };
+      }
+      return { kind: "unpaid", label: "Not paid", dueCents, paidCents: 0 };
+    }
+
+    function makeBillStatusMoney(label, value) {
+      const box = document.createElement("div");
+      const caption = document.createElement("span");
+      caption.textContent = label;
+      const strong = document.createElement("strong");
+      strong.textContent = value;
+      box.append(caption, strong);
+      return box;
+    }
+
+    function renderBillPaymentStatus() {
+      const state = billPaymentStatusState;
+      const container = paymentElement("billPaymentStatusGrid");
+      container.replaceChildren();
+
+      paymentElement("billPaymentStatusMonth").textContent =
+        state.month ? displayMonth(state.month) : "Selected month";
+
+      let paidCount = 0;
+
+      for (const item of BILL_PAYMENT_STATUS_ITEMS) {
+        const status = billStatusStateFor(item);
+        if (status.kind === "paid") paidCount++;
+
+        const card = document.createElement("article");
+        card.className = "bill-status-item";
+
+        const top = document.createElement("div");
+        top.className = "bill-status-top";
+
+        const info = document.createElement("div");
+        const name = document.createElement("h3");
+        name.className = "bill-status-name";
+        name.textContent = item.label;
+        const caption = document.createElement("p");
+        caption.className = "bill-status-caption";
+        caption.textContent = item.caption;
+        info.append(name, caption);
+
+        const badge = document.createElement("span");
+        badge.className = "bill-status-badge " +
+          (status.kind === "paid" ? "paid" : status.kind === "partial" ? "partial" : status.kind === "unpaid" ? "unpaid" : "");
+        badge.textContent = status.label;
+        top.append(info, badge);
+
+        const money = document.createElement("div");
+        money.className = "bill-status-money";
+        money.append(
+          makeBillStatusMoney("Full amount", status.dueCents === null ? "Not entered" : formatMVR(status.dueCents / 100)),
+          makeBillStatusMoney("Recorded paid", formatMVR(status.paidCents / 100))
+        );
+
+        card.append(top, money);
+
+        if (item.manualDue) {
+          const field = document.createElement("div");
+          field.className = "bill-status-phone";
+          const label = document.createElement("label");
+          label.htmlFor = "billStatusDue-" + item.key;
+          label.textContent = item.label + " amount (MVR)";
+          const row = document.createElement("div");
+          row.className = "bill-status-phone-row";
+          const input = document.createElement("input");
+          input.id = "billStatusDue-" + item.key;
+          input.type = "number";
+          input.min = "0";
+          input.step = "0.01";
+          input.inputMode = "decimal";
+          input.value = status.dueCents === null ? "" : (status.dueCents / 100).toFixed(2);
+          input.disabled = state.saving.has(item.key);
+          const save = document.createElement("button");
+          save.type = "button";
+          save.className = "quick-button";
+          save.dataset.billStatusAction = "save-due";
+          save.dataset.billStatusKey = item.key;
+          save.textContent = "Save amount";
+          save.disabled = state.saving.has(item.key);
+          row.append(input, save);
+          field.append(label, row);
+          card.appendChild(field);
+        }
+
+        const actions = document.createElement("div");
+        actions.className = "bill-status-actions";
+
+        const paid = document.createElement("button");
+        paid.type = "button";
+        paid.className = "quick-button";
+        paid.dataset.billStatusAction = "paid";
+        paid.dataset.billStatusKey = item.key;
+        paid.textContent = status.kind === "paid" ? "Paid ✓" : "Mark paid";
+        paid.disabled = state.saving.has(item.key) || status.dueCents === null || status.dueCents <= 0 || status.kind === "paid";
+
+        const unpaid = document.createElement("button");
+        unpaid.type = "button";
+        unpaid.className = "quick-button";
+        unpaid.dataset.billStatusAction = "unpaid";
+        unpaid.dataset.billStatusKey = item.key;
+        unpaid.textContent = "Mark not paid";
+        unpaid.disabled = state.saving.has(item.key) || status.paidCents <= 0;
+
+        actions.append(paid, unpaid);
+        card.appendChild(actions);
+
+        const paidOn = billStatusPaidOn(item);
+        const date = document.createElement("p");
+        date.className = "bill-status-paid-date";
+        date.textContent = paidOn ? "Last marked paid: " + paymentDisplayDate(paidOn) : "No paid date recorded.";
+        card.appendChild(date);
+
+        container.appendChild(card);
+      }
+
+      paymentElement("billPaymentStatusCount").textContent =
+        paidCount + " / " + BILL_PAYMENT_STATUS_ITEMS.length + " paid";
+    }
+
+    function resetBillPaymentStatus() {
+      const state = billPaymentStatusState;
+      state.request++;
+      state.month = null;
+      state.rows = new Map();
+      state.due = new Map();
+      state.saving.clear();
+      paymentElement("billPaymentStatusMonth").textContent = "Selected month";
+      paymentElement("billPaymentStatusCount").textContent = "—";
+      paymentElement("billPaymentStatusGrid").innerHTML = '<div class="history-empty">Sign in to view bill payment status.</div>';
+      billPaymentStatusMessage("Choose a billing month to load payment status.");
+    }
+
+    async function loadBillPaymentStatus() {
+      const state = billPaymentStatusState;
+      if (!currentUser) return;
+      const month = monthlyBillMonth();
+      const request = ++state.request;
+      const userId = currentUser.id;
+      state.month = month;
+      billPaymentStatusMessage("Loading payment status for " + displayMonth(month) + "…");
+      paymentElement("billPaymentStatusGrid").innerHTML = '<div class="history-empty">Loading bill payment status…</div>';
+
+      try {
+        const data = await readBillPaymentStatus(month);
+        if (request !== state.request || currentUser?.id !== userId || monthlyBillMonth() !== month) return;
+        state.rows = data.rows;
+        state.due = data.due;
+        renderBillPaymentStatus();
+        billPaymentStatusMessage("Showing full-bill payment status for " + displayMonth(month) + ".");
+      } catch (error) {
+        if (request !== state.request || currentUser?.id !== userId) return;
+        state.rows = new Map();
+        state.due = new Map();
+        renderBillPaymentStatus();
+        billPaymentStatusMessage(error.message || "Could not load bill payment status.", true);
+      }
+    }
+
+    function billStatusItem(key) {
+      return BILL_PAYMENT_STATUS_ITEMS.find(item => item.key === key) || null;
+    }
+
+    function billStatusDueFromInput(item) {
+      if (!item.manualDue) return billPaymentStatusState.due.get(item.key);
+      const input = paymentElement("billStatusDue-" + item.key);
+      const cents = monthlyBillCents(input?.value);
+      if (cents === null) throw new Error("Enter the " + item.label + " amount first.");
+      return cents;
+    }
+
+    async function saveBillStatusItem(item, mode) {
+      const state = billPaymentStatusState;
+      if (!currentUser || !state.month || state.saving.has(item.key)) return;
+
+      let dueCents;
+      try {
+        dueCents = billStatusDueFromInput(item);
+      } catch (error) {
+        billPaymentStatusMessage(error.message, true);
+        paymentElement("billStatusDue-" + item.key)?.focus();
+        return;
+      }
+
+      if (mode === "paid" && !(dueCents > 0)) {
+        billPaymentStatusMessage("Enter a full amount greater than 0 before marking " + item.label + " paid.", true);
+        return;
+      }
+
+      const existing = billStatusRecord(item);
+      const existingMeta = billStatusParseNotes(existing?.notes);
+      const paidCents =
+        mode === "paid"
+          ? dueCents
+          : mode === "unpaid"
+            ? 0
+            : Number(existingMeta.paidCents) || 0;
+
+      const paidOn =
+        mode === "paid"
+          ? quickToday()
+          : mode === "unpaid"
+            ? ""
+            : String(existingMeta.paidOn || "");
+
+      const meta = {
+        dueCents: item.manualDue ? dueCents : undefined,
+        paidCents,
+        paidOn
+      };
+      Object.keys(meta).forEach(key => meta[key] === undefined && delete meta[key]);
+
+      state.saving.add(item.key);
+      renderBillPaymentStatus();
+      billPaymentStatusMessage(
+        mode === "paid"
+          ? "Marking " + item.label + " paid…"
+          : mode === "unpaid"
+            ? "Marking " + item.label + " not paid…"
+            : "Saving " + item.label + " amount…"
+      );
+
+      try {
+        const payload = {
+          bill_type: item.marker,
+          billing_month: state.month,
+          amount: 0,
+          notes: JSON.stringify(meta),
+          created_by: existing?.created_by ?? currentUser.id,
+          updated_by: currentUser.id
+        };
+
+        const { data, error } = await supabaseClient
+          .from("dhaftar_bills")
+          .upsert(payload, { onConflict: "bill_type,billing_month" })
+          .select("bill_type,billing_month,amount,notes,created_by")
+          .single();
+
+        if (error) throw error;
+        if (!data || data.bill_type !== item.marker || data.billing_month !== state.month) {
+          throw new Error("The saved status could not be verified.");
+        }
+
+        state.rows.set(item.marker, data);
+        if (item.manualDue) state.due.set(item.key, dueCents);
+
+        billPaymentStatusMessage(
+          mode === "paid"
+            ? item.label + " marked paid for " + displayMonth(state.month) + "."
+            : mode === "unpaid"
+              ? item.label + " marked not paid for " + displayMonth(state.month) + "."
+              : item.label + " amount saved for " + displayMonth(state.month) + "."
+        );
+      } catch (error) {
+        billPaymentStatusMessage(
+          "Could not save " + item.label + " status. " + (error.message || "Try again."),
+          true
+        );
+      } finally {
+        state.saving.delete(item.key);
+        renderBillPaymentStatus();
+      }
+    }
+
+    paymentElement("refreshBillPaymentStatus").addEventListener("click", loadBillPaymentStatus);
+
+    paymentElement("billPaymentStatusGrid").addEventListener("click", event => {
+      const button = event.target.closest("button[data-bill-status-action][data-bill-status-key]");
+      if (!button) return;
+      const item = billStatusItem(button.dataset.billStatusKey);
+      if (!item) return;
+      void saveBillStatusItem(item, button.dataset.billStatusAction);
+    });
   </script>
 </body>
 </html>

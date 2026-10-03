@@ -982,6 +982,323 @@
       }
     }
     .admin-tabs { flex-wrap: wrap; }
+
+    .admin-month-bar {
+      position: sticky;
+      top: 8px;
+      z-index: 30;
+      display: grid;
+      grid-template-columns: 46px minmax(0, 1fr) 46px;
+      gap: 9px;
+      align-items: center;
+      margin: 0 0 18px;
+      padding: 10px;
+      border: 1px solid var(--line);
+      border-radius: 16px;
+      background: color-mix(in srgb, var(--surface) 92%, transparent);
+      box-shadow: 0 10px 26px rgba(0,0,0,0.08);
+      backdrop-filter: blur(14px);
+      -webkit-backdrop-filter: blur(14px);
+    }
+
+    .admin-month-bar button {
+      width: 46px;
+      min-width: 46px;
+      height: 46px;
+      padding: 0;
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      color: var(--brand);
+      background: var(--brand-soft);
+      font-size: 1.25rem;
+      font-weight: 900;
+      cursor: pointer;
+    }
+
+    .admin-month-bar input[type="month"] {
+      height: 46px;
+      min-height: 46px;
+      max-height: 46px;
+      border-radius: 12px;
+      text-align: center;
+      font-weight: 850;
+      color: var(--brand);
+      background: var(--surface-soft);
+    }
+
+    .admin-home-card {
+      margin-bottom: 18px;
+      padding: clamp(20px, 3vw, 28px);
+      box-shadow: var(--soft-shadow);
+    }
+
+    .admin-home-top {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 14px;
+      flex-wrap: wrap;
+    }
+
+    .admin-home-top h2 {
+      margin: 0 0 6px;
+      font-size: 1.25rem;
+    }
+
+    .admin-home-top p {
+      margin: 0;
+      color: var(--muted);
+      font-size: 0.82rem;
+      line-height: 1.45;
+    }
+
+    .admin-home-grid {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 10px;
+      margin-top: 16px;
+    }
+
+    .admin-home-metric {
+      min-width: 0;
+      padding: 13px;
+      border: 1px solid var(--line);
+      border-radius: 14px;
+      background: var(--surface-soft);
+    }
+
+    .admin-home-metric span {
+      display: block;
+      color: var(--muted);
+      font-size: 0.68rem;
+      font-weight: 700;
+    }
+
+    .admin-home-metric strong {
+      display: block;
+      margin-top: 5px;
+      color: var(--ink);
+      font-size: 0.94rem;
+      overflow-wrap: anywhere;
+    }
+
+    .admin-home-metric strong.alert { color: var(--danger); }
+    .admin-home-metric strong.good { color: var(--success); }
+
+    .admin-quick-actions {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 9px;
+      margin-top: 14px;
+    }
+
+    .admin-quick-actions a,
+    .admin-quick-actions button {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 46px;
+      padding: 9px 12px;
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      color: var(--brand);
+      background: var(--brand-soft);
+      text-decoration: none;
+      font-weight: 850;
+      font-size: 0.82rem;
+      cursor: pointer;
+    }
+
+    .recent-activity {
+      margin-top: 16px;
+      padding-top: 14px;
+      border-top: 1px solid var(--line);
+    }
+
+    .recent-activity-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      margin-bottom: 8px;
+    }
+
+    .recent-activity-head strong { font-size: 0.86rem; }
+    .recent-activity-list { display: grid; gap: 7px; }
+    .recent-activity-item {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto;
+      gap: 10px;
+      align-items: center;
+      padding: 10px 11px;
+      border-radius: 11px;
+      background: var(--surface-soft);
+    }
+    .recent-activity-item span { color: var(--muted); font-size: 0.74rem; line-height: 1.35; }
+    .recent-activity-item strong { color: var(--brand); font-size: 0.78rem; white-space: nowrap; }
+
+    .admin-disclosure {
+      margin: 0 0 18px;
+      min-width: 0;
+    }
+
+    .admin-disclosure > summary {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      min-height: 58px;
+      padding: 14px 16px;
+      border: 1px solid var(--line);
+      border-radius: 16px;
+      color: var(--ink);
+      background: var(--surface);
+      box-shadow: var(--soft-shadow);
+      cursor: pointer;
+      list-style: none;
+      font-weight: 850;
+    }
+
+    .admin-disclosure > summary::-webkit-details-marker { display: none; }
+
+    .admin-disclosure > summary::after {
+      content: "＋";
+      flex: 0 0 auto;
+      color: var(--brand);
+      font-size: 1.1rem;
+    }
+
+    .admin-disclosure[open] > summary::after { content: "−"; }
+    .admin-disclosure > summary span { color: var(--muted); font-size: 0.76rem; font-weight: 650; }
+    .admin-disclosure > .card { margin-top: 10px; }
+
+    .legacy-period-selector { display: none !important; }
+
+    .bill-status-item.compact {
+      padding: 14px;
+    }
+
+    .bill-compact-money {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      margin-top: 10px;
+    }
+
+    .bill-compact-money > div { min-width: 0; }
+    .bill-compact-money span { display: block; color: var(--muted); font-size: 0.68rem; }
+    .bill-compact-money strong { display: block; margin-top: 3px; color: var(--ink); font-size: 0.9rem; }
+    .bill-compact-actions { display: flex; gap: 8px; margin-top: 12px; }
+    .bill-compact-actions .quick-button { flex: 1 1 0; min-width: 0; }
+    .bill-status-expanded { margin-top: 12px; padding-top: 12px; border-top: 1px solid var(--line); }
+
+    .app-toast {
+      position: fixed;
+      left: 50%;
+      bottom: 20px;
+      z-index: 90;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      width: min(92vw, 520px);
+      padding: 12px 14px;
+      border: 1px solid var(--line);
+      border-radius: 14px;
+      background: var(--surface);
+      box-shadow: var(--shadow);
+      transform: translate(-50%, 18px);
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity .18s ease, transform .18s ease;
+    }
+
+    .app-toast.show {
+      opacity: 1;
+      transform: translate(-50%, 0);
+      pointer-events: auto;
+    }
+
+    .app-toast span { flex: 1 1 auto; min-width: 0; font-size: 0.8rem; line-height: 1.4; }
+    .app-toast button {
+      flex: 0 0 auto;
+      min-height: 38px;
+      padding: 7px 11px;
+      border: 0;
+      border-radius: 10px;
+      color: var(--brand);
+      background: var(--brand-soft);
+      font-weight: 850;
+    }
+
+    .mobile-bottom-nav { display: none; }
+
+    @media (max-width: 820px) {
+      .admin-home-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    }
+
+    @media (max-width: 760px) {
+      body { padding-bottom: 84px; }
+      .admin-month-bar { top: 6px; }
+      .admin-home-card { padding: 18px; }
+      .admin-quick-actions { grid-template-columns: minmax(0, 1fr); }
+      .recent-activity-item { grid-template-columns: minmax(0, 1fr) auto; }
+
+      .mobile-bottom-nav {
+        position: fixed;
+        left: 10px;
+        right: 10px;
+        bottom: max(8px, env(safe-area-inset-bottom));
+        z-index: 80;
+        display: grid;
+        grid-template-columns: repeat(5, minmax(0, 1fr));
+        gap: 4px;
+        padding: 7px;
+        border: 1px solid var(--line);
+        border-radius: 18px;
+        background: color-mix(in srgb, var(--surface) 94%, transparent);
+        box-shadow: var(--shadow);
+        backdrop-filter: blur(16px);
+        -webkit-backdrop-filter: blur(16px);
+      }
+
+      .mobile-bottom-nav a,
+      .mobile-bottom-nav button {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: 2px;
+        min-width: 0;
+        min-height: 48px;
+        padding: 5px 3px;
+        border: 0;
+        border-radius: 11px;
+        color: var(--muted);
+        background: transparent;
+        text-decoration: none;
+        font-size: 0.63rem;
+        font-weight: 800;
+      }
+
+      .mobile-bottom-nav .nav-icon {
+        color: var(--brand);
+        font-size: 1rem;
+        line-height: 1;
+      }
+
+      .app-toast { bottom: 78px; }
+
+      .bill-status-grid { grid-template-columns: minmax(0, 1fr); }
+    }
+
+    @media (max-width: 460px) {
+      .admin-home-grid { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); }
+      .admin-home-metric { padding: 11px; }
+      .admin-month-bar { grid-template-columns: 42px minmax(0,1fr) 42px; }
+      .admin-month-bar button { width: 42px; min-width: 42px; height: 44px; }
+      .bill-compact-money { align-items: flex-end; }
+    }
     .history-card {
       width: 100%;
       min-width: 0;
@@ -1530,6 +1847,47 @@
         aria-live="polite"
       ></div>
 
+      <div class="admin-month-bar" id="adminMonthBar" aria-label="Selected billing month">
+        <button id="masterMonthPrevious" type="button" aria-label="Previous month">‹</button>
+        <input id="masterMonth" type="month" min="2026-01" aria-label="Billing month">
+        <button id="masterMonthNext" type="button" aria-label="Next month">›</button>
+      </div>
+
+      <section class="card admin-home-card" id="adminHome" aria-labelledby="adminHomeTitle">
+        <div class="admin-home-top">
+          <div>
+            <h2 id="adminHomeTitle">Home</h2>
+            <p id="adminHomePeriod">Loading this month…</p>
+          </div>
+          <span id="adminHomeStatus" class="month-close-badge">Loading…</span>
+        </div>
+
+        <div class="admin-home-grid">
+          <div class="admin-home-metric"><span>Household remaining</span><strong id="homeRemaining">MVR —</strong></div>
+          <div class="admin-home-metric"><span>Provider bills</span><strong id="homeBillsPaid">— / 7 paid</strong></div>
+          <div class="admin-home-metric"><span>Overdue</span><strong id="homeOverdue">—</strong></div>
+          <div class="admin-home-metric"><span>Outstanding to Dad</span><strong id="homeDadOutstanding">—</strong></div>
+        </div>
+
+        <div class="admin-quick-actions">
+          <button id="homeAddPayment" type="button">＋ Add payment</button>
+          <button id="homeManageBills" type="button">✓ Pay / review bills</button>
+          <a href="amanah.html">↗ Open Amanah</a>
+        </div>
+
+        <div class="recent-activity">
+          <div class="recent-activity-head">
+            <strong>Recent activity</strong>
+            <button class="history-button" id="openFullHistory" type="button">View all</button>
+          </div>
+          <div class="recent-activity-list" id="recentActivityList">
+            <div class="history-empty">Loading recent payments…</div>
+          </div>
+        </div>
+      </section>
+
+        <details class="admin-disclosure" id="closingWork">
+          <summary>Monthly closing <span>Final review and lock</span></summary>
         <section class="card month-close-card" id="monthlyClosingDashboard" aria-labelledby="monthlyClosingTitle">
           <div class="month-close-head">
             <div>
@@ -1575,7 +1933,10 @@
             </div>
           </div>
         </section>
+        </details>
 
+        <details class="admin-disclosure" id="historyWork">
+          <summary>Payment history <span>Search, review and correct</span></summary>
         <section class="card history-card" id="paymentHistory" aria-labelledby="historyTitle">
           <div class="history-heading">
             <div>
@@ -1636,8 +1997,11 @@
             </nav>
           </div>
         </section>
+        </details>
 
         <!-- MONTHLY BILLS -->
+        <details class="admin-disclosure" id="adminMore">
+          <summary>Monthly bill amounts <span>Edit full bill values</span></summary>
         <section class="card action-card monthly-bills-card" aria-labelledby="billTitle">
           <div class="card-heading">
             <div class="card-icon" aria-hidden="true">↻</div>
@@ -1647,7 +2011,7 @@
             </div>
           </div>
           <form id="billForm" aria-describedby="monthlyBillsHelp">
-            <fieldset id="billPeriodFields" class="quick-fields">
+            <fieldset id="billPeriodFields" class="quick-fields legacy-period-selector">
               <div class="form-row monthly-bills-period">
                 <div class="field">
                   <label for="billMonth">Billing month</label>
@@ -1746,9 +2110,10 @@
             </div>
           </form>
         </section>
+        </details>
 
         <!-- BILL PAYMENT STATUS -->
-        <section class="card action-card bill-status-card" aria-labelledby="billPaymentStatusTitle">
+        <section class="card action-card bill-status-card" id="billStatusSection" aria-labelledby="billPaymentStatusTitle">
           <div class="bill-status-heading">
             <div>
               <h2 id="billPaymentStatusTitle">Monthly bill payment status</h2>
@@ -1782,6 +2147,7 @@
         <!-- ADD PAYMENT -->
         <section
           class="card action-card"
+          id="paymentCard"
           aria-labelledby="paymentTitle"
         >
           <div class="card-heading">
@@ -1835,7 +2201,7 @@
 
             </div>
 
-            <div class="form-row payment-period-row">
+            <div class="form-row payment-period-row legacy-period-selector">
 
               <div class="field">
                 <label for="paymentMonth">
@@ -1913,6 +2279,8 @@
         </section>
 
         <!-- RENT RATE -->
+        <details class="admin-disclosure" id="rentWork">
+          <summary>Rent settings <span>Rates and effective month</span></summary>
         <section
           class="card action-card"
           aria-labelledby="rentTitle"
@@ -1938,7 +2306,7 @@
 
           <form id="rentForm">
 
-            <div class="form-row">
+            <div class="form-row rent-period-row legacy-period-selector">
 
               <div class="field">
                 <label for="rentMonth">
@@ -2029,6 +2397,7 @@
             aria-live="polite"
           ></div>
         </section>
+        </details>
 
         <!-- AMANAH OVERVIEW -->
         <section
@@ -2098,6 +2467,19 @@
       </div>
     </section>
   </main>
+
+  <nav class="mobile-bottom-nav" aria-label="Admin navigation">
+    <button type="button" data-nav-target="adminHome"><span class="nav-icon">⌂</span><span>Home</span></button>
+    <button type="button" data-nav-target="billStatusSection"><span class="nav-icon">✓</span><span>Bills</span></button>
+    <button type="button" data-nav-target="paymentCard"><span class="nav-icon">＋</span><span>Payments</span></button>
+    <a href="amanah.html"><span class="nav-icon">↗</span><span>Amanah</span></a>
+    <button type="button" data-nav-target="adminMore"><span class="nav-icon">•••</span><span>More</span></button>
+  </nav>
+
+  <div class="app-toast" id="appToast" role="status" aria-live="polite">
+    <span id="appToastText"></span>
+    <button id="appToastAction" type="button" hidden>Undo</button>
+  </div>
 
   <dialog class="payment-dialog" id="paymentDialog" aria-labelledby="paymentDialogTitle">
     <div class="dialog-heading">

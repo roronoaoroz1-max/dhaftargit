@@ -2014,7 +2014,7 @@
               </h2>
 
               <p>
-                Apply a repayment to an existing loan.
+                Record one repayment against a borrower and lender balance. Dhaftar applies it to the oldest loans first.
               </p>
             </div>
           </div>
@@ -2023,7 +2023,7 @@
             <fieldset id="repaymentFields" class="quick-fields">
             <div class="field">
               <label for="repaymentLoan">
-                Loan
+                Borrower / lender balance
               </label>
 
               <select
@@ -2034,9 +2034,9 @@
 
             <div class="quick-payment" aria-labelledby="installmentQuickTitle">
               <strong id="installmentQuickTitle">Quick installment</strong>
-              <p id="installmentQuickStatus" class="quick-status" role="status" aria-live="polite">Choose a loan to prepare a repayment.</p>
+              <p id="installmentQuickStatus" class="quick-status" role="status" aria-live="polite">Choose a borrower / lender balance to prepare a repayment.</p>
               <button class="quick-button" id="useInstallmentAmount" type="button" disabled>Use installment amount</button>
-              <p class="quick-note">Uses one standard installment, capped at the remaining loan balance. Review the actual amount received, including any partial payments, before saving.</p>
+              <p class="quick-note">One repayment can cover several loans. Dhaftar automatically clears the oldest outstanding loan first, then continues to the next.</p>
             </div>
 
             <div class="form-row">
@@ -2103,8 +2103,8 @@
             </button>
 
             <p class="form-note">
-              Repayments automatically reduce the remaining loan and
-              increase the source account’s available cash through the view.
+              Repayments automatically reduce the combined balance, oldest loan first,
+              and increase the source account’s available cash through the view.
             </p>
             </fieldset>
           </form>
@@ -2159,11 +2159,61 @@
         !["cancelled", "paid"].includes(normalize(loan.calculated_status || loan.status));
     }
 
-    function installmentSuggestion(loan, installment) {
-      const remaining = quickMoneyCents(loan?.remaining_amount);
+    function loanPartyKey(loan) {
+      const lender = loan?.lender_id ? "id:" + loan.lender_id : "name:" + normalize(loan?.lender_name || "");
+      const borrower = loan?.borrower_id ? "id:" + loan.borrower_id : "name:" + normalize(loan?.borrower_name || "");
+      const currency = normalize(loan?.currency || "MVR");
+      return lender + "|" + borrower + "|" + currency;
+    }
+
+    function compareLoanAge(a, b) {
+      const aDate = String(a?.loan_date || a?.created_at || "");
+      const bDate = String(b?.loan_date || b?.created_at || "");
+      return aDate.localeCompare(bDate) || String(a?.created_at || "").localeCompare(String(b?.created_at || "")) || String(a?.loan_id || "").localeCompare(String(b?.loan_id || ""));
+    }
+
+    function buildPayableLoanGroups(rows = loanBalances) {
+      const grouped = new Map();
+      rows.filter(isPayableLoan).forEach((loan) => {
+        const key = loanPartyKey(loan);
+        const group = grouped.get(key) || {
+          key,
+          lender_name: loan.lender_name || "Lender",
+          borrower_name: loan.borrower_name || "Borrower",
+          currency: loan.currency || "MVR",
+          loans: [],
+          totalCents: 0
+        };
+        group.loans.push(loan);
+        group.totalCents += quickMoneyCents(loan.remaining_amount) || 0;
+        grouped.set(key, group);
+      });
+      return [...grouped.values()].map((group) => {
+        group.loans.sort(compareLoanAge);
+        group.anchorLoanId = String(group.loans[0]?.loan_id || "");
+        return group;
+      }).sort((a, b) =>
+        a.lender_name.localeCompare(b.lender_name) ||
+        a.borrower_name.localeCompare(b.borrower_name) ||
+        a.currency.localeCompare(b.currency)
+      );
+    }
+
+    function repaymentGroupForLoanId(loanId, rows = loanBalances) {
+      const seed = rows.find((loan) => String(loan.loan_id) === String(loanId));
+      if (!seed) return null;
+      const key = loanPartyKey(seed);
+      return buildPayableLoanGroups(rows).find((group) => group.key === key) || null;
+    }
+
+    function selectedRepaymentGroup() {
+      return repaymentGroupForLoanId(repaymentElement("repaymentLoan").value);
+    }
+
+    function installmentSuggestionForGroup(group, installment) {
       const standard = quickMoneyCents(installment);
-      if (!isPayableLoan(loan) || !(standard > 0)) return null;
-      return Math.min(standard, remaining);
+      if (!group || !(group.totalCents > 0) || !(standard > 0)) return null;
+      return Math.min(standard, group.totalCents);
     }
 
     function syncRepaymentQuickButton() {
@@ -2174,11 +2224,18 @@
     }
 
     function updateRepaymentQuickHint() {
-      const loanId = repaymentElement("repaymentLoan").value;
-      const loan = loanBalances.find(row => String(row.loan_id) === loanId);
-      repaymentElement("repaymentAmountLabel").textContent = loan ? "Amount (" + (loan.currency || "MVR") + ")" : "Amount";
+      const group = selectedRepaymentGroup();
+      repaymentElement("repaymentAmountLabel").textContent = group ? "Amount (" + group.currency + ")" : "Amount";
       if (!repaymentQuickState.loading && !repaymentQuickState.autoFilled) {
-        installmentQuickStatus(loan ? "Remaining " + formatMoney(loan.remaining_amount, loan.currency) + ". Use the shortcut or enter the amount received." : "Choose a loan to prepare a repayment.");
+        if (group) {
+          const loanText = group.loans.length === 1 ? "1 loan" : group.loans.length + " loans";
+          installmentQuickStatus(
+            "Total outstanding " + formatMoney(group.totalCents / 100, group.currency) +
+            " across " + loanText + ". Repayments are applied oldest first."
+          );
+        } else {
+          installmentQuickStatus("Choose a borrower / lender balance to prepare a repayment.");
+        }
       }
       syncRepaymentQuickButton();
     }
@@ -2191,64 +2248,102 @@
       updateRepaymentQuickHint();
     }
 
-    async function readRepaymentLoan(loanId) {
-      const { data, error } = await supabaseClient.from("loan_balances").select("*").eq("loan_id", loanId).single();
-      if (error || !data) throw new Error("Could not refresh the loan balance. Try again before saving.");
-      if (!isPayableLoan(data)) throw new Error("This loan has no payable balance or is no longer active. Choose another loan.");
-      return data;
+    async function readRepaymentGroup(seedLoanId) {
+      const { data, error } = await supabaseClient.from("loan_balances").select("*");
+      if (error || !Array.isArray(data)) throw new Error("Could not refresh the loan balances. Try again before saving.");
+
+      const seed = data.find((loan) => String(loan.loan_id) === String(seedLoanId));
+      if (!seed) throw new Error("This loan balance could not be found. Refresh and try again.");
+
+      const key = loanPartyKey(seed);
+      const group = buildPayableLoanGroups(data).find((item) => item.key === key);
+      if (!group || !(group.totalCents > 0)) {
+        throw new Error("This borrower / lender balance has no payable amount remaining.");
+      }
+      return { group, rows: data };
     }
 
     async function prefillInstallment(loanId = repaymentElement("repaymentLoan").value) {
       const state = repaymentQuickState;
       if (state.saving || !currentUser) return;
+
       const select = repaymentElement("repaymentLoan");
       loanId = String(loanId || "");
-      if (!loanId || ![...select.options].some(option => option.value === loanId)) {
-        installmentQuickStatus("Choose a valid loan first.", true);
+      const localGroup = repaymentGroupForLoanId(loanId);
+      const anchorLoanId = localGroup?.anchorLoanId || loanId;
+
+      if (!anchorLoanId || ![...select.options].some((option) => option.value === anchorLoanId)) {
+        installmentQuickStatus("Choose a valid borrower / lender balance first.", true);
         select.focus();
         return;
       }
-      if (select.value !== loanId) {
-        select.value = loanId;
+
+      if (select.value !== anchorLoanId) {
+        select.value = anchorLoanId;
         repaymentDraftChanged(true);
       }
+
       const request = ++state.request;
       const userId = currentUser.id;
-      const stillCurrent = () => request === state.request && currentUser?.id === userId && select.value === loanId;
+      const stillCurrent = () => request === state.request && currentUser?.id === userId && select.value === anchorLoanId;
       state.loading = true;
       state.autoFilled = null;
-      installmentQuickStatus("Checking the latest balance and installment…");
+      installmentQuickStatus("Checking the latest combined balance and installment…");
       syncRepaymentQuickButton();
       repaymentElement("repaymentForm").scrollIntoView({ behavior: "smooth", block: "start" });
+
       try {
-        const loan = await readRepaymentLoan(loanId);
+        const refreshed = await readRepaymentGroup(anchorLoanId);
         if (!stillCurrent()) return;
-        const index = loanBalances.findIndex(row => String(row.loan_id) === loanId);
-        if (index !== -1) loanBalances[index] = loan;
-        repaymentElement("repaymentAmountLabel").textContent = "Amount (" + (loan.currency || "MVR") + ")";
-        // Some installations omit installment_amount from the balance view.
-        let installment = loan.installment_amount;
-        if (installment === undefined) {
-          const { data, error } = await supabaseClient.from("loans").select("installment_amount").eq("id", loanId).single();
+
+        loanBalances = refreshed.rows;
+        const group = refreshed.group;
+        const oldestLoan = group.loans[0];
+        repaymentElement("repaymentAmountLabel").textContent = "Amount (" + group.currency + ")";
+
+        let installment = oldestLoan?.installment_amount;
+        if (installment === undefined && oldestLoan?.loan_id) {
+          const { data, error } = await supabaseClient
+            .from("loans")
+            .select("installment_amount")
+            .eq("id", oldestLoan.loan_id)
+            .single();
           if (!stillCurrent()) return;
           if (error || !data) throw new Error("Could not load the standard installment. Enter the amount received manually.");
           installment = data.installment_amount;
         }
+
         if (!stillCurrent()) return;
-        const cents = installmentSuggestion(loan, installment);
+        const cents = installmentSuggestionForGroup(group, installment);
         if (cents === null) {
-          installmentQuickStatus("No standard installment is set for this loan. Remaining " + formatMoney(loan.remaining_amount, loan.currency) + ". Enter the amount received manually.");
+          installmentQuickStatus(
+            "Total outstanding " + formatMoney(group.totalCents / 100, group.currency) +
+            " across " + group.loans.length + (group.loans.length === 1 ? " loan." : " loans.") +
+            " Enter the repayment amount manually; Dhaftar will allocate it oldest first."
+          );
           repaymentElement("repaymentAmount").focus();
           return;
         }
+
         repaymentElement("repaymentAmount").value = (cents / 100).toFixed(2);
         repaymentElement("repaymentDate").value = quickToday();
-        state.autoFilled = { loanId, cents, installmentCents: quickMoneyCents(installment) };
+        state.autoFilled = {
+          loanId: anchorLoanId,
+          cents,
+          installmentCents: quickMoneyCents(installment)
+        };
+
         const capped = cents < quickMoneyCents(installment);
-        installmentQuickStatus((capped ? "Final balance " : "Standard installment ") + formatMoney(cents / 100, loan.currency) + " filled with today's date. Review, then select Add repayment.");
+        installmentQuickStatus(
+          (capped ? "Final combined balance " : "Standard installment ") +
+          formatMoney(cents / 100, group.currency) +
+          " filled. Any amount entered here will be allocated to the oldest loans first."
+        );
         repaymentElement("repaymentAmount").focus();
       } catch (error) {
-        if (stillCurrent()) installmentQuickStatus(error.message || "Could not prepare the installment. Enter the amount manually.", true);
+        if (stillCurrent()) {
+          installmentQuickStatus(error.message || "Could not prepare the repayment. Enter the amount manually.", true);
+        }
       } finally {
         if (request === state.request) {
           state.loading = false;
@@ -2256,6 +2351,7 @@
         }
       }
     }
+
 
     const privateBalanceValues = {
       dadCash: 0,
@@ -3137,32 +3233,37 @@
         "";
 
       first.textContent =
-        "Choose an active loan";
+        "Choose a borrower / lender balance";
 
       repaymentSelect.appendChild(
         first
       );
 
-      loanBalances
-        .filter(isPayableLoan)
-        .forEach((loan) => {
+      buildPayableLoanGroups()
+        .forEach((group) => {
           const option =
             document.createElement(
               "option"
             );
 
           option.value =
-            loan.loan_id;
+            group.anchorLoanId;
+
+          const count =
+            group.loans.length === 1
+              ? ""
+              : " · " + group.loans.length + " loans";
 
           option.textContent =
-            loan.lender_name +
+            group.lender_name +
             " → " +
-            loan.borrower_name +
+            group.borrower_name +
             " · " +
             formatMoney(
-              loan.remaining_amount,
-              loan.currency
-            );
+              group.totalCents / 100,
+              group.currency
+            ) +
+            count;
 
           repaymentSelect.appendChild(
             option
@@ -3605,63 +3706,91 @@
           )
         );
 
-      repayments.forEach(
-        (payment) => {
-          const loan =
-            loanMap.get(
-              payment.loan_id
-            );
+      const grouped = [];
+      const batchMap = new Map();
 
-          const label =
-            loan
-              ? loan.lender_name +
-                " → " +
-                loan.borrower_name
-              : "Loan";
+      repayments.forEach((payment) => {
+        const loan = loanMap.get(payment.loan_id);
+        const currency = loan?.currency || "MVR";
+        const created = String(payment.created_at || payment.id || "");
+        const party = loan ? loanPartyKey(loan) : "loan:" + payment.loan_id;
+        const key = [
+          created,
+          payment.payment_date || "",
+          party,
+          payment.payment_method || "",
+          payment.notes || ""
+        ].join("|");
 
-          const currency =
-            loan?.currency ||
-            "MVR";
-
-          const row =
-            document.createElement(
-              "tr"
-            );
-
-          row.append(
-            cell(
-              formatDate(
-                payment.payment_date
-              )
-            ),
-
-            cell(label),
-
-            cell(
-              formatMoney(
-                payment.amount,
-                currency
-              ),
-              "money-cell"
-            ),
-
-            cell(
-              payment.payment_method ||
-              "—"
-            ),
-
-            cell(
-              payment.notes ||
-              "—",
-              "muted"
-            )
-          );
-
-          tbody.appendChild(
-            row
-          );
+        let batch = batchMap.get(key);
+        if (!batch) {
+          batch = {
+            payment_date: payment.payment_date,
+            payment_method: payment.payment_method,
+            notes: payment.notes,
+            currency,
+            lender_name: loan?.lender_name || "Lender",
+            borrower_name: loan?.borrower_name || "Borrower",
+            cents: 0,
+            allocations: 0
+          };
+          batchMap.set(key, batch);
+          grouped.push(batch);
         }
-      );
+
+        batch.cents += quickMoneyCents(payment.amount) || 0;
+        batch.allocations += 1;
+      });
+
+      grouped.forEach((payment) => {
+        const label =
+          payment.lender_name +
+          " → " +
+          payment.borrower_name +
+          (
+            payment.allocations > 1
+              ? " · " + payment.allocations + " loans"
+              : ""
+          );
+
+        const row =
+          document.createElement(
+            "tr"
+          );
+
+        row.append(
+          cell(
+            formatDate(
+              payment.payment_date
+            )
+          ),
+
+          cell(label),
+
+          cell(
+            formatMoney(
+              payment.cents / 100,
+              payment.currency
+            ),
+            "money-cell"
+          ),
+
+          cell(
+            payment.payment_method ||
+            "—"
+          ),
+
+          cell(
+            payment.notes ||
+            "—",
+            "muted"
+          )
+        );
+
+        tbody.appendChild(
+          row
+        );
+      });
     }
 
 
@@ -4373,21 +4502,16 @@
       event.preventDefault();
       const state = repaymentQuickState;
       if (state.saving || !currentUser || !event.target.reportValidity()) return;
+
       const cents = quickMoneyCents(repaymentElement("repaymentAmount").value);
-      const loanId = repaymentElement("repaymentLoan").value;
-      if (!(cents > 0) || !loanId) {
-        showMessage("Choose a loan and enter a valid repayment amount.", true);
+      const seedLoanId = repaymentElement("repaymentLoan").value;
+      if (!(cents > 0) || !seedLoanId) {
+        showMessage("Choose a borrower / lender balance and enter a valid repayment amount.", true);
         return;
       }
+
       const epoch = state.epoch;
       const userId = currentUser.id;
-      const payload = {
-        loan_id: loanId,
-        payment_date: repaymentElement("repaymentDate").value,
-        amount: cents / 100,
-        payment_method: clean(repaymentElement("repaymentMethod").value),
-        notes: clean(repaymentElement("repaymentNotes").value)
-      };
       state.request++;
       state.loading = false;
       state.saving = true;
@@ -4396,29 +4520,83 @@
       setButtonLoading(button, true, "Adding…");
       syncRepaymentQuickButton();
       showMessage("");
+
       let saved = false;
       try {
-        const loan = await readRepaymentLoan(loanId);
+        const refreshed = await readRepaymentGroup(seedLoanId);
         if (epoch !== state.epoch || currentUser?.id !== userId) return;
-        const remaining = quickMoneyCents(loan.remaining_amount);
-        if (cents > remaining) {
-          if (state.autoFilled?.loanId === loanId && state.autoFilled.cents === cents) {
-            const updated = Math.min(state.autoFilled.installmentCents, remaining);
+
+        loanBalances = refreshed.rows;
+        const group = refreshed.group;
+        const totalRemaining = group.totalCents;
+
+        if (cents > totalRemaining) {
+          if (state.autoFilled?.loanId === seedLoanId && state.autoFilled.cents === cents) {
+            const updated = Math.min(state.autoFilled.installmentCents, totalRemaining);
             repaymentElement("repaymentAmount").value = (updated / 100).toFixed(2);
             state.autoFilled.cents = updated;
-            installmentQuickStatus("Balance changed. Suggested amount updated to " + formatMoney(updated / 100, loan.currency) + ". Review before saving.", true);
+            installmentQuickStatus(
+              "Balance changed. Suggested amount updated to " +
+              formatMoney(updated / 100, group.currency) +
+              ". Review before saving.",
+              true
+            );
           }
-          throw new Error("The repayment exceeds the latest remaining balance of " + formatMoney(remaining / 100, loan.currency) + ". Review the amount before saving again.");
+          throw new Error(
+            "The repayment exceeds the latest combined balance of " +
+            formatMoney(totalRemaining / 100, group.currency) +
+            ". Review the amount before saving again."
+          );
         }
-        const { error } = await supabaseClient.from("loan_payments").insert(payload);
+
+        let unallocated = cents;
+        const paymentDate = repaymentElement("repaymentDate").value;
+        const paymentMethod = clean(repaymentElement("repaymentMethod").value);
+        const notes = clean(repaymentElement("repaymentNotes").value);
+        const payloads = [];
+        const allocations = [];
+
+        for (const loan of group.loans) {
+          if (!(unallocated > 0)) break;
+          const loanRemaining = quickMoneyCents(loan.remaining_amount) || 0;
+          if (!(loanRemaining > 0)) continue;
+
+          const allocation = Math.min(unallocated, loanRemaining);
+          payloads.push({
+            loan_id: loan.loan_id,
+            payment_date: paymentDate,
+            amount: allocation / 100,
+            payment_method: paymentMethod,
+            notes
+          });
+          allocations.push({
+            loanId: loan.loan_id,
+            cents: allocation
+          });
+          unallocated -= allocation;
+        }
+
+        if (unallocated !== 0 || !payloads.length) {
+          throw new Error("The repayment could not be fully allocated. Refresh and try again.");
+        }
+
+        const { error } = await supabaseClient.from("loan_payments").insert(payloads);
         if (error) throw error;
         saved = true;
+
         if (epoch !== state.epoch || currentUser?.id !== userId) return;
+
         event.target.reset();
         repaymentElement("repaymentDate").value = quickToday();
         state.autoFilled = null;
         updateRepaymentQuickHint();
-        showMessage("Loan repayment added successfully.");
+
+        const allocationText =
+          allocations.length === 1
+            ? "Applied to 1 loan."
+            : "Automatically allocated across " + allocations.length + " loans, oldest first.";
+        showMessage("Repayment added successfully. " + allocationText);
+
         // Refresh failures must never suggest repeating a committed payment.
         const [refresh] = await Promise.allSettled([loadData()]);
         if (refresh.status === "rejected" && epoch === state.epoch && currentUser?.id === userId) {
@@ -4426,7 +4604,12 @@
         }
       } catch (error) {
         if (epoch === state.epoch && currentUser?.id === userId) {
-          showMessage(saved ? "Repayment saved. Reload the page to update the balances." : (error.message || "Repayment could not be added."), true);
+          showMessage(
+            saved
+              ? "Repayment saved. Reload the page to update the balances."
+              : (error.message || "Repayment could not be added."),
+            true
+          );
         }
       } finally {
         if (epoch === state.epoch) {

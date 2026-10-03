@@ -775,12 +775,16 @@
     }
 
     .rate-item {
-      display: flex;
+      display: grid;
+      grid-template-columns:
+        minmax(110px, 0.8fr)
+        minmax(120px, 1fr)
+        minmax(120px, 1fr);
+      gap: 12px;
       align-items: center;
-      justify-content: space-between;
-      gap: 16px;
+      min-width: 0;
 
-      padding: 13px 14px;
+      padding: 14px;
 
       border: 1px solid var(--line);
       border-radius: 13px;
@@ -788,14 +792,40 @@
       background: var(--surface-soft);
     }
 
-    .rate-item span {
-      color: var(--muted);
-      font-size: 0.85rem;
+    .rate-item > div {
+      min-width: 0;
     }
 
-    .rate-item strong {
+    .rate-item-label {
+      display: block;
+      color: var(--muted);
+      font-size: 0.7rem;
+      font-weight: 700;
+      line-height: 1.3;
+    }
+
+    .rate-item-value {
+      display: block;
+      margin-top: 4px;
+      color: var(--ink);
+      font-size: 0.86rem;
+      font-weight: 800;
+      line-height: 1.35;
+      overflow-wrap: anywhere;
+    }
+
+    .rate-item-value.money {
       color: var(--brand);
-      white-space: nowrap;
+      font-size: 0.92rem;
+    }
+
+    .rate-item-note {
+      grid-column: 1 / -1;
+      margin-top: 1px;
+      color: var(--muted);
+      font-size: 0.75rem;
+      line-height: 1.4;
+      overflow-wrap: anywhere;
     }
 
     .small-note {
@@ -873,6 +903,13 @@
       .debt-grid {
         grid-template-columns: 1fr;
       }
+
+      .rate-item {
+        grid-template-columns:
+          minmax(0, 0.85fr)
+          minmax(0, 1fr)
+          minmax(0, 1fr);
+      }
     }
 
     @media (max-width: 460px) {
@@ -898,6 +935,21 @@
       .admin-tabs {
         display: grid;
         grid-template-columns: 1fr 1fr;
+      }
+
+      .rate-list {
+        gap: 9px;
+      }
+
+      .rate-item {
+        grid-template-columns: minmax(0, 1fr);
+        gap: 10px;
+        padding: 14px;
+      }
+
+      .rate-item-note {
+        grid-column: auto;
+        padding-top: 2px;
       }
 
       .action-card,
@@ -2953,35 +3005,96 @@
         item.className =
           "rate-item";
 
-        const label =
-          document.createElement(
-            "span"
+        const makeField = (
+          labelText,
+          valueText,
+          isMoney = false
+        ) => {
+          const box =
+            document.createElement(
+              "div"
+            );
+
+          const label =
+            document.createElement(
+              "span"
+            );
+
+          label.className =
+            "rate-item-label";
+
+          label.textContent =
+            labelText;
+
+          const value =
+            document.createElement(
+              "strong"
+            );
+
+          value.className =
+            "rate-item-value" +
+            (
+              isMoney
+                ? " money"
+                : ""
+            );
+
+          value.textContent =
+            valueText;
+
+          box.append(
+            label,
+            value
           );
 
-        label.textContent =
-          "From " +
-          displayMonth(
-            rate.effective_from
-          );
-
-        const amount =
-          document.createElement(
-            "strong"
-          );
-
-        amount.textContent =
-          formatMVR(
-            rate.full_rent_amount
-          ) +
-          " → " +
-          formatMVR(
-            rate.fixed_rent_share
-          );
+          return box;
+        };
 
         item.append(
-          label,
-          amount
+          makeField(
+            "Effective from",
+            displayMonth(
+              rate.effective_from
+            )
+          ),
+
+          makeField(
+            "Full rent",
+            formatMVR(
+              rate.full_rent_amount
+            ),
+            true
+          ),
+
+          makeField(
+            "Imaad share",
+            formatMVR(
+              rate.fixed_rent_share
+            ),
+            true
+          )
         );
+
+        if (
+          String(
+            rate.note || ""
+          ).trim()
+        ) {
+          const note =
+            document.createElement(
+              "div"
+            );
+
+          note.className =
+            "rate-item-note";
+
+          note.textContent =
+            rate.note;
+
+          item.appendChild(
+            note
+          );
+        }
 
         list.appendChild(
           item

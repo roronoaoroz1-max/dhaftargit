@@ -1109,6 +1109,99 @@
       cursor: pointer;
     }
 
+    .month-setup {
+      margin-top: 16px;
+      padding-top: 14px;
+      border-top: 1px solid var(--line);
+    }
+
+    .month-setup-head {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 12px;
+      flex-wrap: wrap;
+      margin-bottom: 10px;
+    }
+
+    .month-setup-head strong { font-size: 0.88rem; }
+    .month-setup-head span { color: var(--muted); font-size: 0.74rem; }
+
+    .month-setup-list {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 7px;
+    }
+
+    .month-setup-item {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      min-width: 0;
+      padding: 9px 10px;
+      border-radius: 11px;
+      background: var(--surface-soft);
+    }
+
+    .month-setup-item span {
+      min-width: 0;
+      color: var(--ink);
+      font-size: 0.74rem;
+      font-weight: 750;
+    }
+
+    .month-setup-item strong {
+      flex: 0 0 auto;
+      font-size: 0.72rem;
+    }
+
+    .month-setup-item strong.ready { color: var(--success); }
+    .month-setup-item strong.missing { color: var(--warning); }
+
+    .month-setup-actions {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 8px;
+      margin-top: 10px;
+    }
+
+    .month-setup-actions button {
+      width: 100%;
+      min-width: 0;
+    }
+
+    .defaults-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 12px;
+      margin-top: 14px;
+    }
+
+    .defaults-card {
+      margin-top: 10px;
+      padding: 18px;
+    }
+
+    .defaults-card h3 {
+      margin: 0 0 6px;
+      font-size: 1rem;
+    }
+
+    .defaults-card > p {
+      margin: 0;
+      color: var(--muted);
+      font-size: 0.8rem;
+      line-height: 1.5;
+    }
+
+    .defaults-actions {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      margin-top: 14px;
+    }
+
     .recent-activity {
       margin-top: 16px;
       padding-top: 14px;
@@ -1242,6 +1335,8 @@
       .admin-month-bar { top: 6px; }
       .admin-home-card { padding: 18px; }
       .admin-quick-actions { grid-template-columns: minmax(0, 1fr); }
+      .month-setup-list { grid-template-columns: minmax(0, 1fr); }
+      .defaults-grid { grid-template-columns: minmax(0, 1fr); }
       .recent-activity-item { grid-template-columns: minmax(0, 1fr) auto; }
 
       .mobile-bottom-nav {
@@ -1875,6 +1970,21 @@
           <a href="amanah.html">↗ Open Amanah</a>
         </div>
 
+        <div class="month-setup" id="monthSetupPanel">
+          <div class="month-setup-head">
+            <strong id="monthSetupTitle">Month setup</strong>
+            <span id="monthSetupCount">Checking…</span>
+          </div>
+          <div class="month-setup-list" id="monthSetupList">
+            <div class="history-empty">Checking monthly setup…</div>
+          </div>
+          <div class="month-setup-actions">
+            <button class="history-button primary" id="setupMonthButton" type="button">Set up month</button>
+            <button class="history-button" id="copyPreviousMonthButton" type="button">Copy previous month</button>
+          </div>
+          <p class="quick-note" id="monthSetupMessage">Recurring defaults fill only missing amounts. Electricity and Water stay blank until their actual bills arrive.</p>
+        </div>
+
         <div class="recent-activity">
           <div class="recent-activity-head">
             <strong>Recent activity</strong>
@@ -2109,6 +2219,34 @@
               <button class="history-button" id="reloadMonthlyBills" type="button">Reload saved bills</button>
             </div>
           </form>
+        </section>
+
+        <section class="card defaults-card" aria-labelledby="recurringDefaultsTitle">
+          <h3 id="recurringDefaultsTitle">Recurring bill defaults</h3>
+          <p>Save the usual monthly amounts. These are used by Smart Month Setup and never overwrite amounts already entered for a month.</p>
+          <div class="defaults-grid">
+            <div class="field">
+              <label for="defaultWifi">WiFi default (MVR)</label>
+              <input id="defaultWifi" type="number" min="0" step="0.01" inputmode="decimal" placeholder="Not set">
+            </div>
+            <div class="field">
+              <label for="defaultTv">TV default (MVR)</label>
+              <input id="defaultTv" type="number" min="0" step="0.01" inputmode="decimal" placeholder="Not set">
+            </div>
+            <div class="field">
+              <label for="defaultMalPhone">Mal's phone default (MVR)</label>
+              <input id="defaultMalPhone" type="number" min="0" step="0.01" inputmode="decimal" placeholder="Not set">
+            </div>
+            <div class="field">
+              <label for="defaultMyPhone">My phone default (MVR)</label>
+              <input id="defaultMyPhone" type="number" min="0" step="0.01" inputmode="decimal" placeholder="Not set">
+            </div>
+          </div>
+          <div class="defaults-actions">
+            <button class="history-button primary" id="saveRecurringDefaults" type="button">Save defaults</button>
+            <button class="history-button" id="reloadRecurringDefaults" type="button">Reload</button>
+          </div>
+          <p class="quick-status" id="recurringDefaultsStatus" role="status" aria-live="polite">Defaults not loaded yet.</p>
         </section>
         </details>
 
@@ -5310,6 +5448,7 @@
       paymentElement("billUnpaidTotal").textContent = formatMVR(unpaidTotal / 100);
 
       if (typeof renderAdminHome === "function") renderAdminHome();
+      if (typeof renderMonthSetupChecklist === "function") renderMonthSetupChecklist();
     }
 
 
@@ -6007,6 +6146,7 @@
       ]);
 
       renderAdminHome();
+      renderMonthSetupChecklist();
     }
 
     function adminScrollTo(targetId, open = true) {
@@ -6127,6 +6267,345 @@
       }
     }
 
+    const RECURRING_DEFAULT_ITEMS = [
+      { key: "wifi", label: "WiFi", marker: "__default_amount__wifi", billType: "WiFi", inputId: "defaultWifi" },
+      { key: "tv", label: "TV", marker: "__default_amount__tv", billType: "TV", inputId: "defaultTv" },
+      { key: "malPhone", label: "Mal's phone", marker: "__default_amount__mal_phone", statusKey: "malPhone", inputId: "defaultMalPhone" },
+      { key: "myPhone", label: "My phone", marker: "__default_amount__my_phone", statusKey: "myPhone", inputId: "defaultMyPhone" }
+    ];
+
+    const recurringDefaultsState = {
+      loaded: false,
+      saving: false,
+      rows: new Map(),
+      cents: new Map()
+    };
+
+    function recurringDefaultsStatus(message, isError = false) {
+      const element = paymentElement("recurringDefaultsStatus");
+      element.textContent = message;
+      element.classList.toggle("is-error", isError);
+    }
+
+    function recurringDefaultCents(key) {
+      const value = recurringDefaultsState.cents.get(key);
+      return Number.isSafeInteger(value) && value >= 0 ? value : null;
+    }
+
+    function renderRecurringDefaults() {
+      for (const item of RECURRING_DEFAULT_ITEMS) {
+        const cents = recurringDefaultCents(item.key);
+        paymentElement(item.inputId).value = cents === null ? "" : (cents / 100).toFixed(2);
+        paymentElement(item.inputId).disabled = recurringDefaultsState.saving;
+      }
+      paymentElement("saveRecurringDefaults").disabled = recurringDefaultsState.saving;
+      paymentElement("reloadRecurringDefaults").disabled = recurringDefaultsState.saving;
+    }
+
+    async function loadRecurringBillDefaults() {
+      if (!currentUser) return;
+
+      recurringDefaultsStatus("Loading recurring defaults…");
+
+      try {
+        const markers = RECURRING_DEFAULT_ITEMS.map(item => item.marker);
+        const { data, error } = await supabaseClient
+          .from("dhaftar_bills")
+          .select("bill_type,billing_month,amount,notes,created_by")
+          .eq("billing_month", BILL_DUE_CONFIG_MONTH)
+          .in("bill_type", markers);
+
+        if (error) throw error;
+
+        recurringDefaultsState.rows = new Map();
+        recurringDefaultsState.cents = new Map();
+
+        for (const row of data || []) {
+          recurringDefaultsState.rows.set(row.bill_type, row);
+          const meta = billStatusParseNotes(row.notes);
+          const cents = Number(meta.cents);
+          if (Number.isSafeInteger(cents) && cents >= 0) {
+            const item = RECURRING_DEFAULT_ITEMS.find(entry => entry.marker === row.bill_type);
+            if (item) recurringDefaultsState.cents.set(item.key, cents);
+          }
+        }
+
+        recurringDefaultsState.loaded = true;
+        renderRecurringDefaults();
+
+        const count = [...recurringDefaultsState.cents.values()].filter(value => Number.isSafeInteger(value)).length;
+        recurringDefaultsStatus(count + " of " + RECURRING_DEFAULT_ITEMS.length + " recurring defaults saved.");
+      } catch (error) {
+        recurringDefaultsStatus("Could not load recurring defaults. " + (error.message || "Try again."), true);
+      }
+
+      renderMonthSetupChecklist();
+    }
+
+    async function saveRecurringBillDefaults() {
+      if (!currentUser || recurringDefaultsState.saving) return;
+
+      const values = [];
+      try {
+        for (const item of RECURRING_DEFAULT_ITEMS) {
+          const input = paymentElement(item.inputId);
+          if (input.validity?.badInput) throw new Error(item.label + ": enter a valid amount.");
+          const cents = monthlyBillCents(input.value);
+          values.push({ item, cents });
+        }
+      } catch (error) {
+        recurringDefaultsStatus(error.message, true);
+        return;
+      }
+
+      recurringDefaultsState.saving = true;
+      renderRecurringDefaults();
+      recurringDefaultsStatus("Saving recurring defaults…");
+
+      try {
+        const payloads = values
+          .filter(entry => entry.cents !== null)
+          .map(({ item, cents }) => {
+            const existing = recurringDefaultsState.rows.get(item.marker);
+            return {
+              bill_type: item.marker,
+              billing_month: BILL_DUE_CONFIG_MONTH,
+              amount: 0,
+              notes: JSON.stringify({ cents }),
+              created_by: existing?.created_by ?? currentUser.id,
+              updated_by: currentUser.id
+            };
+          });
+
+        if (payloads.length) {
+          const { error } = await supabaseClient
+            .from("dhaftar_bills")
+            .upsert(payloads, { onConflict: "bill_type,billing_month" });
+          if (error) throw error;
+        }
+
+        await loadRecurringBillDefaults();
+        showAppToast("Recurring bill defaults saved.");
+      } catch (error) {
+        recurringDefaultsStatus("Could not save defaults. " + (error.message || "Try again."), true);
+      } finally {
+        recurringDefaultsState.saving = false;
+        renderRecurringDefaults();
+      }
+    }
+
+    async function readActiveRentForSetup(month) {
+      const { data, error } = await supabaseClient
+        .from("dhaftar_rent_rates")
+        .select("effective_from,full_rent_amount,fixed_rent_share")
+        .lte("effective_from", month)
+        .order("effective_from", { ascending: false })
+        .limit(1);
+
+      if (error) throw error;
+      return Array.isArray(data) && data.length ? data[0] : null;
+    }
+
+    function monthSetupRows() {
+      const due = billPaymentStatusState.due;
+      return [
+        { key: "rent", label: "Rent", ready: due.get("rent") !== null && due.get("rent") !== undefined, source: "Active rent rate" },
+        { key: "electricity", label: "Electricity", ready: due.get("electricity") !== null && due.get("electricity") !== undefined, source: "Actual bill" },
+        { key: "water", label: "Water", ready: due.get("water") !== null && due.get("water") !== undefined, source: "Actual bill" },
+        { key: "wifi", label: "WiFi", ready: due.get("wifi") !== null && due.get("wifi") !== undefined, source: recurringDefaultCents("wifi") !== null ? "Default available" : "Monthly amount" },
+        { key: "malPhone", label: "Mal's phone", ready: due.get("malPhone") !== null && due.get("malPhone") !== undefined, source: recurringDefaultCents("malPhone") !== null ? "Default available" : "Monthly amount" },
+        { key: "myPhone", label: "My phone", ready: due.get("myPhone") !== null && due.get("myPhone") !== undefined, source: recurringDefaultCents("myPhone") !== null ? "Default available" : "Monthly amount" },
+        { key: "tv", label: "TV", ready: due.get("tv") !== null && due.get("tv") !== undefined, source: recurringDefaultCents("tv") !== null ? "Default available" : "Monthly amount" }
+      ];
+    }
+
+    function renderMonthSetupChecklist() {
+      const container = paymentElement("monthSetupList");
+      if (!container) return;
+
+      const month = billPaymentStatusState.month || monthlyBillMonth();
+      paymentElement("monthSetupTitle").textContent = displayMonth(month) + " setup";
+
+      const rows = monthSetupRows();
+      const readyCount = rows.filter(row => row.ready).length;
+      paymentElement("monthSetupCount").textContent = readyCount + " of " + rows.length + " ready";
+
+      container.replaceChildren();
+      for (const row of rows) {
+        const item = document.createElement("div");
+        item.className = "month-setup-item";
+
+        const label = document.createElement("span");
+        label.textContent = row.label;
+
+        const status = document.createElement("strong");
+        status.className = row.ready ? "ready" : "missing";
+        status.textContent = row.ready ? "✓ Ready" : "○ Needed";
+
+        item.title = row.source;
+        item.append(label, status);
+        container.appendChild(item);
+      }
+
+      paymentElement("setupMonthButton").disabled =
+        recurringDefaultsState.saving || monthlyClosingState.closed || readyCount === rows.length;
+      paymentElement("copyPreviousMonthButton").disabled =
+        recurringDefaultsState.saving || monthlyClosingState.closed;
+    }
+
+    function previousBillingMonth(month) {
+      const date = new Date(month + "T00:00:00Z");
+      date.setUTCMonth(date.getUTCMonth() - 1);
+      return date.toISOString().slice(0, 8) + "01";
+    }
+
+    async function setupSelectedMonth({ copyPrevious = false } = {}) {
+      if (!currentUser) return;
+
+      const month = adminMasterMonthValue();
+      if (await monthIsClosed(month)) {
+        showAppToast(displayMonth(month) + " is closed. Unlock it before setup.");
+        return;
+      }
+
+      paymentElement("setupMonthButton").disabled = true;
+      paymentElement("copyPreviousMonthButton").disabled = true;
+      paymentElement("monthSetupMessage").textContent =
+        copyPrevious ? "Copying missing values from the previous month…" : "Applying recurring defaults to missing values…";
+
+      try {
+        const [currentBills, currentStatus, rentRate] = await Promise.all([
+          readMonthlyBills(month),
+          readBillPaymentStatus(month),
+          readActiveRentForSetup(month)
+        ]);
+
+        const billPayloads = [];
+        const statusPayloads = [];
+
+        if (!copyPrevious) {
+          for (const item of RECURRING_DEFAULT_ITEMS) {
+            const cents = recurringDefaultCents(item.key);
+            if (cents === null) continue;
+
+            if (item.billType) {
+              if (!currentBills.has(item.billType)) {
+                billPayloads.push({
+                  bill_type: item.billType,
+                  billing_month: month,
+                  amount: cents / 100,
+                  notes: "Smart Month Setup default",
+                  created_by: currentUser.id,
+                  updated_by: currentUser.id
+                });
+              }
+            } else if (item.statusKey) {
+              const statusItem = BILL_PAYMENT_STATUS_ITEMS.find(entry => entry.key === item.statusKey);
+              const existing = currentStatus.rows.get(statusItem.marker);
+              const meta = billStatusParseNotes(existing?.notes);
+              if (!Number.isSafeInteger(Number(meta.dueCents))) {
+                statusPayloads.push({
+                  bill_type: statusItem.marker,
+                  billing_month: month,
+                  amount: 0,
+                  notes: JSON.stringify({
+                    ...meta,
+                    dueCents: cents,
+                    paidCents: Number(meta.paidCents) || 0,
+                    paidOn: String(meta.paidOn || "")
+                  }),
+                  created_by: existing?.created_by ?? currentUser.id,
+                  updated_by: currentUser.id
+                });
+              }
+            }
+          }
+        } else {
+          const previous = previousBillingMonth(month);
+          const [previousBills, previousStatus] = await Promise.all([
+            readMonthlyBills(previous),
+            readBillPaymentStatus(previous)
+          ]);
+
+          for (const type of ["Water", "Electricity", "WiFi", "TV"]) {
+            if (currentBills.has(type)) continue;
+            const saved = previousBills.get(type);
+            if (!saved) continue;
+            billPayloads.push({
+              bill_type: type,
+              billing_month: month,
+              amount: saved.cents / 100,
+              notes: "Copied from " + displayMonth(previous),
+              created_by: currentUser.id,
+              updated_by: currentUser.id
+            });
+          }
+
+          for (const key of ["malPhone", "myPhone"]) {
+            const item = BILL_PAYMENT_STATUS_ITEMS.find(entry => entry.key === key);
+            const current = currentStatus.rows.get(item.marker);
+            const currentMeta = billStatusParseNotes(current?.notes);
+            if (Number.isSafeInteger(Number(currentMeta.dueCents))) continue;
+
+            const previousRow = previousStatus.rows.get(item.marker);
+            const previousMeta = billStatusParseNotes(previousRow?.notes);
+            const previousDue = Number(previousMeta.dueCents);
+            if (!Number.isSafeInteger(previousDue) || previousDue < 0) continue;
+
+            statusPayloads.push({
+              bill_type: item.marker,
+              billing_month: month,
+              amount: 0,
+              notes: JSON.stringify({
+                ...currentMeta,
+                dueCents: previousDue,
+                paidCents: Number(currentMeta.paidCents) || 0,
+                paidOn: String(currentMeta.paidOn || "")
+              }),
+              created_by: current?.created_by ?? currentUser.id,
+              updated_by: currentUser.id
+            });
+          }
+        }
+
+        if (billPayloads.length) {
+          const { error } = await supabaseClient
+            .from("dhaftar_bills")
+            .upsert(billPayloads, { onConflict: "bill_type,billing_month" });
+          if (error) throw error;
+        }
+
+        if (statusPayloads.length) {
+          const { error } = await supabaseClient
+            .from("dhaftar_bills")
+            .upsert(statusPayloads, { onConflict: "bill_type,billing_month" });
+          if (error) throw error;
+        }
+
+        await Promise.all([
+          loadMonthlyBills(),
+          loadBillPaymentStatus(),
+          loadMonthlyClosingDashboard(),
+          loadHouseholdBalance()
+        ]);
+
+        const applied = billPayloads.length + statusPayloads.length;
+        const rentText = rentRate ? " Rent inherited from the active rate." : " Rent rate still needs to be set.";
+        const message = applied
+          ? (copyPrevious ? "Previous month copied into " : "Smart setup applied to ") + displayMonth(month) + "." + rentText
+          : "Nothing needed copying. Existing month values were left unchanged." + rentText;
+
+        paymentElement("monthSetupMessage").textContent = message;
+        showAppToast(message);
+      } catch (error) {
+        paymentElement("monthSetupMessage").textContent =
+          "Month setup failed. " + (error.message || "Try again.");
+      } finally {
+        renderMonthSetupChecklist();
+        renderAdminHome();
+      }
+    }
+
     async function initializeAdminUx() {
       if (!currentUser) return;
 
@@ -6173,9 +6652,18 @@
           showAppToast("");
           if (action) action();
         });
+
+        paymentElement("saveRecurringDefaults").addEventListener("click", () => { void saveRecurringBillDefaults(); });
+        paymentElement("reloadRecurringDefaults").addEventListener("click", () => { void loadRecurringBillDefaults(); });
+        paymentElement("setupMonthButton").addEventListener("click", () => { void setupSelectedMonth({ copyPrevious: false }); });
+        paymentElement("copyPreviousMonthButton").addEventListener("click", () => { void setupSelectedMonth({ copyPrevious: true }); });
       }
 
-      await loadRecentActivity();
+      await Promise.all([
+        loadRecentActivity(),
+        loadRecurringBillDefaults()
+      ]);
+      renderMonthSetupChecklist();
       renderAdminHome();
     }
   </script>

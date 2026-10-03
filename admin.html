@@ -3535,7 +3535,12 @@
         state.autoFilled = null;
         showMessage("Payment added successfully.");
         // The insert is committed. A refresh error must not imply it failed.
-        await Promise.allSettled([loadOverview(), loadPaymentHistory(1), loadMonthlyClosingDashboard()]);
+        await Promise.allSettled([
+          loadOverview(),
+          loadPaymentHistory(1),
+          loadMonthlyClosingDashboard(),
+          typeof loadOutstandingCenter === "function" ? loadOutstandingCenter() : Promise.resolve()
+        ]);
       } catch (error) {
         if (epoch === state.epoch && currentUser?.id === userId) {
           showMessage(saved ? "Payment saved. Refresh the page to update the balances." : (error.message || "Payment could not be added."), true);
@@ -5167,7 +5172,13 @@
         fillMonthlyBillFields();
         monthlyBillStatus(writes.length + (writes.length === 1 ? " bill saved" : " bills saved") + " for " + displayMonth(month) + ".");
         // These refreshes are separate from the completed save.
-        await Promise.allSettled([loadHouseholdBalance(), loadOverview(), loadBillPaymentStatus(), loadMonthlyClosingDashboard()]);
+        await Promise.allSettled([
+          loadHouseholdBalance(),
+          loadOverview(),
+          loadBillPaymentStatus(),
+          loadMonthlyClosingDashboard(),
+          typeof loadOutstandingCenter === "function" ? loadOutstandingCenter() : Promise.resolve()
+        ]);
       } catch (error) {
         if (epoch !== state.epoch || currentUser?.id !== userId) return;
         if (saved) {
@@ -6192,7 +6203,8 @@
         await Promise.all([
           loadMonthlyClosingDashboard(),
           loadMonthlyBills(),
-          loadBillPaymentStatus()
+          loadBillPaymentStatus(),
+          typeof loadOutstandingCenter === "function" ? loadOutstandingCenter() : Promise.resolve()
         ]);
       } catch (error) {
         paymentElement("monthlyClosingMessage").textContent =
@@ -6284,7 +6296,8 @@
       await Promise.allSettled([
         loadSelectedRentRate(),
         loadHouseholdBalance(),
-        loadRecentActivity()
+        loadRecentActivity(),
+        loadOutstandingCenter()
       ]);
 
       renderAdminHome();
@@ -6354,7 +6367,9 @@
             ? "Ready to close"
             : overdue > 0
               ? overdue + (overdue === 1 ? " overdue bill" : " overdue bills")
-              : "In progress";
+              : outstandingState.items.length > 0
+                ? outstandingState.items.length + (outstandingState.items.length === 1 ? " previous item" : " previous items")
+                : "In progress";
     }
 
     async function loadRecentActivity() {
@@ -6407,6 +6422,343 @@
       } catch (error) {
         container.innerHTML = '<div class="history-empty">Recent activity is unavailable. Open Payment history to retry.</div>';
       }
+    }
+
+    const OUTSTANDING_START_MONTH = "2026-01-01";
+    const outstandingState = {
+      request: 0,
+      loading: false,
+      items: [],
+      providerCents: 0,
+      householdCents: 0,
+      oldestMonth: null
+    };
+
+    function monthsBeforeSelected(selectedMonth) {
+      const months = [];
+      const cursor = new Date(OUTSTANDING_START_MONTH + "T00:00:00Z");
+      const end = new Date(selectedMonth + "T00:00:00Z");
+
+      while (cursor < end) {
+        months.push(cursor.toISOString().slice(0, 8) + "01");
+        cursor.setUTCMonth(cursor.getUTCMonth() + 1);
+      }
+
+      return months;
+    }
+
+    function activeRentRateForMonth(rates, month) {
+      let active = null;
+      for (const rate of rates || []) {
+        if (String(rate.effective_from || "") <= month) active = rate;
+        else break;
+      }
+      return active;
+    }
+
+    function outstandingAgeText(item) {
+      if (item.dueDate) {
+        const diff = billDateDiffDays(item.dueDate, quickToday());
+        if (Number.isInteger(diff) && diff > 0) {
+          return diff + (diff === 1 ? " day overdue" : " days overdue");
+        }
+      }
+
+      const start = new Date(item.month + "T00:00:00Z");
+      const current = new Date(adminMasterMonthValue() + "T00:00:00Z");
+      const months =
+        (current.getUTCFullYear() - start.getUTCFullYear()) * 12 +
+        (current.getUTCMonth() - start.getUTCMonth());
+
+      return months > 0
+        ? months + (months === 1 ? " month old" : " months old")
+        : displayMonth(item.month);
+    }
+
+    function renderOutstandingCenter() {
+      const list = paymentElement("outstandingList");
+      if (!list) return;
+
+      const state = outstandingState;
+      paymentElement("outstandingProviderTotal").textContent = formatMVR(state.providerCents / 100);
+      paymentElement("outstandingHouseholdTotal").textContent = formatMVR(state.householdCents / 100);
+      paymentElement("outstandingOldest").textContent =
+        state.oldestMonth ? displayMonth(state.oldestMonth) : "None";
+      paymentElement("outstandingCount").textContent =
+        state.loading
+          ? "Checking…"
+          : state.items.length
+            ? state.items.length + (state.items.length === 1 ? " item" : " items")
+            : "All clear";
+
+      paymentElement("bottomBillsLabel").textContent =
+        state.items.length ? "Bills • " + state.items.length : "Bills";
+
+      list.replaceChildren();
+
+      if (state.loading) {
+        const loading = document.createElement("div");
+        loading.className = "history-empty";
+        loading.textContent = "Checking earlier months…";
+        list.appendChild(loading);
+        return;
+      }
+
+      if (!state.items.length) {
+        const clear = document.createElement("div");
+        clear.className = "history-empty";
+        clear.textContent = "✓ No outstanding items from earlier months.";
+        list.appendChild(clear);
+        return;
+      }
+
+      for (const entry of state.items) {
+        const row = document.createElement("div");
+        row.className = "outstanding-item";
+
+        const main = document.createElement("div");
+        main.className = "outstanding-item-main";
+
+        const title = document.createElement("strong");
+        title.textContent =
+          displayMonth(entry.month) + " · " +
+          (entry.kind === "household" ? "Household balance" : entry.label);
+
+        const meta = document.createElement("span");
+        meta.textContent =
+          entry.kind === "household"
+            ? "Imaad's household share · " + outstandingAgeText(entry)
+            : "Provider bill · " + outstandingAgeText(entry);
+
+        main.append(title, meta);
+
+        const side = document.createElement("div");
+        side.className = "outstanding-item-side";
+
+        const amount = document.createElement("strong");
+        amount.textContent = formatMVR(entry.outstandingCents / 100);
+        side.appendChild(amount);
+
+        const action = document.createElement("button");
+        action.type = "button";
+        action.className = "quick-button";
+
+        if (entry.kind === "provider") {
+          action.textContent = entry.closed ? "Month closed" : "Mark paid";
+          action.disabled = entry.closed;
+          action.addEventListener("click", () => { void markHistoricalProviderPaid(entry); });
+        } else {
+          action.textContent = entry.closed ? "Month closed" : "Add payment";
+          action.disabled = entry.closed;
+          action.addEventListener("click", () => { void payHistoricalHouseholdBalance(entry); });
+        }
+
+        side.appendChild(action);
+        row.append(main, side);
+        list.appendChild(row);
+      }
+    }
+
+    async function loadOutstandingCenter() {
+      if (!currentUser) return;
+
+      const selected = adminMasterMonthValue();
+      const months = monthsBeforeSelected(selected);
+      const request = ++outstandingState.request;
+
+      outstandingState.loading = true;
+      outstandingState.items = [];
+      outstandingState.providerCents = 0;
+      outstandingState.householdCents = 0;
+      outstandingState.oldestMonth = null;
+      renderOutstandingCenter();
+
+      if (!months.length) {
+        outstandingState.loading = false;
+        renderOutstandingCenter();
+        renderAdminHome();
+        return;
+      }
+
+      try {
+        const markers = [
+          ...BILL_PAYMENT_STATUS_ITEMS.map(item => item.marker),
+          MONTH_CLOSE_MARKER
+        ];
+
+        const [billResult, rentResult, ...summaryResults] = await Promise.all([
+          supabaseClient
+            .from("dhaftar_bills")
+            .select("bill_type,billing_month,amount,notes,created_by")
+            .gte("billing_month", OUTSTANDING_START_MONTH)
+            .lt("billing_month", selected),
+          supabaseClient
+            .from("dhaftar_rent_rates")
+            .select("effective_from,full_rent_amount,fixed_rent_share")
+            .lt("effective_from", selected)
+            .order("effective_from", { ascending: true }),
+          ...months.map(month =>
+            supabaseClient.rpc("get_dhaftar_summary", { p_billing_month: month })
+          )
+        ]);
+
+        if (request !== outstandingState.request || !currentUser) return;
+        if (billResult.error) throw billResult.error;
+        if (rentResult.error) throw rentResult.error;
+
+        const byMonth = new Map(months.map(month => [month, []]));
+        for (const row of billResult.data || []) {
+          if (byMonth.has(row.billing_month)) byMonth.get(row.billing_month).push(row);
+        }
+
+        const items = [];
+        let providerCents = 0;
+        let householdCents = 0;
+
+        for (let index = 0; index < months.length; index++) {
+          const month = months[index];
+          const rows = byMonth.get(month) || [];
+          const rowByType = new Map(rows.map(row => [row.bill_type, row]));
+          const closeMeta = billStatusParseNotes(rowByType.get(MONTH_CLOSE_MARKER)?.notes);
+          const closed = closeMeta.closed === true;
+          const activeRent = activeRentRateForMonth(rentResult.data || [], month);
+
+          for (const item of BILL_PAYMENT_STATUS_ITEMS) {
+            let dueCents = null;
+
+            if (item.source === "rent") {
+              dueCents = quickMoneyCents(activeRent?.full_rent_amount);
+            } else if (item.billType) {
+              dueCents = quickMoneyCents(rowByType.get(item.billType)?.amount);
+            } else {
+              const markerMeta = billStatusParseNotes(rowByType.get(item.marker)?.notes);
+              const manual = Number(markerMeta.dueCents);
+              dueCents = Number.isSafeInteger(manual) && manual >= 0 ? manual : null;
+            }
+
+            if (!(dueCents > 0)) continue;
+
+            const markerRow = rowByType.get(item.marker) || null;
+            const meta = billStatusParseNotes(markerRow?.notes);
+            const paidCents = Math.max(0, Math.min(dueCents, Number(meta.paidCents) || 0));
+            const remaining = Math.max(0, dueCents - paidCents);
+            if (!(remaining > 0)) continue;
+
+            const dueDay = billDueDay(item);
+            const dueDate = dueDay ? billActualDueDate(month, dueDay) : "";
+
+            items.push({
+              kind: "provider",
+              month,
+              key: item.key,
+              label: item.label,
+              marker: item.marker,
+              markerRow,
+              dueCents,
+              paidCents,
+              outstandingCents: remaining,
+              dueDate,
+              closed
+            });
+            providerCents += remaining;
+          }
+
+          const summaryResult = summaryResults[index];
+          if (!summaryResult?.error && summaryResult?.data && summaryResult.data.success !== false) {
+            const remaining = quickMoneyCents(summaryResult.data.remainingBalance);
+            if (remaining > 0) {
+              items.push({
+                kind: "household",
+                month,
+                label: "Household balance",
+                outstandingCents: remaining,
+                dueDate: "",
+                closed
+              });
+              householdCents += remaining;
+            }
+          }
+        }
+
+        items.sort((a, b) =>
+          a.month.localeCompare(b.month) ||
+          (a.kind === b.kind ? a.label.localeCompare(b.label) : a.kind === "provider" ? -1 : 1)
+        );
+
+        outstandingState.items = items;
+        outstandingState.providerCents = providerCents;
+        outstandingState.householdCents = householdCents;
+        outstandingState.oldestMonth = items[0]?.month || null;
+      } catch (error) {
+        if (request === outstandingState.request) {
+          paymentElement("outstandingList").innerHTML =
+            '<div class="history-empty">Could not check earlier outstanding items. Refresh or change month to retry.</div>';
+          paymentElement("outstandingCount").textContent = "Unavailable";
+        }
+        return;
+      } finally {
+        if (request === outstandingState.request) {
+          outstandingState.loading = false;
+          renderOutstandingCenter();
+          renderAdminHome();
+        }
+      }
+    }
+
+    async function markHistoricalProviderPaid(entry) {
+      if (!currentUser || !entry || entry.kind !== "provider") return;
+
+      if (await monthIsClosed(entry.month)) {
+        showAppToast(displayMonth(entry.month) + " is closed. Unlock that month before changing its bill status.");
+        return;
+      }
+
+      const existingMeta = billStatusParseNotes(entry.markerRow?.notes);
+      const meta = {
+        ...existingMeta,
+        paidCents: entry.dueCents,
+        paidOn: quickToday()
+      };
+
+      if (entry.key === "malPhone" || entry.key === "myPhone") {
+        meta.dueCents = entry.dueCents;
+      }
+
+      try {
+        const { error } = await supabaseClient
+          .from("dhaftar_bills")
+          .upsert({
+            bill_type: entry.marker,
+            billing_month: entry.month,
+            amount: 0,
+            notes: JSON.stringify(meta),
+            created_by: entry.markerRow?.created_by ?? currentUser.id,
+            updated_by: currentUser.id
+          }, { onConflict: "bill_type,billing_month" });
+
+        if (error) throw error;
+
+        showAppToast(entry.label + " marked paid for " + displayMonth(entry.month) + ".");
+        await loadOutstandingCenter();
+      } catch (error) {
+        showAppToast("Could not mark " + entry.label + " paid. " + (error.message || "Try again."));
+      }
+    }
+
+    async function payHistoricalHouseholdBalance(entry) {
+      if (!currentUser || !entry || entry.kind !== "household") return;
+
+      if (await monthIsClosed(entry.month)) {
+        showAppToast(displayMonth(entry.month) + " is closed. Unlock it before adding a payment.");
+        return;
+      }
+
+      paymentElement("masterMonth").value = entry.month.slice(0, 7);
+      await applyMasterAdminMonth();
+      paymentElement("payerName").value = "Imaad";
+      paymentElement("paymentDate").value = quickToday();
+      adminScrollTo("paymentCard");
+      await loadHouseholdBalance(true);
     }
 
     const RECURRING_DEFAULT_ITEMS = [
@@ -6803,9 +7155,11 @@
 
       await Promise.all([
         loadRecentActivity(),
-        loadRecurringBillDefaults()
+        loadRecurringBillDefaults(),
+        loadOutstandingCenter()
       ]);
       renderMonthSetupChecklist();
+      renderOutstandingCenter();
       renderAdminHome();
     }
   </script>

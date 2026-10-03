@@ -619,6 +619,167 @@
       font-size: 0.84rem;
     }
 
+    .borrower-ledger-card {
+      padding: clamp(20px, 3vw, 28px);
+      margin-bottom: 20px;
+      box-shadow: var(--soft-shadow);
+    }
+
+    .borrower-ledger-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 14px;
+      margin-top: 18px;
+    }
+
+    .borrower-ledger {
+      min-width: 0;
+      border: 1px solid var(--line);
+      border-radius: 18px;
+      background: var(--surface-soft);
+      overflow: hidden;
+    }
+
+    .borrower-ledger > summary {
+      list-style: none;
+      cursor: pointer;
+      padding: 18px;
+    }
+
+    .borrower-ledger > summary::-webkit-details-marker {
+      display: none;
+    }
+
+    .ledger-summary-top,
+    .ledger-actions,
+    .ledger-metrics {
+      display: flex;
+      gap: 10px;
+    }
+
+    .ledger-summary-top {
+      align-items: flex-start;
+      justify-content: space-between;
+    }
+
+    .ledger-title {
+      margin: 0;
+      color: var(--ink);
+      font-size: 1rem;
+      font-weight: 900;
+    }
+
+    .ledger-subtitle {
+      margin: 5px 0 0;
+      color: var(--muted);
+      font-size: 0.76rem;
+      line-height: 1.45;
+    }
+
+    .ledger-balance {
+      flex: 0 0 auto;
+      color: var(--warning);
+      font-weight: 900;
+      font-size: 1.05rem;
+      text-align: right;
+    }
+
+    .ledger-metrics {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      margin-top: 16px;
+    }
+
+    .ledger-metric {
+      min-width: 0;
+      padding: 10px;
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      background: var(--surface);
+    }
+
+    .ledger-metric span {
+      display: block;
+      color: var(--muted);
+      font-size: 0.68rem;
+      font-weight: 700;
+    }
+
+    .ledger-metric strong {
+      display: block;
+      margin-top: 5px;
+      overflow-wrap: anywhere;
+      color: var(--ink);
+      font-size: 0.82rem;
+    }
+
+    .ledger-expanded {
+      padding: 0 18px 18px;
+      border-top: 1px solid var(--line);
+    }
+
+    .ledger-actions {
+      flex-wrap: wrap;
+      margin: 16px 0;
+    }
+
+    .ledger-actions button {
+      width: auto;
+    }
+
+    .ledger-timeline {
+      display: grid;
+      gap: 8px;
+    }
+
+    .ledger-event {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto;
+      gap: 12px;
+      align-items: center;
+      padding: 11px 12px;
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      background: var(--surface);
+    }
+
+    .ledger-event-main strong {
+      display: block;
+      color: var(--ink);
+      font-size: 0.8rem;
+    }
+
+    .ledger-event-main span {
+      display: block;
+      margin-top: 3px;
+      color: var(--muted);
+      font-size: 0.7rem;
+    }
+
+    .ledger-event-amount {
+      font-weight: 900;
+      font-size: 0.82rem;
+      white-space: nowrap;
+    }
+
+    .ledger-event-amount.borrowed {
+      color: var(--warning);
+    }
+
+    .ledger-event-amount.repaid {
+      color: var(--success);
+    }
+
+    @media (max-width: 760px) {
+      .borrower-ledger-grid {
+        grid-template-columns: minmax(0, 1fr);
+      }
+
+      .ledger-metrics {
+        grid-template-columns: minmax(0, 1fr);
+      }
+    }
+
     .data-stack {
       display: grid;
       gap: 18px;
@@ -1278,6 +1439,33 @@
         >
           <div class="empty-box">
             Loading person-wise balances…
+          </div>
+        </div>
+      </section>
+
+      <!-- BORROWER LEDGER -->
+      <section
+        class="card borrower-ledger-card"
+        aria-labelledby="borrowerLedgerTitle"
+      >
+        <div class="overview-heading">
+          <div>
+            <h2 id="borrowerLedgerTitle">
+              Borrower ledger
+            </h2>
+
+            <p>
+              One running account for each lender and borrower. Open an account to review its activity or record the next transaction.
+            </p>
+          </div>
+        </div>
+
+        <div
+          class="borrower-ledger-grid"
+          id="borrowerLedgerGrid"
+        >
+          <div class="empty-box">
+            Loading borrower accounts…
           </div>
         </div>
       </section>
@@ -3021,7 +3209,7 @@
                 ascending: false
               }
             )
-            .limit(40),
+            .limit(1000),
 
           supabaseClient
             .from(
@@ -3283,6 +3471,314 @@
       }
       if (repaymentSelect.value !== previous) repaymentDraftChanged(true);
       else updateRepaymentQuickHint();
+    }
+
+
+    function buildLedgerGroups() {
+      const groups = new Map();
+
+      loanBalances.forEach((loan) => {
+        const status = normalize(loan.calculated_status || loan.status || "");
+        if (status === "cancelled") return;
+
+        const key = loanPartyKey(loan);
+        const group = groups.get(key) || {
+          key,
+          lender_name: loan.lender_name || "Lender",
+          borrower_name: loan.borrower_name || "Borrower",
+          lender_id: loan.lender_id || null,
+          borrower_id: loan.borrower_id || null,
+          currency: loan.currency || "MVR",
+          loans: [],
+          borrowedCents: 0,
+          repaidCents: 0,
+          outstandingCents: 0,
+          activeLoans: 0,
+          events: []
+        };
+
+        const principal = Math.max(0, quickMoneyCents(loan.principal_amount) || 0);
+        const repaid = Math.max(0, quickMoneyCents(loan.total_repaid) || 0);
+        const remaining = Math.max(0, quickMoneyCents(loan.remaining_amount) || 0);
+
+        group.loans.push(loan);
+        group.borrowedCents += principal;
+        group.repaidCents += repaid;
+        group.outstandingCents += remaining;
+        if (remaining > 0 && !["paid", "cancelled"].includes(status)) group.activeLoans += 1;
+
+        group.events.push({
+          type: "borrowed",
+          date: String(loan.loan_date || loan.created_at || "").slice(0, 10),
+          sort: String(loan.created_at || loan.loan_date || ""),
+          cents: principal,
+          label: "Borrowed",
+          note: loan.notes || ""
+        });
+
+        groups.set(key, group);
+      });
+
+      const loanToGroup = new Map();
+      groups.forEach((group) => {
+        group.loans.forEach((loan) => loanToGroup.set(String(loan.loan_id), group));
+      });
+
+      const repaymentBatches = new Map();
+      repayments.forEach((payment) => {
+        const group = loanToGroup.get(String(payment.loan_id));
+        if (!group) return;
+
+        const created = String(payment.created_at || payment.id || "");
+        const batchKey = [
+          group.key,
+          created,
+          payment.payment_date || "",
+          payment.payment_method || "",
+          payment.notes || ""
+        ].join("|");
+
+        let batch = repaymentBatches.get(batchKey);
+        if (!batch) {
+          batch = {
+            group,
+            date: String(payment.payment_date || "").slice(0, 10),
+            sort: created || String(payment.payment_date || ""),
+            cents: 0,
+            method: payment.payment_method || "",
+            note: payment.notes || "",
+            allocations: 0
+          };
+          repaymentBatches.set(batchKey, batch);
+        }
+
+        batch.cents += Math.max(0, quickMoneyCents(payment.amount) || 0);
+        batch.allocations += 1;
+      });
+
+      repaymentBatches.forEach((batch) => {
+        batch.group.events.push({
+          type: "repaid",
+          date: batch.date,
+          sort: batch.sort,
+          cents: batch.cents,
+          label: "Repayment",
+          note: [
+            batch.method,
+            batch.allocations > 1 ? batch.allocations + " loan allocations" : "",
+            batch.note
+          ].filter(Boolean).join(" · ")
+        });
+      });
+
+      groups.forEach((group) => {
+        group.events.sort((a, b) =>
+          String(b.date).localeCompare(String(a.date)) ||
+          String(b.sort).localeCompare(String(a.sort)) ||
+          (a.type === "repaid" ? -1 : 1)
+        );
+        group.lastRepayment = group.events.find((event) => event.type === "repaid") || null;
+      });
+
+      return [...groups.values()].sort((a, b) =>
+        b.outstandingCents - a.outstandingCents ||
+        a.lender_name.localeCompare(b.lender_name) ||
+        a.borrower_name.localeCompare(b.borrower_name) ||
+        a.currency.localeCompare(b.currency)
+      );
+    }
+
+
+    function ledgerGroupByKey(key) {
+      return buildLedgerGroups().find((group) => group.key === key) || null;
+    }
+
+
+    function renderBorrowerLedgers() {
+      const container = document.getElementById("borrowerLedgerGrid");
+      container.replaceChildren();
+
+      const groups = buildLedgerGroups();
+      if (!groups.length) {
+        const empty = document.createElement("div");
+        empty.className = "empty-box";
+        empty.textContent = "No borrower accounts found.";
+        container.appendChild(empty);
+        return;
+      }
+
+      groups.forEach((group) => {
+        const details = document.createElement("details");
+        details.className = "borrower-ledger";
+
+        const summary = document.createElement("summary");
+        const top = document.createElement("div");
+        top.className = "ledger-summary-top";
+
+        const heading = document.createElement("div");
+        const title = document.createElement("h3");
+        title.className = "ledger-title";
+        title.textContent = group.lender_name + " → " + group.borrower_name;
+
+        const subtitle = document.createElement("p");
+        subtitle.className = "ledger-subtitle";
+        subtitle.textContent =
+          group.loans.length + (group.loans.length === 1 ? " loan recorded" : " loans recorded") +
+          (group.lastRepayment
+            ? " · Last repayment " + formatDate(group.lastRepayment.date)
+            : " · No repayment recorded");
+
+        heading.append(title, subtitle);
+
+        const balance = document.createElement("div");
+        balance.className = "ledger-balance";
+        balance.textContent = formatMoney(group.outstandingCents / 100, group.currency);
+
+        top.append(heading, balance);
+
+        const metrics = document.createElement("div");
+        metrics.className = "ledger-metrics";
+        [
+          ["Total borrowed", formatMoney(group.borrowedCents / 100, group.currency)],
+          ["Total repaid", formatMoney(group.repaidCents / 100, group.currency)],
+          ["Active loans", String(group.activeLoans)]
+        ].forEach(([label, value]) => {
+          const metric = document.createElement("div");
+          metric.className = "ledger-metric";
+          const caption = document.createElement("span");
+          caption.textContent = label;
+          const strong = document.createElement("strong");
+          strong.textContent = value;
+          metric.append(caption, strong);
+          metrics.appendChild(metric);
+        });
+
+        summary.append(top, metrics);
+
+        const expanded = document.createElement("div");
+        expanded.className = "ledger-expanded";
+
+        const actions = document.createElement("div");
+        actions.className = "ledger-actions";
+
+        const borrowButton = document.createElement("button");
+        borrowButton.type = "button";
+        borrowButton.className = "quick-button";
+        borrowButton.dataset.ledgerAction = "borrow";
+        borrowButton.dataset.ledgerKey = group.key;
+        borrowButton.textContent = "Borrow more";
+
+        const repayButton = document.createElement("button");
+        repayButton.type = "button";
+        repayButton.className = "quick-button";
+        repayButton.dataset.ledgerAction = "repay";
+        repayButton.dataset.ledgerKey = group.key;
+        repayButton.textContent = "Record repayment";
+        repayButton.disabled = !(group.outstandingCents > 0);
+
+        actions.append(borrowButton, repayButton);
+
+        const timeline = document.createElement("div");
+        timeline.className = "ledger-timeline";
+
+        if (!group.events.length) {
+          const empty = document.createElement("div");
+          empty.className = "empty-box";
+          empty.textContent = "No activity recorded.";
+          timeline.appendChild(empty);
+        } else {
+          group.events.forEach((event) => {
+            const row = document.createElement("div");
+            row.className = "ledger-event";
+
+            const main = document.createElement("div");
+            main.className = "ledger-event-main";
+            const label = document.createElement("strong");
+            label.textContent = event.label;
+            const meta = document.createElement("span");
+            meta.textContent = [
+              event.date ? formatDate(event.date) : "Date not set",
+              event.note
+            ].filter(Boolean).join(" · ");
+            main.append(label, meta);
+
+            const amount = document.createElement("div");
+            amount.className = "ledger-event-amount " + event.type;
+            amount.textContent =
+              (event.type === "repaid" ? "− " : "+ ") +
+              formatMoney(event.cents / 100, group.currency);
+
+            row.append(main, amount);
+            timeline.appendChild(row);
+          });
+        }
+
+        expanded.append(actions, timeline);
+        details.append(summary, expanded);
+        container.appendChild(details);
+      });
+    }
+
+
+    function ledgerPersonId(group, role) {
+      const direct = role === "lender" ? group?.lender_id : group?.borrower_id;
+      if (direct) return String(direct);
+
+      const name = normalize(role === "lender" ? group?.lender_name : group?.borrower_name);
+      return String(people.find((person) => normalize(person.name) === name)?.id || "");
+    }
+
+
+    function prepareBorrowMore(groupKey) {
+      const group = ledgerGroupByKey(groupKey);
+      if (!group) {
+        showMessage("This borrower account could not be found. Refresh and try again.", true);
+        return;
+      }
+
+      const lenderId = ledgerPersonId(group, "lender");
+      const borrowerId = ledgerPersonId(group, "borrower");
+      const lenderSelect = document.getElementById("loanLender");
+      const borrowerSelect = document.getElementById("loanBorrower");
+
+      if ([...lenderSelect.options].some((option) => option.value === lenderId)) lenderSelect.value = lenderId;
+      if ([...borrowerSelect.options].some((option) => option.value === borrowerId)) borrowerSelect.value = borrowerId;
+
+      document.getElementById("loanCurrency").value = group.currency;
+      document.getElementById("loanDate").value = localToday();
+      document.getElementById("loanStatus").value = "active";
+      document.getElementById("loanPrincipal").value = "";
+      document.getElementById("loanPrincipal").focus();
+      document.getElementById("loanForm").scrollIntoView({ behavior: "smooth", block: "start" });
+      showMessage("Borrow more prepared for " + group.lender_name + " → " + group.borrower_name + ".");
+    }
+
+
+    function prepareLedgerRepayment(groupKey) {
+      const group = ledgerGroupByKey(groupKey);
+      if (!group) {
+        showMessage("This borrower account could not be found. Refresh and try again.", true);
+        return;
+      }
+
+      const payable = buildPayableLoanGroups().find((item) => item.key === group.key);
+      if (!payable || !(payable.totalCents > 0)) {
+        showMessage("This borrower account has no outstanding balance.", true);
+        return;
+      }
+
+      const select = repaymentElement("repaymentLoan");
+      if (![...select.options].some((option) => option.value === payable.anchorLoanId)) {
+        showMessage("The repayment balance is not available. Refresh and try again.", true);
+        return;
+      }
+
+      select.value = payable.anchorLoanId;
+      repaymentDraftChanged(true);
+      repaymentElement("repaymentDate").value = quickToday();
+      repaymentElement("repaymentForm").scrollIntoView({ behavior: "smooth", block: "start" });
+      repaymentElement("repaymentAmount").focus();
+      showMessage("Repayment prepared for " + group.lender_name + " → " + group.borrower_name + ".");
     }
 
 
@@ -3742,7 +4238,7 @@
         batch.allocations += 1;
       });
 
-      grouped.forEach((payment) => {
+      grouped.slice(0, 40).forEach((payment) => {
         const label =
           payment.lender_name +
           " → " +
@@ -3923,6 +4419,7 @@
     function renderAll() {
       renderPrivateMoneyPosition();
       renderPersonLoanTotals();
+      renderBorrowerLedgers();
       renderLoans();
       renderAccounts();
       renderRepayments();
@@ -4733,6 +5230,16 @@
       const button = event.target.closest("button[data-loan-id]");
       if (button) void prefillInstallment(button.dataset.loanId);
     });
+
+    document.getElementById("borrowerLedgerGrid").addEventListener("click", event => {
+      const button = event.target.closest("button[data-ledger-action][data-ledger-key]");
+      if (!button) return;
+      const action = button.dataset.ledgerAction;
+      const key = button.dataset.ledgerKey;
+      if (action === "borrow") prepareBorrowMore(key);
+      if (action === "repay") prepareLedgerRepayment(key);
+    });
+
     supabaseClient.auth.onAuthStateChange(event => {
       if (event !== "SIGNED_OUT") return;
       currentUser = null;

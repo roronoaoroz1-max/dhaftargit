@@ -1809,11 +1809,23 @@
       elements.billsList.replaceChildren();
 
       const breakdown =
-        Array.isArray(
-          data.billBreakdown
-        )
-          ? data.billBreakdown
-          : [];
+        (
+          Array.isArray(
+            data.billBreakdown
+          )
+            ? data.billBreakdown
+            : []
+        ).filter((bill) => {
+          const type =
+            String(
+              bill?.type || ""
+            ).trim();
+
+          return (
+            type &&
+            !type.startsWith("__")
+          );
+        });
 
       if (!breakdown.length) {
         const empty =

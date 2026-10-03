@@ -1003,6 +1003,12 @@
     .bill-status-summary strong { display: block; margin-top: 5px; color: var(--brand); font-size: 1.05rem; }
     .bill-status-toolbar { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; margin: 16px 0; }
     .bill-status-toolbar .quick-status { margin: 0; }
+    .bill-alert-summary { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 9px; margin: 14px 0 16px; }
+    .bill-alert-summary div { min-width: 0; padding: 12px; border: 1px solid var(--line); border-radius: 13px; background: var(--surface-soft); }
+    .bill-alert-summary span { display: block; color: var(--muted); font-size: 0.68rem; font-weight: 700; }
+    .bill-alert-summary strong { display: block; margin-top: 5px; color: var(--ink); font-size: 0.9rem; overflow-wrap: anywhere; }
+    .bill-alert-summary strong.alert { color: var(--warning); }
+    .bill-alert-summary strong.overdue { color: var(--danger); }
     .bill-status-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
     .bill-status-item { min-width: 0; padding: 16px; border: 1px solid var(--line); border-radius: 16px; background: var(--surface-soft); }
     .bill-status-top { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; }
@@ -1021,10 +1027,23 @@
     .bill-status-phone-row { display: flex; gap: 8px; align-items: flex-end; }
     .bill-status-phone-row input { min-width: 0; }
     .bill-status-phone-row .quick-button { flex: 0 0 auto; }
+    .bill-due-setting { margin-top: 12px; }
+    .bill-due-setting label { font-size: 0.74rem; }
+    .bill-due-setting-row { display: flex; gap: 8px; align-items: flex-end; }
+    .bill-due-setting-row input { min-width: 0; }
+    .bill-due-setting-row .quick-button { flex: 0 0 auto; }
+    .bill-due-line { margin: 10px 0 0; font-size: 0.76rem; font-weight: 800; }
+    .bill-due-line.overdue { color: var(--danger); }
+    .bill-due-line.today { color: var(--danger); }
+    .bill-due-line.soon { color: var(--warning); }
+    .bill-due-line.later { color: var(--brand); }
+    .bill-due-line.missing { color: var(--muted); }
+    .bill-due-line.paid { color: var(--success); }
     .bill-status-actions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 14px; }
     .bill-status-actions .quick-button { min-height: 38px; }
     .bill-status-paid-date { margin: 10px 0 0; color: var(--muted); font-size: 0.72rem; }
     @media (max-width: 760px) {
+      .bill-alert-summary { grid-template-columns: repeat(2, minmax(0, 1fr)); }
       .bill-status-grid { grid-template-columns: minmax(0, 1fr); }
     }
     @media (max-width: 640px) {
@@ -1474,6 +1493,13 @@
           <div class="bill-status-toolbar">
             <p id="billPaymentStatusMessage" class="quick-status" role="status" aria-live="polite">Choose a billing month to load payment status.</p>
             <button class="history-button" id="refreshBillPaymentStatus" type="button">Refresh status</button>
+          </div>
+
+          <div class="bill-alert-summary" aria-live="polite">
+            <div><span>Need attention</span><strong id="billAttentionCount" class="alert">—</strong></div>
+            <div><span>Due this week</span><strong id="billDueWeekCount">—</strong></div>
+            <div><span>Overdue</span><strong id="billOverdueCount" class="overdue">—</strong></div>
+            <div><span>Total unpaid</span><strong id="billUnpaidTotal">MVR —</strong></div>
           </div>
 
           <div id="billPaymentStatusGrid" class="bill-status-grid">
@@ -4168,12 +4194,16 @@
       { key: "tv", label: "TV", caption: "Full TV bill", marker: "__payment_status__tv", billType: "TV" }
     ];
 
+    const BILL_DUE_CONFIG_MONTH = "2026-01-01";
+
     const billPaymentStatusState = {
       request: 0,
       saving: new Set(),
       month: null,
       rows: new Map(),
-      due: new Map()
+      due: new Map(),
+      dueDays: new Map(),
+      dueConfigRows: new Map()
     };
 
     function billPaymentStatusMessage(message, isError = false) {
@@ -4207,6 +4237,58 @@
       return /^\d{4}-\d{2}-\d{2}$/.test(String(meta.paidOn || "")) ? meta.paidOn : "";
     }
 
+    function billDueConfigMarker(item) {
+      return "__due_day__" + item.key;
+    }
+
+    function billDueDay(item) {
+      const value = Number(billPaymentStatusState.dueDays.get(item.key));
+      return Number.isInteger(value) && value >= 1 && value <= 31 ? value : null;
+    }
+
+    function billActualDueDate(month, dueDay) {
+      if (!/^\d{4}-\d{2}-01$/.test(String(month || "")) || !Number.isInteger(dueDay)) return "";
+      const year = Number(month.slice(0, 4));
+      const monthNumber = Number(month.slice(5, 7));
+      const lastDay = new Date(Date.UTC(year, monthNumber, 0)).getUTCDate();
+      const day = Math.min(Math.max(dueDay, 1), lastDay);
+      return month.slice(0, 8) + String(day).padStart(2, "0");
+    }
+
+    function billDateDiffDays(fromDate, toDate) {
+      const from = Date.parse(fromDate + "T00:00:00Z");
+      const to = Date.parse(toDate + "T00:00:00Z");
+      return Number.isFinite(from) && Number.isFinite(to) ? Math.round((to - from) / 86400000) : null;
+    }
+
+    function billUrgency(item, status) {
+      if (status.kind === "paid") {
+        const paidOn = billStatusPaidOn(item);
+        return {
+          kind: "paid",
+          rank: 90,
+          label: paidOn ? "Paid · " + paymentDisplayDate(paidOn) : "Paid"
+        };
+      }
+
+      const dueDay = billDueDay(item);
+      if (!dueDay) {
+        return { kind: "missing", rank: 40, label: "Recurring due date not set" };
+      }
+
+      const dueDate = billActualDueDate(billPaymentStatusState.month, dueDay);
+      const diff = billDateDiffDays(quickToday(), dueDate);
+
+      if (diff === null) return { kind: "missing", rank: 40, label: "Due date unavailable" };
+      if (diff < 0) {
+        const days = Math.abs(diff);
+        return { kind: "overdue", rank: 0, diff, dueDate, label: "Overdue by " + days + (days === 1 ? " day" : " days") + " · due " + paymentDisplayDate(dueDate) };
+      }
+      if (diff === 0) return { kind: "today", rank: 10, diff, dueDate, label: "Due today · " + paymentDisplayDate(dueDate) };
+      if (diff <= 7) return { kind: "soon", rank: 20, diff, dueDate, label: "Due in " + diff + (diff === 1 ? " day" : " days") + " · " + paymentDisplayDate(dueDate) };
+      return { kind: "later", rank: 30, diff, dueDate, label: "Due " + paymentDisplayDate(dueDate) };
+    }
+
     async function readBillStatusRent(month) {
       const { data, error } = await supabaseClient
         .from("dhaftar_rent_rates")
@@ -4222,7 +4304,8 @@
 
     async function readBillPaymentStatus(month) {
       const markers = BILL_PAYMENT_STATUS_ITEMS.map(item => item.marker);
-      const [billResult, markerResult, rentCents] = await Promise.all([
+      const dueMarkers = BILL_PAYMENT_STATUS_ITEMS.map(item => billDueConfigMarker(item));
+      const [billResult, markerResult, dueConfigResult, rentCents] = await Promise.all([
         supabaseClient
           .from("dhaftar_bills")
           .select("bill_type,billing_month,amount,notes,created_by")
@@ -4233,11 +4316,17 @@
           .select("bill_type,billing_month,amount,notes,created_by")
           .eq("billing_month", month)
           .in("bill_type", markers),
+        supabaseClient
+          .from("dhaftar_bills")
+          .select("bill_type,billing_month,amount,notes,created_by")
+          .eq("billing_month", BILL_DUE_CONFIG_MONTH)
+          .in("bill_type", dueMarkers),
         readBillStatusRent(month)
       ]);
 
       if (billResult.error) throw new Error("Could not load the saved bill amounts.");
       if (markerResult.error) throw new Error("Could not load the bill payment status.");
+      if (dueConfigResult.error) throw new Error("Could not load recurring bill due dates.");
 
       const billMap = new Map();
       for (const row of billResult.data || []) {
@@ -4249,6 +4338,18 @@
       for (const row of markerResult.data || []) {
         if (rowMap.has(row.bill_type)) throw new Error("Duplicate bill payment status found for this month.");
         rowMap.set(row.bill_type, row);
+      }
+
+      const dueConfigRows = new Map();
+      const dueDays = new Map();
+      for (const row of dueConfigResult.data || []) {
+        if (dueConfigRows.has(row.bill_type)) throw new Error("Duplicate recurring due-date setting found.");
+        dueConfigRows.set(row.bill_type, row);
+      }
+      for (const item of BILL_PAYMENT_STATUS_ITEMS) {
+        const meta = billStatusParseNotes(dueConfigRows.get(billDueConfigMarker(item))?.notes);
+        const dueDay = Number(meta.dueDay);
+        if (Number.isInteger(dueDay) && dueDay >= 1 && dueDay <= 31) dueDays.set(item.key, dueDay);
       }
 
       const due = new Map();
@@ -4264,7 +4365,7 @@
         }
       }
 
-      return { rows: rowMap, due };
+      return { rows: rowMap, due, dueDays, dueConfigRows };
     }
 
     function billStatusStateFor(item) {
@@ -4305,10 +4406,34 @@
         state.month ? displayMonth(state.month) : "Selected month";
 
       let paidCount = 0;
+      let attentionCount = 0;
+      let overdueCount = 0;
+      let dueWeekCount = 0;
+      let unpaidTotal = 0;
 
-      for (const item of BILL_PAYMENT_STATUS_ITEMS) {
-        const status = billStatusStateFor(item);
+      const rows = BILL_PAYMENT_STATUS_ITEMS
+        .map(item => {
+          const status = billStatusStateFor(item);
+          const urgency = billUrgency(item, status);
+          return { item, status, urgency };
+        })
+        .sort((a, b) =>
+          a.urgency.rank - b.urgency.rank ||
+          String(a.urgency.dueDate || "").localeCompare(String(b.urgency.dueDate || "")) ||
+          a.item.label.localeCompare(b.item.label)
+        );
+
+      for (const entry of rows) {
+        const { item, status, urgency } = entry;
         if (status.kind === "paid") paidCount++;
+        else attentionCount++;
+
+        if (urgency.kind === "overdue") overdueCount++;
+        if (urgency.kind === "today" || urgency.kind === "soon") dueWeekCount++;
+
+        if (status.dueCents !== null && status.dueCents !== undefined) {
+          unpaidTotal += Math.max(0, status.dueCents - status.paidCents);
+        }
 
         const card = document.createElement("article");
         card.className = "bill-status-item";
@@ -4331,14 +4456,46 @@
         badge.textContent = status.label;
         top.append(info, badge);
 
+        const dueLine = document.createElement("p");
+        dueLine.className = "bill-due-line " + urgency.kind;
+        dueLine.textContent = urgency.label;
+
         const money = document.createElement("div");
         money.className = "bill-status-money";
         money.append(
           makeBillStatusMoney("Full amount", status.dueCents === null ? "Not entered" : formatMVR(status.dueCents / 100)),
-          makeBillStatusMoney("Recorded paid", formatMVR(status.paidCents / 100))
+          makeBillStatusMoney("Remaining", status.dueCents === null ? "—" : formatMVR(Math.max(0, status.dueCents - status.paidCents) / 100))
         );
 
-        card.append(top, money);
+        card.append(top, dueLine, money);
+
+        const dueSetting = document.createElement("div");
+        dueSetting.className = "bill-due-setting";
+        const dueLabel = document.createElement("label");
+        dueLabel.htmlFor = "billDueDay-" + item.key;
+        dueLabel.textContent = "Recurring due day (1–31)";
+        const dueRow = document.createElement("div");
+        dueRow.className = "bill-due-setting-row";
+        const dueInput = document.createElement("input");
+        dueInput.id = "billDueDay-" + item.key;
+        dueInput.type = "number";
+        dueInput.min = "1";
+        dueInput.max = "31";
+        dueInput.step = "1";
+        dueInput.inputMode = "numeric";
+        dueInput.placeholder = "Day";
+        dueInput.value = billDueDay(item) || "";
+        dueInput.disabled = state.saving.has("due:" + item.key);
+        const dueSave = document.createElement("button");
+        dueSave.type = "button";
+        dueSave.className = "quick-button";
+        dueSave.dataset.billStatusAction = "save-due-day";
+        dueSave.dataset.billStatusKey = item.key;
+        dueSave.textContent = "Save due day";
+        dueSave.disabled = state.saving.has("due:" + item.key);
+        dueRow.append(dueInput, dueSave);
+        dueSetting.append(dueLabel, dueRow);
+        card.appendChild(dueSetting);
 
         if (item.manualDue) {
           const field = document.createElement("div");
@@ -4401,7 +4558,12 @@
 
       paymentElement("billPaymentStatusCount").textContent =
         paidCount + " / " + BILL_PAYMENT_STATUS_ITEMS.length + " paid";
+      paymentElement("billAttentionCount").textContent = String(attentionCount);
+      paymentElement("billDueWeekCount").textContent = String(dueWeekCount);
+      paymentElement("billOverdueCount").textContent = String(overdueCount);
+      paymentElement("billUnpaidTotal").textContent = formatMVR(unpaidTotal / 100);
     }
+
 
     function resetBillPaymentStatus() {
       const state = billPaymentStatusState;
@@ -4409,9 +4571,15 @@
       state.month = null;
       state.rows = new Map();
       state.due = new Map();
+      state.dueDays = new Map();
+      state.dueConfigRows = new Map();
       state.saving.clear();
       paymentElement("billPaymentStatusMonth").textContent = "Selected month";
       paymentElement("billPaymentStatusCount").textContent = "—";
+      paymentElement("billAttentionCount").textContent = "—";
+      paymentElement("billDueWeekCount").textContent = "—";
+      paymentElement("billOverdueCount").textContent = "—";
+      paymentElement("billUnpaidTotal").textContent = "MVR —";
       paymentElement("billPaymentStatusGrid").innerHTML = '<div class="history-empty">Sign in to view bill payment status.</div>';
       billPaymentStatusMessage("Choose a billing month to load payment status.");
     }
@@ -4431,12 +4599,16 @@
         if (request !== state.request || currentUser?.id !== userId || monthlyBillMonth() !== month) return;
         state.rows = data.rows;
         state.due = data.due;
+        state.dueDays = data.dueDays;
+        state.dueConfigRows = data.dueConfigRows;
         renderBillPaymentStatus();
-        billPaymentStatusMessage("Showing full-bill payment status for " + displayMonth(month) + ".");
+        billPaymentStatusMessage("Showing " + displayMonth(month) + " bills in pay-next order: overdue, due soon, later, then paid.");
       } catch (error) {
         if (request !== state.request || currentUser?.id !== userId) return;
         state.rows = new Map();
         state.due = new Map();
+        state.dueDays = new Map();
+        state.dueConfigRows = new Map();
         renderBillPaymentStatus();
         billPaymentStatusMessage(error.message || "Could not load bill payment status.", true);
       }
@@ -4452,6 +4624,52 @@
       const cents = monthlyBillCents(input?.value);
       if (cents === null) throw new Error("Enter the " + item.label + " amount first.");
       return cents;
+    }
+
+    async function saveBillDueDay(item) {
+      const state = billPaymentStatusState;
+      if (!currentUser || !item || state.saving.has("due:" + item.key)) return;
+
+      const input = paymentElement("billDueDay-" + item.key);
+      const dueDay = Number(input?.value);
+      if (!Number.isInteger(dueDay) || dueDay < 1 || dueDay > 31) {
+        billPaymentStatusMessage("Enter a recurring due day from 1 to 31 for " + item.label + ".", true);
+        input?.focus();
+        return;
+      }
+
+      const marker = billDueConfigMarker(item);
+      const existing = state.dueConfigRows.get(marker) || null;
+      state.saving.add("due:" + item.key);
+      renderBillPaymentStatus();
+      billPaymentStatusMessage("Saving " + item.label + " recurring due day…");
+
+      try {
+        const { data, error } = await supabaseClient
+          .from("dhaftar_bills")
+          .upsert({
+            bill_type: marker,
+            billing_month: BILL_DUE_CONFIG_MONTH,
+            amount: 0,
+            notes: JSON.stringify({ dueDay }),
+            created_by: existing?.created_by ?? currentUser.id,
+            updated_by: currentUser.id
+          }, { onConflict: "bill_type,billing_month" })
+          .select("bill_type,billing_month,amount,notes,created_by")
+          .single();
+
+        if (error) throw error;
+        if (!data || data.bill_type !== marker) throw new Error("The recurring due date could not be verified.");
+
+        state.dueConfigRows.set(marker, data);
+        state.dueDays.set(item.key, dueDay);
+        billPaymentStatusMessage(item.label + " will now be due on day " + dueDay + " of each month.");
+      } catch (error) {
+        billPaymentStatusMessage("Could not save " + item.label + " due date. " + (error.message || "Try again."), true);
+      } finally {
+        state.saving.delete("due:" + item.key);
+        renderBillPaymentStatus();
+      }
     }
 
     async function saveBillStatusItem(item, mode) {
@@ -4559,6 +4777,10 @@
       if (!button) return;
       const item = billStatusItem(button.dataset.billStatusKey);
       if (!item) return;
+      if (button.dataset.billStatusAction === "save-due-day") {
+        void saveBillDueDay(item);
+        return;
+      }
       void saveBillStatusItem(item, button.dataset.billStatusAction);
     });
   </script>

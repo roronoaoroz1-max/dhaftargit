@@ -2843,11 +2843,15 @@
         isError
       );
 
-      if (text) {
+      if (text && isError) {
         element.scrollIntoView({
           behavior: "smooth",
           block: "nearest"
         });
+      }
+
+      if (text && !isError && typeof showAppToast === "function") {
+        showAppToast(text);
       }
     }
 
@@ -2944,6 +2948,10 @@
         loadPaymentHistory(1),
         loadHouseholdBalance()
       ]);
+
+      if (typeof initializeAdminUx === "function") {
+        await initializeAdminUx();
+      }
     }
 
 
@@ -5136,20 +5144,22 @@
           a.item.label.localeCompare(b.item.label)
         );
 
-      for (const entry of rows) {
-        const { item, status, urgency } = entry;
+      for (const { item, status, urgency } of rows) {
         if (status.kind === "paid") paidCount++;
         else attentionCount++;
 
         if (urgency.kind === "overdue") overdueCount++;
         if (urgency.kind === "today" || urgency.kind === "soon") dueWeekCount++;
 
-        if (status.dueCents !== null && status.dueCents !== undefined) {
-          unpaidTotal += Math.max(0, status.dueCents - status.paidCents);
-        }
+        const remainingCents =
+          status.dueCents === null || status.dueCents === undefined
+            ? null
+            : Math.max(0, status.dueCents - status.paidCents);
+
+        if (remainingCents !== null) unpaidTotal += remainingCents;
 
         const card = document.createElement("article");
-        card.className = "bill-status-item";
+        card.className = "bill-status-item compact";
 
         const top = document.createElement("div");
         top.className = "bill-status-top";
@@ -5174,13 +5184,40 @@
         dueLine.textContent = urgency.label;
 
         const money = document.createElement("div");
-        money.className = "bill-status-money";
-        money.append(
-          makeBillStatusMoney("Full amount", status.dueCents === null ? "Not entered" : formatMVR(status.dueCents / 100)),
-          makeBillStatusMoney("Remaining", status.dueCents === null ? "—" : formatMVR(Math.max(0, status.dueCents - status.paidCents) / 100))
-        );
+        money.className = "bill-compact-money";
+        const amountBox = document.createElement("div");
+        const amountLabel = document.createElement("span");
+        amountLabel.textContent = "Bill";
+        const amountValue = document.createElement("strong");
+        amountValue.textContent = status.dueCents === null ? "Not entered" : formatMVR(status.dueCents / 100);
+        amountBox.append(amountLabel, amountValue);
 
-        card.append(top, dueLine, money);
+        const remainingBox = document.createElement("div");
+        const remainingLabel = document.createElement("span");
+        remainingLabel.textContent = "Remaining";
+        const remainingValue = document.createElement("strong");
+        remainingValue.textContent = remainingCents === null ? "—" : formatMVR(remainingCents / 100);
+        remainingBox.append(remainingLabel, remainingValue);
+        money.append(amountBox, remainingBox);
+
+        const compactActions = document.createElement("div");
+        compactActions.className = "bill-compact-actions";
+
+        const paid = document.createElement("button");
+        paid.type = "button";
+        paid.className = "quick-button";
+        paid.dataset.billStatusAction = "paid";
+        paid.dataset.billStatusKey = item.key;
+        paid.textContent = status.kind === "paid" ? "Paid ✓" : "Mark paid";
+        paid.disabled = state.saving.has(item.key) || status.dueCents === null || status.dueCents <= 0 || status.kind === "paid";
+        compactActions.appendChild(paid);
+
+        const details = document.createElement("details");
+        details.className = "bill-status-expanded";
+        const summary = document.createElement("summary");
+        summary.className = "quick-button";
+        summary.textContent = "Details / settings";
+        details.appendChild(summary);
 
         const dueSetting = document.createElement("div");
         dueSetting.className = "bill-due-setting";
@@ -5208,7 +5245,7 @@
         dueSave.disabled = state.saving.has("due:" + item.key);
         dueRow.append(dueInput, dueSave);
         dueSetting.append(dueLabel, dueRow);
-        card.appendChild(dueSetting);
+        details.appendChild(dueSetting);
 
         if (item.manualDue) {
           const field = document.createElement("div");
@@ -5235,20 +5272,11 @@
           save.disabled = state.saving.has(item.key);
           row.append(input, save);
           field.append(label, row);
-          card.appendChild(field);
+          details.appendChild(field);
         }
 
-        const actions = document.createElement("div");
-        actions.className = "bill-status-actions";
-
-        const paid = document.createElement("button");
-        paid.type = "button";
-        paid.className = "quick-button";
-        paid.dataset.billStatusAction = "paid";
-        paid.dataset.billStatusKey = item.key;
-        paid.textContent = status.kind === "paid" ? "Paid ✓" : "Mark paid";
-        paid.disabled = state.saving.has(item.key) || status.dueCents === null || status.dueCents <= 0 || status.kind === "paid";
-
+        const extraActions = document.createElement("div");
+        extraActions.className = "bill-status-actions";
         const unpaid = document.createElement("button");
         unpaid.type = "button";
         unpaid.className = "quick-button";
@@ -5256,16 +5284,16 @@
         unpaid.dataset.billStatusKey = item.key;
         unpaid.textContent = "Mark not paid";
         unpaid.disabled = state.saving.has(item.key) || status.paidCents <= 0;
-
-        actions.append(paid, unpaid);
-        card.appendChild(actions);
+        extraActions.appendChild(unpaid);
+        details.appendChild(extraActions);
 
         const paidOn = billStatusPaidOn(item);
         const date = document.createElement("p");
         date.className = "bill-status-paid-date";
         date.textContent = paidOn ? "Last marked paid: " + paymentDisplayDate(paidOn) : "No paid date recorded.";
-        card.appendChild(date);
+        details.appendChild(date);
 
+        card.append(top, dueLine, money, compactActions, details);
         container.appendChild(card);
       }
 
@@ -5275,6 +5303,8 @@
       paymentElement("billDueWeekCount").textContent = String(dueWeekCount);
       paymentElement("billOverdueCount").textContent = String(overdueCount);
       paymentElement("billUnpaidTotal").textContent = formatMVR(unpaidTotal / 100);
+
+      if (typeof renderAdminHome === "function") renderAdminHome();
     }
 
 
@@ -5464,13 +5494,25 @@
         state.rows.set(item.marker, data);
         if (item.manualDue) state.due.set(item.key, dueCents);
 
-        billPaymentStatusMessage(
+        const successMessage =
           mode === "paid"
             ? item.label + " marked paid for " + displayMonth(state.month) + "."
             : mode === "unpaid"
               ? item.label + " marked not paid for " + displayMonth(state.month) + "."
-              : item.label + " amount saved for " + displayMonth(state.month) + "."
-        );
+              : item.label + " amount saved for " + displayMonth(state.month) + ".";
+
+        billPaymentStatusMessage(successMessage);
+
+        if (typeof showAppToast === "function") {
+          showAppToast(
+            successMessage,
+            mode === "paid"
+              ? () => { void saveBillStatusItem(item, "unpaid"); }
+              : null,
+            mode === "paid" ? "Undo" : ""
+          );
+        }
+
         await loadMonthlyClosingDashboard();
       } catch (error) {
         billPaymentStatusMessage(
@@ -5708,11 +5750,11 @@
 
       const amanah = data.amanah;
       paymentElement("closingAmanahBorrowed").textContent =
-        amanah.available ? formatCurrencyTotals(amanah.borrowed) : "Unavailable";
+        amanah.available ? formatCurrencyTotals(amanah.borrowed) : "Open Amanah";
       paymentElement("closingAmanahRepaid").textContent =
-        amanah.available ? formatCurrencyTotals(amanah.repaid) : "Unavailable";
+        amanah.available ? formatCurrencyTotals(amanah.repaid) : "Open Amanah";
       paymentElement("closingAmanahOutstanding").textContent =
-        amanah.available ? formatCurrencyTotals(amanah.dadOutstanding) : "Unavailable";
+        amanah.available ? formatCurrencyTotals(amanah.dadOutstanding) : "Open Amanah";
 
       const householdAttention = remainingCents > 0 ? 1 : 0;
       const attention = billAttention + householdAttention;
@@ -5738,6 +5780,7 @@
             : settledBills + " of 7 provider bills settled" + (remainingCents > 0 ? " · household balance " + formatMVR(remainingCents / 100) + " remaining." : ".");
 
       syncClosedMonthControls();
+      if (typeof renderAdminHome === "function") renderAdminHome();
     }
 
     function syncClosedMonthControls() {
@@ -5879,6 +5922,256 @@
     paymentElement("refreshMonthlyClosing").addEventListener("click", loadMonthlyClosingDashboard);
     paymentElement("closeMonthButton").addEventListener("click", () => { void setMonthClosed(true); });
     paymentElement("unlockMonthButton").addEventListener("click", () => { void setMonthClosed(false); });
+  </script>
+
+  <script>
+    let adminUxInitialized = false;
+    let appToastTimer = null;
+    let appToastAction = null;
+
+    function showAppToast(message, action = null, actionLabel = "") {
+      const toast = paymentElement("appToast");
+      const text = paymentElement("appToastText");
+      const button = paymentElement("appToastAction");
+
+      clearTimeout(appToastTimer);
+      appToastAction = typeof action === "function" ? action : null;
+      text.textContent = message || "";
+      button.hidden = !appToastAction;
+      button.textContent = actionLabel || "Undo";
+      toast.classList.toggle("show", Boolean(message));
+
+      if (message) {
+        appToastTimer = setTimeout(() => {
+          toast.classList.remove("show");
+          appToastAction = null;
+          button.hidden = true;
+        }, appToastAction ? 7000 : 4200);
+      }
+    }
+
+    function adminMasterMonthValue() {
+      const value = paymentElement("masterMonth").value;
+      return /^\d{4}-\d{2}$/.test(value) ? value + "-01" : monthlyBillMonth();
+    }
+
+    function setLegacyAdminPeriod(month) {
+      const date = String(month || "").slice(0, 10);
+      if (!/^\d{4}-\d{2}-01$/.test(date)) return;
+
+      const monthIndex = Number(date.slice(5, 7)) - 1;
+      const monthName = MONTHS[monthIndex];
+      const year = date.slice(0, 4);
+
+      [
+        ["paymentMonth", monthName], ["billMonth", monthName], ["rentMonth", monthName],
+        ["paymentYear", year], ["billYear", year], ["rentYear", year]
+      ].forEach(([id, value]) => {
+        const element = paymentElement(id);
+        if ([...element.options].some(option => option.value === value)) element.value = value;
+      });
+
+      paymentElement("historyMonth").value = date.slice(0, 7);
+      paymentElement("masterMonth").value = date.slice(0, 7);
+    }
+
+    function shiftAdminMonth(delta) {
+      const current = adminMasterMonthValue();
+      const date = new Date(current + "T00:00:00Z");
+      date.setUTCMonth(date.getUTCMonth() + delta);
+      const next = date.toISOString().slice(0, 7);
+      paymentElement("masterMonth").value = next;
+      void applyMasterAdminMonth();
+    }
+
+    async function applyMasterAdminMonth() {
+      if (!currentUser) return;
+
+      const target = adminMasterMonthValue();
+      setLegacyAdminPeriod(target);
+
+      await changeMonthlyBillPeriod();
+
+      const actual = monthlyBillMonth();
+      if (actual !== target) setLegacyAdminPeriod(actual);
+
+      await Promise.allSettled([
+        loadSelectedRentRate(),
+        loadHouseholdBalance(),
+        loadRecentActivity()
+      ]);
+
+      renderAdminHome();
+    }
+
+    function adminScrollTo(targetId, open = true) {
+      const target = paymentElement(targetId);
+      if (!target) return;
+
+      if (open && target.tagName === "DETAILS") target.open = true;
+
+      const parentDetails = target.closest("details");
+      if (open && parentDetails) parentDetails.open = true;
+
+      requestAnimationFrame(() => {
+        target.scrollIntoView({ behavior: "smooth", block: "start" });
+      });
+    }
+
+    function adminHomeAmanahText() {
+      const amanah = monthlyClosingState.data?.amanah;
+      if (!amanah?.available) return "Open Amanah";
+      return formatCurrencyTotals(amanah.dadOutstanding);
+    }
+
+    function renderAdminHome() {
+      if (!paymentElement("adminHome")) return;
+
+      const month = monthlyClosingState.month || billPaymentStatusState.month || monthlyBillMonth();
+      paymentElement("adminHomePeriod").textContent = displayMonth(month) + " overview";
+
+      const closeData = monthlyClosingState.data;
+      const remainingCents = closeData
+        ? (quickMoneyCents(closeData.summary?.remainingBalance) ?? 0)
+        : householdQuickState.cents;
+
+      paymentElement("homeRemaining").textContent =
+        remainingCents === null || remainingCents === undefined
+          ? "MVR —"
+          : remainingCents < 0
+            ? "Credit " + formatMVR((-remainingCents) / 100)
+            : formatMVR(remainingCents / 100);
+
+      let paid = 0;
+      let overdue = 0;
+      if (billPaymentStatusState.month === month) {
+        for (const item of BILL_PAYMENT_STATUS_ITEMS) {
+          const status = billStatusStateFor(item);
+          if (status.kind === "paid") paid++;
+          else if (billUrgency(item, status).kind === "overdue") overdue++;
+        }
+      }
+
+      paymentElement("homeBillsPaid").textContent = paid + " / " + BILL_PAYMENT_STATUS_ITEMS.length + " paid";
+      paymentElement("homeOverdue").textContent = String(overdue);
+      paymentElement("homeOverdue").classList.toggle("alert", overdue > 0);
+      paymentElement("homeDadOutstanding").textContent = adminHomeAmanahText();
+
+      const badge = paymentElement("adminHomeStatus");
+      badge.className = "month-close-badge " +
+        (monthlyClosingState.closed ? "closed" : monthlyClosingState.ready ? "ready" : "attention");
+      badge.textContent =
+        monthlyClosingState.closed
+          ? "Closed"
+          : monthlyClosingState.ready
+            ? "Ready to close"
+            : overdue > 0
+              ? overdue + (overdue === 1 ? " overdue bill" : " overdue bills")
+              : "In progress";
+    }
+
+    async function loadRecentActivity() {
+      const container = paymentElement("recentActivityList");
+      if (!currentUser || !container) return;
+
+      const month = adminMasterMonthValue();
+      container.innerHTML = '<div class="history-empty">Loading recent payments…</div>';
+
+      try {
+        const { data, error } = await supabaseClient.rpc("dhaftar_payment_history_v1", {
+          p_payer_name: null,
+          p_billing_month: month,
+          p_date_from: null,
+          p_date_to: null,
+          p_amount: null,
+          p_page: 1,
+          p_page_size: 5
+        });
+
+        if (error) throw error;
+        const rows = Array.isArray(data?.rows) ? data.rows : [];
+        container.replaceChildren();
+
+        if (!rows.length) {
+          const empty = document.createElement("div");
+          empty.className = "history-empty";
+          empty.textContent = "No household payments recorded for " + displayMonth(month) + ".";
+          container.appendChild(empty);
+          return;
+        }
+
+        rows.slice(0, 5).forEach(payment => {
+          const item = document.createElement("div");
+          item.className = "recent-activity-item";
+
+          const text = document.createElement("span");
+          text.textContent =
+            paymentDisplayDate(payment.payment_date) +
+            " · " +
+            householdPersonName(payment.payer_name) +
+            (payment.note ? " · " + payment.note : "");
+
+          const amount = document.createElement("strong");
+          amount.textContent = formatMVR(payment.amount);
+
+          item.append(text, amount);
+          container.appendChild(item);
+        });
+      } catch (error) {
+        container.innerHTML = '<div class="history-empty">Recent activity is unavailable. Open Payment history to retry.</div>';
+      }
+    }
+
+    async function initializeAdminUx() {
+      if (!currentUser) return;
+
+      const month = monthlyBillMonth();
+      setLegacyAdminPeriod(month);
+
+      if (!adminUxInitialized) {
+        adminUxInitialized = true;
+
+        paymentElement("masterMonth").addEventListener("change", () => { void applyMasterAdminMonth(); });
+        paymentElement("masterMonthPrevious").addEventListener("click", () => shiftAdminMonth(-1));
+        paymentElement("masterMonthNext").addEventListener("click", () => shiftAdminMonth(1));
+
+        paymentElement("homeAddPayment").addEventListener("click", () => {
+          setLegacyAdminPeriod(adminMasterMonthValue());
+          paymentElement("payerName").value = "Imaad";
+          paymentElement("paymentDate").value = quickToday();
+          adminScrollTo("paymentCard");
+          void loadHouseholdBalance(true);
+        });
+
+        paymentElement("homeManageBills").addEventListener("click", () => {
+          adminScrollTo("billStatusSection");
+        });
+
+        paymentElement("openFullHistory").addEventListener("click", () => {
+          paymentElement("historyWork").open = true;
+          paymentElement("historyPayer").value = "";
+          paymentElement("historyMonth").value = adminMasterMonthValue().slice(0, 7);
+          paymentElement("historyAmount").value = "";
+          paymentElement("historyDateFrom").value = "";
+          paymentElement("historyDateTo").value = "";
+          void loadPaymentHistory(1, null);
+          adminScrollTo("historyWork");
+        });
+
+        document.querySelectorAll(".mobile-bottom-nav [data-nav-target]").forEach(button => {
+          button.addEventListener("click", () => adminScrollTo(button.dataset.navTarget));
+        });
+
+        paymentElement("appToastAction").addEventListener("click", () => {
+          const action = appToastAction;
+          showAppToast("");
+          if (action) action();
+        });
+      }
+
+      await loadRecentActivity();
+      renderAdminHome();
+    }
   </script>
 </body>
 </html>

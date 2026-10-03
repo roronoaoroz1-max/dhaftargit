@@ -2174,7 +2174,10 @@
           </div>
 
           <div class="month-close-footer">
-            <p id="monthlyClosingMessage" role="status" aria-live="polite">Checking whether this month is ready to close…</p>
+            <div>
+              <p id="monthlyClosingMessage" role="status" aria-live="polite">Checking whether this month is ready to close…</p>
+              <p id="closingPreviousOutstanding" class="quick-note">Earlier outstanding items are checked separately and do not change this month’s closing calculation.</p>
+            </div>
             <div class="month-close-actions">
               <button class="history-button" id="refreshMonthlyClosing" type="button">Refresh</button>
               <button class="primary-button" id="closeMonthButton" type="button" disabled>
@@ -6493,6 +6496,15 @@
 
       paymentElement("bottomBillsLabel").textContent =
         state.items.length ? "Bills • " + state.items.length : "Bills";
+
+      const closingNote = paymentElement("closingPreviousOutstanding");
+      if (closingNote) {
+        closingNote.textContent =
+          state.items.length
+            ? state.items.length + (state.items.length === 1 ? " earlier outstanding item exists" : " earlier outstanding items exist") +
+              ". They remain attached to their original months and do not block this month’s close."
+            : "No earlier outstanding items. Earlier balances are checked separately from this month’s closing calculation.";
+      }
 
       list.replaceChildren();
 

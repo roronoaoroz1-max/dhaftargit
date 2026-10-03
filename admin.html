@@ -2468,7 +2468,7 @@
     </section>
   </main>
 
-  <nav class="mobile-bottom-nav" aria-label="Admin navigation">
+  <nav class="mobile-bottom-nav" id="mobileBottomNav" aria-label="Admin navigation" hidden>
     <button type="button" data-nav-target="adminHome"><span class="nav-icon">⌂</span><span>Home</span></button>
     <button type="button" data-nav-target="billStatusSection"><span class="nav-icon">✓</span><span>Bills</span></button>
     <button type="button" data-nav-target="paymentCard"><span class="nav-icon">＋</span><span>Payments</span></button>
@@ -2896,6 +2896,8 @@
       resetMonthlyBills();
       if (typeof resetBillPaymentStatus === "function") resetBillPaymentStatus();
       if (typeof resetMonthlyClosingDashboard === "function") resetMonthlyClosingDashboard();
+      const bottomNav = document.getElementById("mobileBottomNav");
+      if (bottomNav) bottomNav.hidden = true;
       document.getElementById(
         "loginBox"
       ).hidden =
@@ -2925,6 +2927,9 @@
       ).classList.add(
         "is-visible"
       );
+
+      const bottomNav = document.getElementById("mobileBottomNav");
+      if (bottomNav) bottomNav.hidden = false;
 
       document.getElementById(
         "signedInText"
@@ -6154,7 +6159,8 @@
           paymentElement("historyAmount").value = "";
           paymentElement("historyDateFrom").value = "";
           paymentElement("historyDateTo").value = "";
-          void loadPaymentHistory(1, null);
+          paymentHistoryState.filters = null;
+          void loadPaymentHistory(1, readPaymentHistoryFilters());
           adminScrollTo("historyWork");
         });
 

@@ -559,7 +559,7 @@
       display: grid;
 
       grid-template-columns:
-        repeat(3, minmax(0, 1fr));
+        repeat(2, minmax(0, 1fr));
 
       gap: 10px;
     }
@@ -603,6 +603,20 @@
 
     .amount.cleared {
       color: var(--success);
+    }
+
+    .metric-note {
+      display: block;
+      margin-top: 7px;
+      color: var(--muted);
+      font-size: 0.7rem;
+      font-weight: 650;
+      line-height: 1.4;
+    }
+
+    .remaining-metric,
+    .accumulated-metric {
+      min-height: 118px;
     }
 
     .bills-head {
@@ -1144,22 +1158,29 @@
       border-color: #25282d;
     }
 
-    :root[data-theme="dark"] .summary-grid .metric:last-child {
-      grid-column: 1 / -1;
-      padding: 20px;
+    :root[data-theme="dark"] .remaining-metric {
       background:
         radial-gradient(circle at 90% 10%, rgba(240,198,76,0.12), transparent 45%),
         linear-gradient(180deg, #151515, #0f1011);
       border-color: rgba(240,198,76,0.28);
     }
 
-    :root[data-theme="dark"] .summary-grid .metric:last-child .metric-label {
+    :root[data-theme="dark"] .accumulated-metric {
+      background:
+        radial-gradient(circle at 90% 10%, rgba(255,119,112,0.08), transparent 45%),
+        linear-gradient(180deg, #151515, #0f1011);
+      border-color: rgba(255,119,112,0.16);
+    }
+
+    :root[data-theme="dark"] .remaining-metric .metric-label,
+    :root[data-theme="dark"] .accumulated-metric .metric-label {
       min-height: auto;
     }
 
-    :root[data-theme="dark"] .summary-grid .metric:last-child .amount {
+    :root[data-theme="dark"] .remaining-metric .amount,
+    :root[data-theme="dark"] .accumulated-metric .amount {
       margin-top: 7px;
-      font-size: clamp(1.5rem, 6vw, 2.15rem);
+      font-size: clamp(1.35rem, 5vw, 1.85rem);
     }
 
     :root[data-theme="dark"] .amount:not(.outstanding):not(.cleared),
@@ -1233,10 +1254,6 @@
     @media (max-width: 640px) {
       :root[data-theme="dark"] .summary-grid {
         grid-template-columns: minmax(0, 1fr);
-      }
-
-      :root[data-theme="dark"] .summary-grid .metric:last-child {
-        grid-column: auto;
       }
 
       :root[data-theme="dark"] .bill-item {
@@ -1464,9 +1481,9 @@
               </strong>
             </div>
 
-            <div class="metric">
+            <div class="metric remaining-metric">
               <span class="metric-label">
-                Imaad’s remaining balance
+                Selected month remaining
               </span>
 
               <strong
@@ -1475,6 +1492,26 @@
               >
                 MVR 0.00
               </strong>
+            </div>
+
+            <div class="metric accumulated-metric">
+              <span class="metric-label">
+                Accumulated unpaid
+              </span>
+
+              <strong
+                class="amount"
+                id="accumulatedUnpaid"
+              >
+                MVR 0.00
+              </strong>
+
+              <small
+                class="metric-note"
+                id="accumulatedUnpaidNote"
+              >
+                Completed months only · current month excluded
+              </small>
             </div>
 
           </div>
@@ -1634,7 +1671,13 @@
         document.getElementById("dadDebtList"),
 
       remaining:
-        document.getElementById("remaining")
+        document.getElementById("remaining"),
+
+      accumulatedUnpaid:
+        document.getElementById("accumulatedUnpaid"),
+
+      accumulatedUnpaidNote:
+        document.getElementById("accumulatedUnpaidNote")
     };
 
 
@@ -1735,6 +1778,18 @@
     }
 
 
+    function getDefaultOverviewPeriod() {
+      const current = getCurrentPeriod();
+      const previous = shiftPeriod(current, -1);
+
+      if (previous.year < APP_START_YEAR) {
+        return current;
+      }
+
+      return previous;
+    }
+
+
     function getLastAvailableYear() {
       return Math.max(getCurrentPeriod().year + 2, 2028);
     }
@@ -1776,7 +1831,7 @@
 
 
     function initializePeriodSelectors() {
-      const current = getCurrentPeriod();
+      const initial = getDefaultOverviewPeriod();
       elements.year.replaceChildren();
 
       for (let year = APP_START_YEAR; year <= getLastAvailableYear(); year++) {
@@ -1786,9 +1841,26 @@
         elements.year.appendChild(option);
       }
 
-      elements.month.value = current.month;
-      elements.year.value = String(current.year);
+      elements.month.value = initial.month;
+      elements.year.value = String(initial.year);
       updatePeriodNavigation();
+    }
+
+
+    function selectPeriod(period) {
+      if (
+        !period ||
+        period.year < APP_START_YEAR ||
+        period.year > getLastAvailableYear() ||
+        !MONTHS.includes(period.month)
+      ) {
+        return false;
+      }
+
+      elements.month.value = period.month;
+      elements.year.value = String(period.year);
+      updatePeriodNavigation();
+      return true;
     }
 
 
@@ -1880,6 +1952,107 @@
       }
 
       return data;
+    }
+
+
+    function getCompletedPeriods() {
+      const current = getCurrentPeriod();
+      const cutoff = shiftPeriod(current, -1);
+      const periods = [];
+
+      if (cutoff.year < APP_START_YEAR) {
+        return periods;
+      }
+
+      let year = APP_START_YEAR;
+      let monthIndex = 0;
+      const cutoffAbsolute = cutoff.year * 12 + MONTHS.indexOf(cutoff.month);
+
+      while (year * 12 + monthIndex <= cutoffAbsolute) {
+        periods.push({
+          month: MONTHS[monthIndex],
+          year
+        });
+
+        monthIndex += 1;
+
+        if (monthIndex === 12) {
+          monthIndex = 0;
+          year += 1;
+        }
+      }
+
+      return periods;
+    }
+
+
+    async function fetchAccumulatedUnpaid() {
+      const periods = getCompletedPeriods();
+
+      if (!periods.length) {
+        return {
+          total: 0,
+          unpaidMonths: 0,
+          through: null
+        };
+      }
+
+      const summaries = await Promise.all(
+        periods.map((period) =>
+          fetchSummary(period.month, period.year)
+        )
+      );
+
+      let total = 0;
+      let unpaidMonths = 0;
+
+      for (const data of summaries) {
+        const remaining = Number(data?.remainingBalance) || 0;
+
+        if (remaining > 0) {
+          total += remaining;
+          unpaidMonths += 1;
+        }
+      }
+
+      return {
+        total,
+        unpaidMonths,
+        through: periods[periods.length - 1]
+      };
+    }
+
+
+    function displayAccumulatedUnpaid(data) {
+      const total = Number(data?.total) || 0;
+      elements.accumulatedUnpaid.textContent = formatMVR(total);
+      elements.accumulatedUnpaid.classList.toggle("outstanding", total > 0);
+      elements.accumulatedUnpaid.classList.toggle("cleared", total <= 0);
+
+      if (!data?.through) {
+        elements.accumulatedUnpaidNote.textContent =
+          "No completed months yet · current month excluded";
+        return;
+      }
+
+      const throughLabel =
+        data.through.month + " " + data.through.year;
+
+      elements.accumulatedUnpaidNote.textContent =
+        "Through " +
+        throughLabel +
+        " · " +
+        data.unpaidMonths +
+        (data.unpaidMonths === 1 ? " unpaid month" : " unpaid months") +
+        " · current month excluded";
+    }
+
+
+    function showAccumulatedUnpaidError() {
+      elements.accumulatedUnpaid.textContent = "MVR —";
+      elements.accumulatedUnpaid.classList.remove("outstanding", "cleared");
+      elements.accumulatedUnpaidNote.textContent =
+        "Unable to calculate completed months right now";
     }
 
 
@@ -2229,9 +2402,12 @@
           ? summaryRequest
           : fetchSummary(current.month, current.year);
 
-        const [summaryResult, debtsResult] = await Promise.allSettled([
+        const accumulatedRequest = fetchAccumulatedUnpaid();
+
+        const [summaryResult, debtsResult, accumulatedResult] = await Promise.allSettled([
           summaryRequest,
-          debtsRequest
+          debtsRequest,
+          accumulatedRequest
         ]);
 
         // A slower response must never replace the month selected more recently.
@@ -2243,6 +2419,12 @@
           displayDadDebts(debtsResult.value.dadDebts);
         } else {
           showDadDebtsError();
+        }
+
+        if (accumulatedResult.status === "fulfilled") {
+          displayAccumulatedUnpaid(accumulatedResult.value);
+        } else {
+          showAccumulatedUnpaidError();
         }
 
         if (summaryResult.status === "rejected") {
@@ -2311,7 +2493,7 @@
     elements.previousMonth.addEventListener("click", () => changeMonth(-1));
     elements.nextMonth.addEventListener("click", () => changeMonth(1));
     elements.currentMonth.addEventListener("click", () => {
-      initializePeriodSelectors();
+      selectPeriod(getCurrentPeriod());
       getBalance();
     });
 

@@ -31,7 +31,7 @@
     :root[data-theme="dark"] { color-scheme: dark; --ink:#e8f3ef; --muted:#9eb5ae; --brand:#4dd4c4; --soft:#133d38; --surface:#142320; --canvas:#0b1513; --line:#29413c; --danger:#ff8f87; }
     * { box-sizing:border-box; }
     [hidden] { display:none !important; }
-    body { margin:0; background:var(--canvas); color:var(--ink); font:16px/1.5 system-ui,-apple-system,"Segoe UI",sans-serif; }
+    body { margin:0; padding-top:env(safe-area-inset-top); background:var(--canvas); color:var(--ink); font:16px/1.5 system-ui,-apple-system,"Segoe UI",sans-serif; }
     main { width:min(1180px,100% - 36px); margin:28px auto 60px; }
     header, .heading, .actions { display:flex; justify-content:space-between; align-items:center; gap:16px; flex-wrap:wrap; }
     .brand { display:flex; align-items:center; gap:12px; color:var(--brand); font-weight:850; text-decoration:none; letter-spacing:0.06em; }

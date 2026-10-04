@@ -1167,9 +1167,9 @@
 
     :root[data-theme="dark"] .accumulated-metric {
       background:
-        radial-gradient(circle at 90% 10%, rgba(255,119,112,0.08), transparent 45%),
-        linear-gradient(180deg, #151515, #0f1011);
-      border-color: rgba(255,119,112,0.16);
+        radial-gradient(circle at 90% 10%, rgba(240,198,76,0.06), transparent 45%),
+        linear-gradient(180deg, #141516, #0f1011);
+      border-color: rgba(240,198,76,0.14);
     }
 
     :root[data-theme="dark"] .remaining-metric .metric-label,
@@ -1177,10 +1177,15 @@
       min-height: auto;
     }
 
-    :root[data-theme="dark"] .remaining-metric .amount,
-    :root[data-theme="dark"] .accumulated-metric .amount {
+    :root[data-theme="dark"] .remaining-metric .amount {
       margin-top: 7px;
       font-size: clamp(1.35rem, 5vw, 1.85rem);
+    }
+
+    :root[data-theme="dark"] .accumulated-metric .amount {
+      margin-top: 7px;
+      font-size: clamp(1rem, 3.6vw, 1.28rem);
+      color: var(--brand);
     }
 
     :root[data-theme="dark"] .amount:not(.outstanding):not(.cleared),
@@ -1496,7 +1501,7 @@
 
             <div class="metric accumulated-metric">
               <span class="metric-label">
-                Accumulated unpaid
+                Accumulated balance
               </span>
 
               <strong
@@ -2043,7 +2048,7 @@
         throughLabel +
         " · " +
         data.unpaidMonths +
-        (data.unpaidMonths === 1 ? " unpaid month" : " unpaid months") +
+        (data.unpaidMonths === 1 ? " month carried forward" : " months carried forward") +
         " · current month excluded";
     }
 

@@ -31,10 +31,7 @@
     content="Dhaftar"
   >
 
-  <meta
-    name="apple-mobile-web-app-status-bar-style"
-    content="black-translucent"
-  >
+  <meta name="apple-mobile-web-app-status-bar-style" content="black">
 <link
     rel="icon"
     type="image/png"
@@ -870,6 +867,10 @@
     }
 
     @media (max-width: 760px) {
+      body {
+        padding-top: max(56px, env(safe-area-inset-top));
+      }
+
       .app-shell {
         width: min(100% - 24px, 580px);
         padding-top: 18px;
@@ -1486,7 +1487,7 @@
 
     @media (max-width: 760px) {
       body {
-        padding-bottom: calc(76px + env(safe-area-inset-bottom));
+        padding-bottom: calc(96px + max(24px, env(safe-area-inset-bottom)));
       }
       .admin-month-bar { top: 6px; }
       .admin-home-card { padding: 18px; }
@@ -1516,10 +1517,21 @@
         border: 1px solid var(--line);
         border-bottom: 0;
         border-radius: 20px 20px 0 0;
-        background: color-mix(in srgb, var(--surface) 98%, black);
-        box-shadow: 0 -10px 30px rgba(0,0,0,0.38);
+        background: #030304;
+        box-shadow: 0 -10px 30px rgba(0,0,0,0.48);
         backdrop-filter: blur(18px);
         -webkit-backdrop-filter: blur(18px);
+      }
+
+      .mobile-bottom-nav::after {
+        content: "";
+        position: absolute;
+        left: 0;
+        right: 0;
+        bottom: calc(-1 * max(40px, env(safe-area-inset-bottom)));
+        height: max(40px, env(safe-area-inset-bottom));
+        background: #030304;
+        pointer-events: none;
       }
 
       .mobile-bottom-nav a,

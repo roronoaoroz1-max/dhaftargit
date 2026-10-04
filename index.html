@@ -881,12 +881,24 @@
       visibility: hidden;
     }
 
-    #splash img {
+    #splash .splash-logo {
+      width: 155px;
+      max-width: 58vw;
+      height: auto;
+      object-fit: contain;
+      display: block;
+    }
+
+    #splash .splash-emblem {
+      position: absolute;
+      left: 50%;
+      bottom: max(42px, calc(env(safe-area-inset-bottom) + 24px));
       width: 100px;
       max-width: 26vw;
       height: auto;
       object-fit: contain;
       display: block;
+      transform: translateX(-50%);
     }
 
     @media (max-width: 760px) {
@@ -1279,7 +1291,13 @@
 <body>
   <div id="splash" aria-hidden="true">
     <img
+      src="assets/logo.png"
+      class="splash-logo"
+      alt=""
+    >
+    <img
       src="assets/emblem.png"
+      class="splash-emblem"
       alt=""
     >
   </div>

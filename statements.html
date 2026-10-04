@@ -19,10 +19,7 @@
     content="Dhaftar"
   >
 
-  <meta
-    name="apple-mobile-web-app-status-bar-style"
-    content="black-translucent"
-  >
+  <meta name="apple-mobile-web-app-status-bar-style" content="black">
 <meta name="description" content="Private Dhaftar statements for household payments, loans and repayments.">
   <title>Individual statements · Dhaftar</title>
   <link rel="icon" href="assets/app-icon.png">
@@ -76,7 +73,7 @@
     .empty { padding:18px; color:var(--muted); }
     .fine { font-size:.78rem; color:var(--muted); }
     .table-wrap td small { display:block; margin-top:4px; color:var(--muted); overflow-wrap:anywhere; }
-    @media (max-width:760px) { .filters { grid-template-columns:1fr 1fr; } }
+    @media (max-width:760px) { body { padding-top:max(56px, env(safe-area-inset-top)); } .filters { grid-template-columns:1fr 1fr; } }
     @media (max-width:440px) { main { width:calc(100% - 24px); margin-top:16px; } .filters { grid-template-columns:1fr; } .actions button { flex:1 1 100%; } }
     @page { size:A4; margin:14mm; }
     @media print {

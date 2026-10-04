@@ -213,6 +213,19 @@
       margin-bottom: 18px;
     }
 
+    .logo-link {
+      display: inline-flex;
+      align-items: center;
+      flex: 0 0 auto;
+      text-decoration: none;
+      border-radius: 12px;
+    }
+
+    .logo-link:focus-visible {
+      outline: 3px solid rgba(240, 198, 76, 0.28);
+      outline-offset: 4px;
+    }
+
     .logo {
       display: block;
 
@@ -1348,11 +1361,13 @@
   <main class="app-shell">
 
     <header class="topbar">
-      <img
-        src="assets/logo.png"
-        class="logo"
-        alt="Dhaftar"
-      >
+      <a href="index.html" class="logo-link" aria-label="Open Dhaftar Overview">
+        <img
+          src="assets/logo.png"
+          class="logo"
+          alt="Dhaftar"
+        >
+      </a>
 
       <div class="topbar-actions">
         <button

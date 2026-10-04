@@ -1,0 +1,19 @@
+{
+  "name": "Dhaftar",
+  "short_name": "Dhaftar",
+  "description": "Household payments, bills, balances and Amanah.",
+  "start_url": "./index.html",
+  "scope": "./",
+  "display": "standalone",
+  "display_override": ["standalone", "minimal-ui"],
+  "background_color": "#030304",
+  "theme_color": "#030304",
+  "icons": [
+    {
+      "src": "assets/app-icon.png",
+      "sizes": "any",
+      "type": "image/png",
+      "purpose": "any"
+    }
+  ]
+}

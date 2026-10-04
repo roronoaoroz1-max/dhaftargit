@@ -31,10 +31,7 @@
     content="Dhaftar"
   >
 
-  <meta
-    name="apple-mobile-web-app-status-bar-style"
-    content="black-translucent"
-  >
+  <meta name="apple-mobile-web-app-status-bar-style" content="black">
 <link
     rel="icon"
     type="image/png"
@@ -918,6 +915,10 @@
     }
 
     @media (max-width: 760px) {
+      body {
+        padding-top: max(56px, env(safe-area-inset-top));
+      }
+
       .app-shell {
         width: min(100% - 24px, 560px);
         padding-top: 18px;

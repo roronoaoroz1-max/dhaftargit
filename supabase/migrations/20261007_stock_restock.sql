@@ -48,7 +48,8 @@ create index if not exists stock_purchases_date_idx
 create or replace function public.dhaftar_set_updated_at()
 returns trigger
 language plpgsql
-as $$
+set search_path = pg_catalog, public
+as $
 begin
   new.updated_at = now();
   return new;
@@ -77,7 +78,7 @@ using (
   exists (
     select 1
     from public.profiles p
-    where p.id = auth.uid()
+    where p.id = (select auth.uid())
       and p.role = 'admin'
   )
 )
@@ -85,7 +86,7 @@ with check (
   exists (
     select 1
     from public.profiles p
-    where p.id = auth.uid()
+    where p.id = (select auth.uid())
       and p.role = 'admin'
   )
 );
@@ -99,7 +100,7 @@ using (
   exists (
     select 1
     from public.profiles p
-    where p.id = auth.uid()
+    where p.id = (select auth.uid())
       and p.role = 'admin'
   )
 )
@@ -107,7 +108,7 @@ with check (
   exists (
     select 1
     from public.profiles p
-    where p.id = auth.uid()
+    where p.id = (select auth.uid())
       and p.role = 'admin'
   )
 );

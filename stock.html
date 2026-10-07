@@ -485,8 +485,9 @@
       return (
         code==="42P01" ||
         code==="PGRST205" ||
-        message.includes("stock_items") ||
-        message.includes("stock_purchases")
+        message.includes("could not find the table") ||
+        message.includes("relation \"public.stock_items\" does not exist") ||
+        message.includes("relation \"public.stock_purchases\" does not exist")
       );
     }
 

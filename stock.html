@@ -1,0 +1,822 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>Stock & Restock · Dhaftar</title>
+  <meta name="description" content="Track household consumables, purchase frequency, spending and predicted restock dates.">
+  <meta name="theme-color" content="#030304">
+  <link rel="manifest" href="manifest.webmanifest">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-title" content="Dhaftar">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black">
+  <link rel="icon" type="image/png" href="assets/app-icon.png">
+  <link rel="apple-touch-icon" sizes="180x180" href="assets/app-icon.png">
+  <script>
+    (() => {
+      try {
+        document.documentElement.dataset.theme =
+          localStorage.getItem("dhaftar-theme") || "dark";
+      } catch (_) {
+        document.documentElement.dataset.theme = "dark";
+      }
+    })();
+  </script>
+  <style>
+    :root {
+      color-scheme: light;
+      --ink:#202124; --muted:#6f7379; --brand:#9a7316; --brand-dark:#7c5c0e;
+      --brand-soft:#fff6d7; --surface:#fff; --surface-soft:#fafafa; --canvas:#f4f4f3;
+      --line:#e3e3e1; --danger:#b42318; --danger-soft:#fff1f0; --success:#16794d;
+      --success-soft:#eaf8f0; --warning:#9a5b12; --warning-soft:#fff6dd;
+      --info:#3567b7; --info-soft:#eef4ff; --shadow:0 20px 50px rgba(30,28,20,.10);
+      --soft-shadow:0 10px 28px rgba(30,28,20,.06); --radius:24px;
+    }
+    :root[data-theme="dark"] {
+      color-scheme: dark;
+      --ink:#f4f4f5; --muted:#91959d; --brand:#f0c64c; --brand-dark:#d4af37;
+      --brand-soft:rgba(240,198,76,.10); --surface:#0d0e10; --surface-soft:#121316;
+      --canvas:#030304; --line:#27292e; --danger:#ff7770; --danger-soft:#2b1716;
+      --success:#62d990; --success-soft:#12281c; --warning:#ffbd52; --warning-soft:#2b2111;
+      --info:#8eb7ff; --info-soft:#132039; --shadow:0 20px 50px rgba(0,0,0,.32);
+      --soft-shadow:0 10px 28px rgba(0,0,0,.20);
+    }
+    * { box-sizing:border-box; }
+    [hidden] { display:none !important; }
+    html { background:var(--canvas); }
+    body {
+      margin:0; min-height:100vh; padding-top:max(56px, env(safe-area-inset-top));
+      padding-bottom:calc(88px + max(24px, env(safe-area-inset-bottom)));
+      color:var(--ink); background:
+        radial-gradient(circle at 50% -8%, rgba(240,198,76,.07), transparent 28rem),
+        var(--canvas);
+      font-family:Inter,ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
+    }
+    button,input,select,textarea { font:inherit; }
+    button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-visible,a:focus-visible {
+      outline:3px solid rgba(240,198,76,.28); outline-offset:3px;
+    }
+    .app-shell { width:min(100% - 28px,1080px); margin:0 auto; padding:18px 0 48px; }
+    .topbar { display:flex; align-items:center; justify-content:space-between; gap:16px; margin-bottom:30px; }
+    .logo-link { display:inline-flex; align-items:center; text-decoration:none; border-radius:12px; }
+    .logo { width:124px; max-height:54px; object-fit:contain; object-position:left center; display:block; }
+    .top-actions { display:flex; gap:8px; align-items:center; }
+    .icon-button,.pill-link {
+      min-height:44px; border:1px solid var(--line); border-radius:999px; background:var(--surface);
+      color:var(--ink); text-decoration:none; display:inline-flex; align-items:center; justify-content:center;
+      font-weight:800; cursor:pointer;
+    }
+    .icon-button { width:44px; padding:0; }
+    .pill-link { padding:0 14px; font-size:.82rem; }
+    .workspace-head { display:flex; justify-content:space-between; align-items:end; gap:18px; margin-bottom:20px; }
+    .eyebrow { margin:0 0 7px; color:var(--brand); font-size:.76rem; font-weight:850; letter-spacing:.12em; text-transform:uppercase; }
+    h1 { margin:0; font-size:clamp(2rem,6vw,3.2rem); line-height:1; letter-spacing:-.045em; }
+    .intro { margin:10px 0 0; max-width:720px; color:var(--muted); line-height:1.55; }
+    .card { background:var(--surface); border:1px solid var(--line); border-radius:var(--radius); box-shadow:var(--soft-shadow); }
+    .message { display:none; margin:0 0 16px; padding:12px 14px; border:1px solid var(--line); border-radius:12px; font-size:.82rem; }
+    .message.show { display:block; }
+    .message.error { color:var(--danger); background:var(--danger-soft); border-color:var(--danger); }
+    .message.success { color:var(--success); background:var(--success-soft); border-color:var(--success); }
+
+    .metrics { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:10px; margin-bottom:18px; }
+    .metric { min-width:0; padding:15px; border:1px solid var(--line); border-radius:16px; background:var(--surface); }
+    .metric span { display:block; color:var(--muted); font-size:.7rem; font-weight:750; }
+    .metric strong { display:block; margin-top:6px; color:var(--ink); font-size:1.05rem; overflow-wrap:anywhere; }
+    .metric strong.alert { color:var(--danger); }
+    .metric strong.warn { color:var(--warning); }
+    .metric strong.gold { color:var(--brand); }
+
+    .shopping-card { padding:20px; margin-bottom:18px; border-top-color:rgba(240,198,76,.3); }
+    .section-head { display:flex; align-items:flex-start; justify-content:space-between; gap:12px; flex-wrap:wrap; }
+    .section-head h2 { margin:0; font-size:1.15rem; }
+    .section-head p { margin:5px 0 0; color:var(--muted); font-size:.8rem; line-height:1.45; }
+    .count-badge { padding:6px 10px; border-radius:999px; color:var(--brand); background:var(--brand-soft); font-size:.72rem; font-weight:850; }
+    .shopping-list { display:grid; gap:8px; margin-top:14px; }
+    .shopping-row { display:grid; grid-template-columns:minmax(0,1fr) auto; gap:10px; align-items:center; padding:11px 12px; border:1px solid var(--line); border-radius:13px; background:var(--surface-soft); }
+    .shopping-row strong { display:block; font-size:.82rem; }
+    .shopping-row span { display:block; margin-top:3px; color:var(--muted); font-size:.7rem; }
+    .shopping-side { display:flex; gap:8px; align-items:center; }
+    .status { padding:5px 8px; border-radius:999px; font-size:.67rem; font-weight:850; white-space:nowrap; }
+    .status.buy-now { color:var(--danger); background:var(--danger-soft); }
+    .status.buy-soon { color:var(--warning); background:var(--warning-soft); }
+    .status.okay { color:var(--success); background:var(--success-soft); }
+    .status.learning { color:var(--info); background:var(--info-soft); }
+
+    .new-item { margin-bottom:18px; overflow:hidden; }
+    .new-item > summary { list-style:none; cursor:pointer; padding:17px 19px; font-weight:900; display:flex; justify-content:space-between; gap:12px; }
+    .new-item > summary::-webkit-details-marker { display:none; }
+    .new-item > summary::after { content:"＋"; color:var(--brand); }
+    .new-item[open] > summary::after { content:"−"; }
+    .new-body { padding:0 19px 19px; border-top:1px solid var(--line); }
+    .form-grid { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:12px; margin-top:16px; }
+    .field { min-width:0; }
+    label { display:block; margin-bottom:7px; font-size:.78rem; font-weight:800; }
+    input,select,textarea {
+      width:100%; min-width:0; max-width:100%; min-height:50px; padding:0 13px;
+      border:1px solid var(--line); border-radius:12px; background:var(--surface-soft); color:var(--ink);
+    }
+    textarea { min-height:88px; padding:11px 13px; resize:vertical; }
+    input[type="date"] { width:100%; min-width:0; max-width:100%; inline-size:100%; -webkit-appearance:none; appearance:none; }
+    .actions { display:flex; gap:8px; flex-wrap:wrap; margin-top:14px; }
+    .button { min-height:44px; padding:9px 13px; border:1px solid rgba(240,198,76,.2); border-radius:11px; background:var(--brand-soft); color:var(--brand); font-weight:850; cursor:pointer; }
+    .button.primary { color:#080809; background:linear-gradient(180deg,#f2ce63,#d7aa2d); border-color:#d7aa2d; }
+    .button.danger { color:var(--danger); background:var(--danger-soft); border-color:rgba(255,119,112,.22); }
+    .button:disabled { opacity:.5; cursor:default; }
+
+    .toolbar { display:grid; grid-template-columns:minmax(0,1fr) 180px; gap:10px; margin:18px 0 12px; }
+    .items { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:14px; }
+    .item-card { min-width:0; overflow:hidden; }
+    .item-main { padding:18px; }
+    .item-top { display:flex; justify-content:space-between; gap:12px; align-items:flex-start; }
+    .item-title { min-width:0; }
+    .item-title h3 { margin:0; font-size:1.05rem; overflow-wrap:anywhere; }
+    .item-title p { margin:4px 0 0; color:var(--muted); font-size:.72rem; }
+    .item-amount { text-align:right; flex:0 0 auto; }
+    .item-amount strong { display:block; color:var(--brand); font-size:.95rem; }
+    .item-amount span { display:block; color:var(--muted); font-size:.66rem; margin-top:3px; }
+    .item-stats { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:8px; margin-top:14px; }
+    .mini { min-width:0; padding:9px; border:1px solid var(--line); border-radius:11px; background:var(--surface-soft); }
+    .mini span { display:block; color:var(--muted); font-size:.62rem; font-weight:700; }
+    .mini strong { display:block; margin-top:4px; font-size:.76rem; overflow-wrap:anywhere; }
+    .item-note { margin:12px 0 0; color:var(--muted); font-size:.72rem; line-height:1.45; }
+    .item-actions { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:8px; margin-top:14px; }
+    .item-details { border-top:1px solid var(--line); }
+    .item-details > summary { list-style:none; cursor:pointer; padding:12px 18px; color:var(--brand); font-size:.75rem; font-weight:850; }
+    .item-details > summary::-webkit-details-marker { display:none; }
+    .history { padding:0 18px 18px; display:grid; gap:7px; }
+    .history-row { display:grid; grid-template-columns:minmax(0,1fr) auto; gap:10px; align-items:center; padding:10px 11px; border-radius:11px; background:var(--surface-soft); }
+    .history-row span { display:block; color:var(--muted); font-size:.68rem; line-height:1.4; }
+    .history-row strong { font-size:.74rem; white-space:nowrap; }
+    .empty { padding:18px; border:1px dashed var(--line); border-radius:13px; color:var(--muted); text-align:center; font-size:.8rem; }
+
+    dialog { width:min(92vw,520px); padding:0; border:1px solid var(--line); border-radius:20px; background:var(--surface); color:var(--ink); box-shadow:var(--shadow); }
+    dialog::backdrop { background:rgba(0,0,0,.72); backdrop-filter:blur(3px); }
+    .dialog-body { padding:20px; }
+    .dialog-head { display:flex; justify-content:space-between; gap:12px; align-items:flex-start; margin-bottom:14px; }
+    .dialog-head h2 { margin:0; font-size:1.15rem; }
+    .dialog-head p { margin:4px 0 0; color:var(--muted); font-size:.76rem; }
+    .dialog-close { width:38px; height:38px; border:1px solid var(--line); border-radius:50%; background:var(--surface-soft); color:var(--ink); cursor:pointer; }
+
+    .login-card { max-width:520px; margin:90px auto 0; padding:28px; }
+    .login-card h2 { margin:0; }
+    .login-card p { color:var(--muted); line-height:1.55; }
+
+    .bottom-nav {
+      position:fixed; left:0; right:0; bottom:0; z-index:80; display:grid;
+      grid-template-columns:repeat(5,minmax(0,1fr)); gap:4px;
+      padding:8px max(10px,env(safe-area-inset-right)) calc(8px + env(safe-area-inset-bottom)) max(10px,env(safe-area-inset-left));
+      border:1px solid var(--line); border-bottom:0; border-radius:20px 20px 0 0;
+      background:#030304; box-shadow:0 -10px 30px rgba(0,0,0,.48);
+    }
+    .bottom-nav a { min-height:48px; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:2px; color:var(--muted); text-decoration:none; font-size:.63rem; font-weight:800; border-radius:10px; }
+    .bottom-nav .icon { color:var(--brand); font-size:1rem; }
+    .bottom-nav a.active { color:var(--brand); background:var(--brand-soft); }
+
+    @media (max-width:760px) {
+      .app-shell { width:min(100% - 24px,580px); }
+      .workspace-head { align-items:flex-start; }
+      .metrics { grid-template-columns:repeat(2,minmax(0,1fr)); }
+      .items { grid-template-columns:minmax(0,1fr); }
+      .toolbar { grid-template-columns:minmax(0,1fr); }
+      .form-grid { grid-template-columns:minmax(0,1fr); }
+      .item-stats { grid-template-columns:repeat(3,minmax(0,1fr)); }
+      .pill-link { display:none; }
+    }
+    @media (max-width:420px) {
+      .item-stats { grid-template-columns:minmax(0,1fr); }
+      .item-actions { grid-template-columns:minmax(0,1fr); }
+    }
+  </style>
+</head>
+<body>
+  <main class="app-shell">
+    <header class="topbar">
+      <a href="index.html" class="logo-link" aria-label="Open Dhaftar Overview">
+        <img src="assets/logo.png" class="logo" alt="Dhaftar">
+      </a>
+      <div class="top-actions">
+        <a href="admin.html" class="pill-link">Admin</a>
+        <button id="themeToggle" class="icon-button" type="button" aria-label="Switch theme">☀️</button>
+      </div>
+    </header>
+
+    <section id="unauthorized" class="card login-card" hidden>
+      <h2>Administrator access required</h2>
+      <p>Stock & Restock uses your private Dhaftar account so household purchase history can sync across devices.</p>
+      <a class="button primary" href="admin.html">Open Admin sign in</a>
+    </section>
+
+    <section id="stockApp" hidden>
+      <div class="workspace-head">
+        <div>
+          <p class="eyebrow">HOUSEHOLD CONSUMABLES</p>
+          <h1>Stock & Restock</h1>
+          <p class="intro">Record what you buy and when it runs out. Dhaftar learns how long things normally last and when you are likely to need them again.</p>
+        </div>
+      </div>
+
+      <div id="message" class="message" role="status" aria-live="polite"></div>
+
+      <section class="metrics" aria-label="Stock summary">
+        <div class="metric"><span>Buy now</span><strong id="metricBuyNow" class="alert">0</strong></div>
+        <div class="metric"><span>Buy soon</span><strong id="metricBuySoon" class="warn">0</strong></div>
+        <div class="metric"><span>Tracked items</span><strong id="metricTracked">0</strong></div>
+        <div class="metric"><span>This month spent</span><strong id="metricSpend" class="gold">MVR 0.00</strong></div>
+      </section>
+
+      <section class="card shopping-card">
+        <div class="section-head">
+          <div>
+            <h2>Shopping list</h2>
+            <p>Automatically built from items that are out or predicted to run low soon.</p>
+          </div>
+          <span id="shoppingCount" class="count-badge">All clear</span>
+        </div>
+        <div id="shoppingList" class="shopping-list"></div>
+      </section>
+
+      <details class="card new-item" id="newItemPanel">
+        <summary>Add a household item</summary>
+        <div class="new-body">
+          <form id="newItemForm">
+            <div class="form-grid">
+              <div class="field">
+                <label for="itemName">Item name</label>
+                <input id="itemName" required maxlength="80" placeholder="Rice, detergent, toothpaste…">
+              </div>
+              <div class="field">
+                <label for="itemCategory">Category</label>
+                <select id="itemCategory">
+                  <option>Food</option><option>Cleaning</option><option>Bathroom</option>
+                  <option>Personal care</option><option>Household</option><option>Baby</option><option>Other</option>
+                </select>
+              </div>
+              <div class="field">
+                <label for="itemQty">First purchase quantity</label>
+                <input id="itemQty" type="number" required min="0.001" step="0.001" inputmode="decimal" placeholder="10">
+              </div>
+              <div class="field">
+                <label for="itemUnit">Unit</label>
+                <input id="itemUnit" required maxlength="20" placeholder="kg, L, pcs, pack…">
+              </div>
+              <div class="field">
+                <label for="itemAmount">Amount spent (MVR)</label>
+                <input id="itemAmount" type="number" required min="0" step="0.01" inputmode="decimal" placeholder="180.00">
+              </div>
+              <div class="field">
+                <label for="itemPurchaseDate">Purchase date</label>
+                <input id="itemPurchaseDate" type="date" required>
+              </div>
+            </div>
+            <div class="actions">
+              <button class="button primary" type="submit">Add item & purchase</button>
+            </div>
+          </form>
+        </div>
+      </details>
+
+      <div class="toolbar">
+        <input id="searchInput" type="search" placeholder="Search household items">
+        <select id="statusFilter" aria-label="Filter by status">
+          <option value="all">All items</option>
+          <option value="buy-now">Buy now</option>
+          <option value="buy-soon">Buy soon</option>
+          <option value="okay">Okay for now</option>
+          <option value="learning">Learning</option>
+        </select>
+      </div>
+
+      <section id="items" class="items" aria-live="polite"></section>
+    </section>
+  </main>
+
+  <dialog id="purchaseDialog">
+    <div class="dialog-body">
+      <div class="dialog-head">
+        <div><h2>Record purchase</h2><p id="purchaseItemName"></p></div>
+        <button class="dialog-close" type="button" data-close-dialog="purchaseDialog">×</button>
+      </div>
+      <form id="purchaseForm">
+        <div class="form-grid">
+          <div class="field"><label for="purchaseQty">Quantity</label><input id="purchaseQty" type="number" min="0.001" step="0.001" inputmode="decimal" required></div>
+          <div class="field"><label for="purchaseAmount">Amount spent (MVR)</label><input id="purchaseAmount" type="number" min="0" step="0.01" inputmode="decimal" required></div>
+          <div class="field"><label for="purchaseDate">Purchase date</label><input id="purchaseDate" type="date" required></div>
+          <div class="field"><label for="purchaseNote">Note (optional)</label><input id="purchaseNote" maxlength="120" placeholder="Shop, brand, pack size…"></div>
+        </div>
+        <div class="actions">
+          <button class="button primary" type="submit">Save purchase</button>
+          <button class="button" type="button" data-close-dialog="purchaseDialog">Cancel</button>
+        </div>
+      </form>
+    </div>
+  </dialog>
+
+  <dialog id="runoutDialog">
+    <div class="dialog-body">
+      <div class="dialog-head">
+        <div><h2>Mark as ran out</h2><p id="runoutItemName"></p></div>
+        <button class="dialog-close" type="button" data-close-dialog="runoutDialog">×</button>
+      </div>
+      <form id="runoutForm">
+        <div class="field"><label for="runoutDate">Ran out date</label><input id="runoutDate" type="date" required></div>
+        <div class="actions">
+          <button class="button primary" type="submit">Save run-out date</button>
+          <button class="button" type="button" data-close-dialog="runoutDialog">Cancel</button>
+        </div>
+      </form>
+    </div>
+  </dialog>
+
+  <nav class="bottom-nav" id="bottomNav" hidden aria-label="Dhaftar navigation">
+    <a href="index.html"><span class="icon">⌂</span><span>Overview</span></a>
+    <a href="admin.html"><span class="icon">✓</span><span>Admin</span></a>
+    <a href="stock.html" class="active" aria-current="page"><span class="icon">▣</span><span>Stock</span></a>
+    <a href="amanah.html"><span class="icon">↗</span><span>Amanah</span></a>
+    <a href="statements.html"><span class="icon">•••</span><span>More</span></a>
+  </nav>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="supabase-client.js"></script>
+  <script>
+    const STOCK_CONFIG_MONTH = "2026-01-01";
+    const STOCK_PREFIX = "__stock_item__";
+    let currentUser = null;
+    let currentProfile = null;
+    let stockRows = new Map();
+    let items = [];
+    let purchaseTargetId = null;
+    let runoutTargetId = null;
+
+    const el = (id) => document.getElementById(id);
+
+    function money(cents) {
+      const value = Number(cents || 0) / 100;
+      return new Intl.NumberFormat("en-US", { style:"currency", currency:"MVR", minimumFractionDigits:2 }).format(value);
+    }
+
+    function localToday() {
+      const parts = new Intl.DateTimeFormat("en-CA", {
+        timeZone:"Indian/Maldives", year:"numeric", month:"2-digit", day:"2-digit"
+      }).formatToParts(new Date());
+      const read = (type) => parts.find((part) => part.type === type)?.value || "";
+      return read("year") + "-" + read("month") + "-" + read("day");
+    }
+
+    function dateMs(value) {
+      if (!/^\d{4}-\d{2}-\d{2}$/.test(String(value || ""))) return NaN;
+      const [y,m,d] = value.split("-").map(Number);
+      return Date.UTC(y,m-1,d);
+    }
+
+    function daysBetween(a,b) {
+      const one=dateMs(a), two=dateMs(b);
+      if (!Number.isFinite(one) || !Number.isFinite(two)) return null;
+      return Math.round((two-one)/86400000);
+    }
+
+    function addDays(date, days) {
+      const ms=dateMs(date);
+      if (!Number.isFinite(ms)) return "";
+      return new Date(ms + Math.round(days)*86400000).toISOString().slice(0,10);
+    }
+
+    function displayDate(value) {
+      if (!value) return "—";
+      const ms=dateMs(value);
+      if (!Number.isFinite(ms)) return value;
+      return new Intl.DateTimeFormat("en-GB",{day:"numeric",month:"short",year:"numeric",timeZone:"UTC"}).format(new Date(ms));
+    }
+
+    function parseNotes(value) {
+      try { return JSON.parse(value || "{}") || {}; } catch (_) { return {}; }
+    }
+
+    function uid() {
+      return (crypto.randomUUID ? crypto.randomUUID() : Date.now().toString(36) + Math.random().toString(36).slice(2));
+    }
+
+    function centsFromInput(value) {
+      const n=Number(value);
+      if (!Number.isFinite(n) || n < 0) return null;
+      return Math.round(n*100);
+    }
+
+    function numberValue(value) {
+      const n=Number(value);
+      return Number.isFinite(n) && n > 0 ? n : null;
+    }
+
+    function showMessage(text, error=false) {
+      const node=el("message");
+      node.textContent=text || "";
+      node.className="message" + (text ? " show " + (error ? "error" : "success") : "");
+      if (text) setTimeout(() => { if (node.textContent===text) node.className="message"; }, 4500);
+    }
+
+    function normalizeCycle(cycle) {
+      return {
+        id:String(cycle?.id || uid()),
+        purchasedOn:String(cycle?.purchasedOn || ""),
+        qty:Number(cycle?.qty) || 0,
+        amountCents:Math.max(0,Math.round(Number(cycle?.amountCents)||0)),
+        runOutOn:cycle?.runOutOn ? String(cycle.runOutOn) : "",
+        endedReason:String(cycle?.endedReason || ""),
+        endedOn:cycle?.endedOn ? String(cycle.endedOn) : "",
+        note:String(cycle?.note || "")
+      };
+    }
+
+    function normalizeItem(row) {
+      const meta=parseNotes(row.notes);
+      const cycles=(Array.isArray(meta.cycles) ? meta.cycles : []).map(normalizeCycle)
+        .sort((a,b) => a.purchasedOn.localeCompare(b.purchasedOn));
+      return {
+        id:String(meta.id || row.bill_type.slice(STOCK_PREFIX.length)),
+        name:String(meta.name || "Untitled item"),
+        category:String(meta.category || "Other"),
+        unit:String(meta.unit || "unit"),
+        archived:meta.archived===true,
+        cycles,
+        createdAt:String(meta.createdAt || ""),
+        updatedAt:String(meta.updatedAt || ""),
+        row
+      };
+    }
+
+    function activeCycle(item) {
+      const open=item.cycles.filter((cycle) => !cycle.runOutOn && !cycle.endedReason);
+      return open.length ? open[open.length-1] : null;
+    }
+
+    function completedCycles(item) {
+      return item.cycles.filter((cycle) => {
+        const days=daysBetween(cycle.purchasedOn,cycle.runOutOn);
+        return cycle.runOutOn && cycle.qty>0 && days!==null && days>0;
+      });
+    }
+
+    function average(values) {
+      const valid=values.filter((v) => Number.isFinite(v));
+      return valid.length ? valid.reduce((a,b)=>a+b,0)/valid.length : null;
+    }
+
+    function itemAnalytics(item) {
+      const complete=completedCycles(item);
+      const active=activeCycle(item);
+      const dailyRates=complete.map((cycle) => {
+        const days=daysBetween(cycle.purchasedOn,cycle.runOutOn);
+        return days>0 ? cycle.qty/days : NaN;
+      });
+      const daily=average(dailyRates);
+      const durations=complete.map((cycle)=>daysBetween(cycle.purchasedOn,cycle.runOutOn));
+      const typicalDays=average(durations);
+
+      const purchases=item.cycles.slice().sort((a,b)=>a.purchasedOn.localeCompare(b.purchasedOn));
+      const intervals=[];
+      for(let i=1;i<purchases.length;i++) {
+        const d=daysBetween(purchases[i-1].purchasedOn,purchases[i].purchasedOn);
+        if (d!==null && d>0) intervals.push(d);
+      }
+      const avgInterval=average(intervals);
+
+      let predictedDays=null;
+      if (active && daily && daily>0) predictedDays=active.qty/daily;
+      else if (active && typicalDays) predictedDays=typicalDays;
+
+      const predictedDate=active && predictedDays ? addDays(active.purchasedOn,predictedDays) : "";
+      const daysLeft=predictedDate ? daysBetween(localToday(),predictedDate) : null;
+
+      let statusKey="learning", statusLabel="Learning";
+      if (!active) { statusKey="buy-now"; statusLabel="Buy now"; }
+      else if (daysLeft!==null) {
+        if (daysLeft<=0) { statusKey="buy-now"; statusLabel="Buy now"; }
+        else if (daysLeft<=5) { statusKey="buy-soon"; statusLabel="Buy soon"; }
+        else { statusKey="okay"; statusLabel="Okay"; }
+      }
+
+      const confidence=complete.length>=4 ? "High" : complete.length>=2 ? "Medium" : "Low";
+
+      const priced=item.cycles.filter((cycle)=>cycle.qty>0 && cycle.amountCents>=0);
+      const unitPrices=priced.map((cycle)=>cycle.amountCents/cycle.qty);
+      const avgUnitPrice=average(unitPrices);
+      const latest=purchases.length ? purchases[purchases.length-1] : null;
+      const lastUnitPrice=latest && latest.qty>0 ? latest.amountCents/latest.qty : null;
+      let priceTrend="Learning price";
+      if (avgUnitPrice!==null && lastUnitPrice!==null && priced.length>=2) {
+        const pct=avgUnitPrice ? ((lastUnitPrice-avgUnitPrice)/avgUnitPrice)*100 : 0;
+        if (Math.abs(pct)<4) priceTrend="Near usual price";
+        else priceTrend=Math.abs(Math.round(pct)) + "% " + (pct>0 ? "above" : "below") + " usual";
+      }
+
+      return { complete,active,daily,typicalDays,avgInterval,predictedDays,predictedDate,daysLeft,statusKey,statusLabel,confidence,avgUnitPrice,lastUnitPrice,priceTrend,latest };
+    }
+
+    function serializeItem(item) {
+      return JSON.stringify({
+        v:1,id:item.id,name:item.name,category:item.category,unit:item.unit,
+        archived:item.archived===true,cycles:item.cycles,
+        createdAt:item.createdAt || new Date().toISOString(),updatedAt:new Date().toISOString()
+      });
+    }
+
+    async function saveItem(item) {
+      if (!currentUser) throw new Error("Please sign in again.");
+      const marker=STOCK_PREFIX + item.id;
+      const existing=stockRows.get(marker);
+      const payload={
+        bill_type:marker,billing_month:STOCK_CONFIG_MONTH,amount:0,
+        notes:serializeItem(item),
+        created_by:existing?.created_by ?? currentUser.id,
+        updated_by:currentUser.id
+      };
+      const { data,error }=await supabaseClient.from("dhaftar_bills")
+        .upsert(payload,{onConflict:"bill_type,billing_month"})
+        .select("bill_type,billing_month,amount,notes,created_by,updated_by")
+        .single();
+      if (error) throw error;
+      stockRows.set(marker,data);
+      const normalized=normalizeItem(data);
+      const index=items.findIndex((x)=>x.id===normalized.id);
+      if (index>=0) items[index]=normalized; else items.push(normalized);
+      render();
+      return normalized;
+    }
+
+    async function loadItems() {
+      const { data,error }=await supabaseClient.from("dhaftar_bills")
+        .select("bill_type,billing_month,amount,notes,created_by,updated_by")
+        .eq("billing_month",STOCK_CONFIG_MONTH)
+        .like("bill_type",STOCK_PREFIX + "%");
+      if (error) throw error;
+      stockRows=new Map((data||[]).map((row)=>[row.bill_type,row]));
+      items=(data||[]).map(normalizeItem).filter((item)=>!item.archived)
+        .sort((a,b)=>a.name.localeCompare(b.name));
+      render();
+    }
+
+    function renderMetrics() {
+      const analytics=items.map((item)=>itemAnalytics(item));
+      el("metricBuyNow").textContent=String(analytics.filter((a)=>a.statusKey==="buy-now").length);
+      el("metricBuySoon").textContent=String(analytics.filter((a)=>a.statusKey==="buy-soon").length);
+      el("metricTracked").textContent=String(items.length);
+      const month=localToday().slice(0,7);
+      let spent=0;
+      for(const item of items) for(const cycle of item.cycles) if(cycle.purchasedOn.slice(0,7)===month) spent+=cycle.amountCents;
+      el("metricSpend").textContent=money(spent);
+    }
+
+    function renderShopping() {
+      const container=el("shoppingList");
+      const rows=items.map((item)=>({item,a:itemAnalytics(item)}))
+        .filter((x)=>x.a.statusKey==="buy-now" || x.a.statusKey==="buy-soon")
+        .sort((a,b)=>{
+          const rank={"buy-now":0,"buy-soon":1};
+          return rank[a.a.statusKey]-rank[b.a.statusKey] || a.item.name.localeCompare(b.item.name);
+        });
+      el("shoppingCount").textContent=rows.length ? rows.length + (rows.length===1 ? " item" : " items") : "All clear";
+      container.replaceChildren();
+      if (!rows.length) {
+        const empty=document.createElement("div"); empty.className="empty";
+        empty.textContent="✓ Nothing needs restocking yet.";
+        container.appendChild(empty); return;
+      }
+      rows.forEach(({item,a})=>{
+        const row=document.createElement("div"); row.className="shopping-row";
+        const main=document.createElement("div");
+        const title=document.createElement("strong"); title.textContent=item.name;
+        const sub=document.createElement("span");
+        sub.textContent=a.statusKey==="buy-now"
+          ? (a.active ? "Predicted stock has run out" : "No active stock")
+          : "Predicted " + a.daysLeft + (a.daysLeft===1 ? " day" : " days") + " left";
+        main.append(title,sub);
+        const side=document.createElement("div"); side.className="shopping-side";
+        const badge=document.createElement("span"); badge.className="status " + a.statusKey; badge.textContent=a.statusLabel;
+        const buy=document.createElement("button"); buy.className="button"; buy.type="button"; buy.textContent="Purchased";
+        buy.addEventListener("click",()=>openPurchase(item.id));
+        side.append(badge,buy); row.append(main,side); container.appendChild(row);
+      });
+    }
+
+    function statusText(a) {
+      if (a.statusKey==="buy-now") return a.active ? "Predicted out now" : "No active stock";
+      if (a.statusKey==="buy-soon") return "About " + a.daysLeft + (a.daysLeft===1 ? " day" : " days") + " left";
+      if (a.statusKey==="okay") return "About " + a.daysLeft + " days left";
+      return "Need a run-out cycle to learn";
+    }
+
+    function itemCard(item) {
+      const a=itemAnalytics(item);
+      const card=document.createElement("article"); card.className="card item-card";
+      const main=document.createElement("div"); main.className="item-main";
+      const top=document.createElement("div"); top.className="item-top";
+      const titleBox=document.createElement("div"); titleBox.className="item-title";
+      const title=document.createElement("h3"); title.textContent=item.name;
+      const cat=document.createElement("p"); cat.textContent=item.category + " · " + item.unit;
+      titleBox.append(title,cat);
+      const amt=document.createElement("div"); amt.className="item-amount";
+      const lastAmount=document.createElement("strong"); lastAmount.textContent=a.latest ? money(a.latest.amountCents) : "—";
+      const lastLabel=document.createElement("span"); lastLabel.textContent=a.latest ? "last purchase" : "no purchase";
+      amt.append(lastAmount,lastLabel); top.append(titleBox,amt);
+
+      const badge=document.createElement("span"); badge.className="status " + a.statusKey; badge.textContent=a.statusLabel;
+      badge.style.display="inline-block"; badge.style.marginTop="12px";
+
+      const stats=document.createElement("div"); stats.className="item-stats";
+      const statsData=[
+        ["Purchase frequency",a.avgInterval ? "Every ~" + Math.round(a.avgInterval) + " days" : "Learning"],
+        ["Typical duration",a.typicalDays ? "~" + Math.round(a.typicalDays) + " days" : "Learning"],
+        ["Confidence",a.confidence]
+      ];
+      statsData.forEach(([label,value])=>{
+        const box=document.createElement("div"); box.className="mini";
+        const s=document.createElement("span"); s.textContent=label;
+        const st=document.createElement("strong"); st.textContent=value;
+        box.append(s,st); stats.appendChild(box);
+      });
+
+      const note=document.createElement("p"); note.className="item-note";
+      const activeText=a.active ? (a.active.qty + " " + item.unit + " bought " + displayDate(a.active.purchasedOn)) : "No active purchase.";
+      const prediction=a.predictedDate ? " Predicted run-out: " + displayDate(a.predictedDate) + "." : "";
+      note.textContent=activeText + prediction + " " + a.priceTrend + ".";
+
+      const actions=document.createElement("div"); actions.className="item-actions";
+      const purchase=document.createElement("button"); purchase.className="button primary"; purchase.type="button"; purchase.textContent="Record purchase";
+      purchase.addEventListener("click",()=>openPurchase(item.id));
+      const ranout=document.createElement("button"); ranout.className="button"; ranout.type="button"; ranout.textContent="Ran out";
+      ranout.disabled=!a.active; ranout.addEventListener("click",()=>openRunout(item.id));
+      actions.append(purchase,ranout);
+      main.append(top,badge,stats,note,actions);
+
+      const details=document.createElement("details"); details.className="item-details";
+      const summary=document.createElement("summary"); summary.textContent="History & item settings";
+      const history=document.createElement("div"); history.className="history";
+      const cycles=item.cycles.slice().sort((x,y)=>y.purchasedOn.localeCompare(x.purchasedOn));
+      if (!cycles.length) {
+        const empty=document.createElement("div"); empty.className="empty"; empty.textContent="No purchase history yet."; history.appendChild(empty);
+      } else {
+        cycles.forEach((cycle)=>{
+          const row=document.createElement("div"); row.className="history-row";
+          const left=document.createElement("span");
+          let ending="";
+          if (cycle.runOutOn) {
+            const d=daysBetween(cycle.purchasedOn,cycle.runOutOn);
+            ending=" · ran out " + displayDate(cycle.runOutOn) + (d>0 ? " · lasted " + d + " days" : "");
+          } else if (cycle.endedReason==="restocked") ending=" · restocked before run-out";
+          else ending=" · current stock";
+          left.textContent=displayDate(cycle.purchasedOn) + " · " + cycle.qty + " " + item.unit + ending + (cycle.note ? " · " + cycle.note : "");
+          const right=document.createElement("strong"); right.textContent=money(cycle.amountCents);
+          row.append(left,right); history.appendChild(row);
+        });
+      }
+      const archive=document.createElement("button"); archive.className="button danger"; archive.type="button"; archive.textContent="Archive item";
+      archive.addEventListener("click",()=>archiveItem(item.id)); history.appendChild(archive);
+      details.append(summary,history);
+      card.append(main,details);
+      return card;
+    }
+
+    function renderItems() {
+      const q=el("searchInput").value.trim().toLowerCase();
+      const filter=el("statusFilter").value;
+      const filtered=items.filter((item)=>{
+        const a=itemAnalytics(item);
+        const matchesText=!q || item.name.toLowerCase().includes(q) || item.category.toLowerCase().includes(q);
+        const matchesStatus=filter==="all" || a.statusKey===filter;
+        return matchesText && matchesStatus;
+      });
+      const container=el("items"); container.replaceChildren();
+      if (!filtered.length) {
+        const empty=document.createElement("div"); empty.className="empty";
+        empty.textContent=items.length ? "No items match this filter." : "No household items yet. Add your first item above.";
+        container.appendChild(empty); return;
+      }
+      filtered.forEach((item)=>container.appendChild(itemCard(item)));
+    }
+
+    function render() { renderMetrics(); renderShopping(); renderItems(); }
+
+    function openPurchase(id) {
+      const item=items.find((x)=>x.id===id); if (!item) return;
+      purchaseTargetId=id; const a=itemAnalytics(item);
+      el("purchaseItemName").textContent=item.name + " · " + item.unit;
+      el("purchaseQty").value=a.latest?.qty || "";
+      el("purchaseAmount").value="";
+      el("purchaseDate").value=localToday();
+      el("purchaseNote").value="";
+      el("purchaseDialog").showModal();
+    }
+
+    function openRunout(id) {
+      const item=items.find((x)=>x.id===id); if (!item) return;
+      runoutTargetId=id; el("runoutItemName").textContent=item.name;
+      el("runoutDate").value=localToday(); el("runoutDialog").showModal();
+    }
+
+    async function addItem(event) {
+      event.preventDefault();
+      const name=el("itemName").value.trim(), unit=el("itemUnit").value.trim();
+      const qty=numberValue(el("itemQty").value), amountCents=centsFromInput(el("itemAmount").value);
+      const purchasedOn=el("itemPurchaseDate").value;
+      if (!name || !unit || !qty || amountCents===null || !purchasedOn) { showMessage("Complete all purchase fields.",true); return; }
+      const item={
+        id:uid(),name,category:el("itemCategory").value,unit,archived:false,
+        cycles:[{id:uid(),purchasedOn,qty,amountCents,runOutOn:"",endedReason:"",endedOn:"",note:""}],
+        createdAt:new Date().toISOString(),updatedAt:new Date().toISOString()
+      };
+      try {
+        await saveItem(item); el("newItemForm").reset(); el("itemPurchaseDate").value=localToday();
+        el("newItemPanel").open=false; showMessage(name + " added to Stock & Restock.");
+      } catch (error) { showMessage(error.message || "Could not add item.",true); }
+    }
+
+    async function recordPurchase(event) {
+      event.preventDefault();
+      const item=items.find((x)=>x.id===purchaseTargetId); if (!item) return;
+      const qty=numberValue(el("purchaseQty").value), amountCents=centsFromInput(el("purchaseAmount").value);
+      const purchasedOn=el("purchaseDate").value;
+      if (!qty || amountCents===null || !purchasedOn) { showMessage("Enter quantity, amount and purchase date.",true); return; }
+      const open=activeCycle(item);
+      if (open) {
+        open.endedReason="restocked";
+        open.endedOn=purchasedOn;
+      }
+      item.cycles.push({id:uid(),purchasedOn,qty,amountCents,runOutOn:"",endedReason:"",endedOn:"",note:el("purchaseNote").value.trim()});
+      item.cycles.sort((a,b)=>a.purchasedOn.localeCompare(b.purchasedOn));
+      try {
+        await saveItem(item); el("purchaseDialog").close(); showMessage(item.name + " purchase recorded.");
+      } catch (error) { showMessage(error.message || "Could not save purchase.",true); }
+    }
+
+    async function recordRunout(event) {
+      event.preventDefault();
+      const item=items.find((x)=>x.id===runoutTargetId); if (!item) return;
+      const cycle=activeCycle(item), date=el("runoutDate").value;
+      if (!cycle || !date) return;
+      if (daysBetween(cycle.purchasedOn,date)<0) { showMessage("Run-out date cannot be before the purchase date.",true); return; }
+      cycle.runOutOn=date;
+      try {
+        await saveItem(item); el("runoutDialog").close();
+        const a=itemAnalytics(item);
+        showMessage(item.name + " marked ran out. Dhaftar now has " + a.complete.length + " completed usage cycle" + (a.complete.length===1 ? "." : "s."));
+      } catch (error) { showMessage(error.message || "Could not save run-out date.",true); }
+    }
+
+    async function archiveItem(id) {
+      const item=items.find((x)=>x.id===id); if (!item) return;
+      if (!confirm("Archive " + item.name + "? Its history will be kept.")) return;
+      item.archived=true;
+      try {
+        await saveItem(item); items=items.filter((x)=>x.id!==id); render(); showMessage(item.name + " archived.");
+      } catch (error) { showMessage(error.message || "Could not archive item.",true); }
+    }
+
+    async function verifyAdmin() {
+      const { data:sessionData,error:sessionError }=await supabaseClient.auth.getSession();
+      if (sessionError) throw sessionError;
+      const session=sessionData.session;
+      if (!session) return false;
+      const { data:profile,error:profileError }=await supabaseClient.from("profiles")
+        .select("id,email,full_name,role").eq("id",session.user.id).single();
+      if (profileError) throw profileError;
+      if (profile.role!=="admin") return false;
+      currentUser=session.user; currentProfile=profile; return true;
+    }
+
+    function setThemeButton() {
+      el("themeToggle").textContent=document.documentElement.dataset.theme==="dark" ? "☀️" : "🌙";
+    }
+
+    async function init() {
+      setThemeButton();
+      el("itemPurchaseDate").value=localToday();
+      try {
+        const allowed=await verifyAdmin();
+        if (!allowed) { el("unauthorized").hidden=false; return; }
+        el("stockApp").hidden=false; el("bottomNav").hidden=false;
+        await loadItems();
+      } catch (error) {
+        el("unauthorized").hidden=false;
+        const p=el("unauthorized").querySelector("p");
+        p.textContent="Stock & Restock could not verify administrator access. Open Admin and sign in again.";
+      }
+    }
+
+    el("themeToggle").addEventListener("click",()=>{
+      const next=document.documentElement.dataset.theme==="dark" ? "light" : "dark";
+      document.documentElement.dataset.theme=next;
+      try { localStorage.setItem("dhaftar-theme",next); } catch (_) {}
+      setThemeButton();
+    });
+    el("newItemForm").addEventListener("submit",addItem);
+    el("purchaseForm").addEventListener("submit",recordPurchase);
+    el("runoutForm").addEventListener("submit",recordRunout);
+    el("searchInput").addEventListener("input",renderItems);
+    el("statusFilter").addEventListener("change",renderItems);
+    document.querySelectorAll("[data-close-dialog]").forEach((button)=>{
+      button.addEventListener("click",()=>el(button.dataset.closeDialog).close());
+    });
+    init();
+  </script>
+</body>
+</html>

@@ -344,6 +344,7 @@
     let currentUser = null;
     let currentProfile = null;
     let stockRows = new Map();
+    let stockStorageMode = "checking";
     let items = [];
     let purchaseTargetId = null;
     let runoutTargetId = null;
@@ -427,7 +428,7 @@
       };
     }
 
-    function normalizeItem(row) {
+    function normalizeLegacyItem(row) {
       const meta=parseNotes(row.notes);
       const cycles=(Array.isArray(meta.cycles) ? meta.cycles : []).map(normalizeCycle)
         .sort((a,b) => a.purchasedOn.localeCompare(b.purchasedOn));
@@ -440,8 +441,53 @@
         cycles,
         createdAt:String(meta.createdAt || ""),
         updatedAt:String(meta.updatedAt || ""),
-        row
+        row,
+        storage:"legacy"
       };
+    }
+
+    function normalizePurchaseRow(row) {
+      return normalizeCycle({
+        id:row.id,
+        purchasedOn:row.purchased_on,
+        qty:row.quantity,
+        amountCents:Math.round((Number(row.amount) || 0) * 100),
+        runOutOn:row.run_out_on,
+        endedReason:row.ended_reason,
+        endedOn:row.ended_on,
+        note:row.note
+      });
+    }
+
+    function normalizeDedicatedItem(row, purchaseRows) {
+      const cycles=(purchaseRows || [])
+        .filter((purchase) => purchase.stock_item_id === row.id)
+        .map(normalizePurchaseRow)
+        .sort((a,b) => a.purchasedOn.localeCompare(b.purchasedOn));
+
+      return {
+        id:String(row.id),
+        name:String(row.name || "Untitled item"),
+        category:String(row.category || "Other"),
+        unit:String(row.unit || "unit"),
+        archived:row.archived===true,
+        cycles,
+        createdAt:String(row.created_at || ""),
+        updatedAt:String(row.updated_at || ""),
+        row,
+        storage:"dedicated"
+      };
+    }
+
+    function stockSchemaMissing(error) {
+      const code=String(error?.code || "");
+      const message=String(error?.message || "").toLowerCase();
+      return (
+        code==="42P01" ||
+        code==="PGRST205" ||
+        message.includes("stock_items") ||
+        message.includes("stock_purchases")
+      );
     }
 
     function activeCycle(item) {
@@ -520,7 +566,7 @@
       });
     }
 
-    async function saveItem(item) {
+    async function saveLegacyItem(item) {
       if (!currentUser) throw new Error("Please sign in again.");
       const marker=STOCK_PREFIX + item.id;
       const existing=stockRows.get(marker);
@@ -536,23 +582,141 @@
         .single();
       if (error) throw error;
       stockRows.set(marker,data);
-      const normalized=normalizeItem(data);
+      const normalized=normalizeLegacyItem(data);
       const index=items.findIndex((x)=>x.id===normalized.id);
       if (index>=0) items[index]=normalized; else items.push(normalized);
       render();
       return normalized;
     }
 
-    async function loadItems() {
+    async function loadDedicatedItems() {
+      const [itemResult,purchaseResult]=await Promise.all([
+        supabaseClient.from("stock_items")
+          .select("id,name,category,unit,archived,created_by,created_at,updated_at")
+          .eq("archived",false)
+          .order("name",{ascending:true}),
+        supabaseClient.from("stock_purchases")
+          .select("id,stock_item_id,purchased_on,quantity,amount,note,run_out_on,ended_reason,ended_on,created_by,created_at,updated_at")
+          .order("purchased_on",{ascending:true})
+      ]);
+
+      if (itemResult.error) throw itemResult.error;
+      if (purchaseResult.error) throw purchaseResult.error;
+
+      items=(itemResult.data || [])
+        .map((row)=>normalizeDedicatedItem(row,purchaseResult.data || []))
+        .sort((a,b)=>a.name.localeCompare(b.name));
+
+      stockStorageMode="dedicated";
+      render();
+    }
+
+    async function loadLegacyItems() {
       const { data,error }=await supabaseClient.from("dhaftar_bills")
         .select("bill_type,billing_month,amount,notes,created_by,updated_by")
         .eq("billing_month",STOCK_CONFIG_MONTH)
         .like("bill_type",STOCK_PREFIX + "%");
       if (error) throw error;
       stockRows=new Map((data||[]).map((row)=>[row.bill_type,row]));
-      items=(data||[]).map(normalizeItem).filter((item)=>!item.archived)
+      items=(data||[]).map(normalizeLegacyItem).filter((item)=>!item.archived)
         .sort((a,b)=>a.name.localeCompare(b.name));
+      stockStorageMode="legacy";
       render();
+    }
+
+    async function loadItems() {
+      try {
+        await loadDedicatedItems();
+      } catch (error) {
+        if (!stockSchemaMissing(error)) throw error;
+        await loadLegacyItems();
+        showMessage("Stock database upgrade is pending. Compatibility storage is still active.");
+      }
+    }
+
+    async function createDedicatedItem({name,category,unit,qty,amountCents,purchasedOn}) {
+      const { data:itemRow,error:itemError }=await supabaseClient.from("stock_items")
+        .insert({
+          name,category,unit,archived:false,created_by:currentUser.id
+        })
+        .select("id")
+        .single();
+
+      if (itemError) throw itemError;
+
+      const { error:purchaseError }=await supabaseClient.from("stock_purchases")
+        .insert({
+          stock_item_id:itemRow.id,
+          purchased_on:purchasedOn,
+          quantity:qty,
+          amount:amountCents/100,
+          created_by:currentUser.id
+        });
+
+      if (purchaseError) {
+        await supabaseClient.from("stock_items").delete().eq("id",itemRow.id);
+        throw purchaseError;
+      }
+
+      await loadDedicatedItems();
+    }
+
+    async function addDedicatedPurchase(item,{qty,amountCents,purchasedOn,note}) {
+      const open=activeCycle(item);
+
+      const { data:newPurchase,error:insertError }=await supabaseClient.from("stock_purchases")
+        .insert({
+          stock_item_id:item.id,
+          purchased_on:purchasedOn,
+          quantity:qty,
+          amount:amountCents/100,
+          note:note || null,
+          created_by:currentUser.id
+        })
+        .select("id")
+        .single();
+
+      if (insertError) throw insertError;
+
+      if (open) {
+        const { error:updateError }=await supabaseClient.from("stock_purchases")
+          .update({
+            ended_reason:"restocked",
+            ended_on:purchasedOn
+          })
+          .eq("id",open.id)
+          .eq("stock_item_id",item.id);
+
+        if (updateError) {
+          await supabaseClient.from("stock_purchases").delete().eq("id",newPurchase.id);
+          throw updateError;
+        }
+      }
+
+      await loadDedicatedItems();
+    }
+
+    async function markDedicatedRunout(item,cycle,date) {
+      const { error }=await supabaseClient.from("stock_purchases")
+        .update({
+          run_out_on:date,
+          ended_reason:null,
+          ended_on:null
+        })
+        .eq("id",cycle.id)
+        .eq("stock_item_id",item.id);
+
+      if (error) throw error;
+      await loadDedicatedItems();
+    }
+
+    async function archiveDedicatedItem(item) {
+      const { error }=await supabaseClient.from("stock_items")
+        .update({archived:true})
+        .eq("id",item.id);
+
+      if (error) throw error;
+      await loadDedicatedItems();
     }
 
     function renderMetrics() {
@@ -719,13 +883,26 @@
       const qty=numberValue(el("itemQty").value), amountCents=centsFromInput(el("itemAmount").value);
       const purchasedOn=el("itemPurchaseDate").value;
       if (!name || !unit || !qty || amountCents===null || !purchasedOn) { showMessage("Complete all purchase fields.",true); return; }
-      const item={
-        id:uid(),name,category:el("itemCategory").value,unit,archived:false,
-        cycles:[{id:uid(),purchasedOn,qty,amountCents,runOutOn:"",endedReason:"",endedOn:"",note:""}],
-        createdAt:new Date().toISOString(),updatedAt:new Date().toISOString()
-      };
       try {
-        await saveItem(item); el("newItemForm").reset(); el("itemPurchaseDate").value=localToday();
+        if (stockStorageMode==="dedicated") {
+          await createDedicatedItem({
+            name,
+            category:el("itemCategory").value,
+            unit,
+            qty,
+            amountCents,
+            purchasedOn
+          });
+        } else {
+          const item={
+            id:uid(),name,category:el("itemCategory").value,unit,archived:false,
+            cycles:[{id:uid(),purchasedOn,qty,amountCents,runOutOn:"",endedReason:"",endedOn:"",note:""}],
+            createdAt:new Date().toISOString(),updatedAt:new Date().toISOString()
+          };
+          await saveLegacyItem(item);
+        }
+
+        el("newItemForm").reset(); el("itemPurchaseDate").value=localToday();
         el("newItemPanel").open=false; showMessage(name + " added to Stock & Restock.");
       } catch (error) { showMessage(error.message || "Could not add item.",true); }
     }
@@ -736,15 +913,29 @@
       const qty=numberValue(el("purchaseQty").value), amountCents=centsFromInput(el("purchaseAmount").value);
       const purchasedOn=el("purchaseDate").value;
       if (!qty || amountCents===null || !purchasedOn) { showMessage("Enter quantity, amount and purchase date.",true); return; }
-      const open=activeCycle(item);
-      if (open) {
-        open.endedReason="restocked";
-        open.endedOn=purchasedOn;
-      }
-      item.cycles.push({id:uid(),purchasedOn,qty,amountCents,runOutOn:"",endedReason:"",endedOn:"",note:el("purchaseNote").value.trim()});
-      item.cycles.sort((a,b)=>a.purchasedOn.localeCompare(b.purchasedOn));
       try {
-        await saveItem(item); el("purchaseDialog").close(); showMessage(item.name + " purchase recorded.");
+        if (stockStorageMode==="dedicated") {
+          await addDedicatedPurchase(item,{
+            qty,
+            amountCents,
+            purchasedOn,
+            note:el("purchaseNote").value.trim()
+          });
+        } else {
+          const open=activeCycle(item);
+          if (open) {
+            open.endedReason="restocked";
+            open.endedOn=purchasedOn;
+          }
+          item.cycles.push({
+            id:uid(),purchasedOn,qty,amountCents,runOutOn:"",
+            endedReason:"",endedOn:"",note:el("purchaseNote").value.trim()
+          });
+          item.cycles.sort((a,b)=>a.purchasedOn.localeCompare(b.purchasedOn));
+          await saveLegacyItem(item);
+        }
+
+        el("purchaseDialog").close(); showMessage(item.name + " purchase recorded.");
       } catch (error) { showMessage(error.message || "Could not save purchase.",true); }
     }
 
@@ -754,10 +945,17 @@
       const cycle=activeCycle(item), date=el("runoutDate").value;
       if (!cycle || !date) return;
       if (daysBetween(cycle.purchasedOn,date)<0) { showMessage("Run-out date cannot be before the purchase date.",true); return; }
-      cycle.runOutOn=date;
       try {
-        await saveItem(item); el("runoutDialog").close();
-        const a=itemAnalytics(item);
+        if (stockStorageMode==="dedicated") {
+          await markDedicatedRunout(item,cycle,date);
+        } else {
+          cycle.runOutOn=date;
+          await saveLegacyItem(item);
+        }
+
+        el("runoutDialog").close();
+        const refreshed=items.find((x)=>x.id===item.id) || item;
+        const a=itemAnalytics(refreshed);
         showMessage(item.name + " marked ran out. Dhaftar now has " + a.complete.length + " completed usage cycle" + (a.complete.length===1 ? "." : "s."));
       } catch (error) { showMessage(error.message || "Could not save run-out date.",true); }
     }
@@ -765,9 +963,16 @@
     async function archiveItem(id) {
       const item=items.find((x)=>x.id===id); if (!item) return;
       if (!confirm("Archive " + item.name + "? Its history will be kept.")) return;
-      item.archived=true;
       try {
-        await saveItem(item); items=items.filter((x)=>x.id!==id); render(); showMessage(item.name + " archived.");
+        if (stockStorageMode==="dedicated") {
+          await archiveDedicatedItem(item);
+        } else {
+          item.archived=true;
+          await saveLegacyItem(item);
+          items=items.filter((x)=>x.id!==id);
+          render();
+        }
+        showMessage(item.name + " archived.");
       } catch (error) { showMessage(error.message || "Could not archive item.",true); }
     }
 

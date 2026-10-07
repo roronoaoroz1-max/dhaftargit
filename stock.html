@@ -252,25 +252,14 @@
                   <option>Personal care</option><option>Household</option><option>Baby</option><option>Other</option>
                 </select>
               </div>
-              <div class="field">
-                <label for="itemQty">First purchase quantity</label>
-                <input id="itemQty" type="number" required min="0.001" step="0.001" inputmode="decimal" placeholder="10">
-              </div>
+              
               <div class="field">
                 <label for="itemUnit">Unit</label>
                 <input id="itemUnit" required maxlength="20" placeholder="kg, L, pcs, pack…">
               </div>
-              <div class="field">
-                <label for="itemAmount">Amount spent (MVR)</label>
-                <input id="itemAmount" type="number" required min="0" step="0.01" inputmode="decimal" placeholder="180.00">
-              </div>
-              <div class="field">
-                <label for="itemPurchaseDate">Purchase date</label>
-                <input id="itemPurchaseDate" type="date" required>
-              </div>
             </div>
             <div class="actions">
-              <button class="button primary" type="submit">Add item & purchase</button>
+              <button class="button primary" type="submit">Add item</button>
             </div>
           </form>
         </div>
@@ -535,8 +524,14 @@
       const daysLeft=predictedDate ? daysBetween(localToday(),predictedDate) : null;
 
       let statusKey="learning", statusLabel="Learning";
-      if (!active) { statusKey="buy-now"; statusLabel="Buy now"; }
-      else if (daysLeft!==null) {
+
+if (!purchases.length) {
+  statusKey="waiting";
+  statusLabel="Waiting";
+} else if (!active) {
+  statusKey="buy-now";
+  statusLabel="Buy now";
+} else if (daysLeft!==null) {
         if (daysLeft<=0) { statusKey="buy-now"; statusLabel="Buy now"; }
         else if (daysLeft<=5) { statusKey="buy-soon"; statusLabel="Buy soon"; }
         else { statusKey="okay"; statusLabel="Okay"; }
@@ -635,32 +630,35 @@
       }
     }
 
-    async function createDedicatedItem({name,category,unit,qty,amountCents,purchasedOn}) {
-      const { data:itemRow,error:itemError }=await supabaseClient.from("stock_items")
-        .insert({
-          name,category,unit,archived:false,created_by:currentUser.id
-        })
-        .select("id")
-        .single();
+    async function createDedicatedItem({name,category,unit}) {
+  const duplicate=items.find((item)=>
+    item.name.trim().toLowerCase()===name.trim().toLowerCase()
+  );
 
-      if (itemError) throw itemError;
+  if (duplicate) {
+    throw new Error(name + " is already being tracked.");
+  }
 
-      const { error:purchaseError }=await supabaseClient.from("stock_purchases")
-        .insert({
-          stock_item_id:itemRow.id,
-          purchased_on:purchasedOn,
-          quantity:qty,
-          amount:amountCents/100,
-          created_by:currentUser.id
-        });
+  const { error:itemError }=await supabaseClient
+    .from("stock_items")
+    .insert({
+      name,
+      category,
+      unit,
+      archived:false,
+      created_by:currentUser.id
+    });
 
-      if (purchaseError) {
-        await supabaseClient.from("stock_items").delete().eq("id",itemRow.id);
-        throw purchaseError;
-      }
-
-      await loadDedicatedItems();
+  if (itemError) {
+    if (String(itemError.code || "")==="23505") {
+      throw new Error(name + " is already being tracked.");
     }
+
+    throw itemError;
+  }
+
+  await loadDedicatedItems();
+}
 
     async function addDedicatedPurchase(item,{qty,amountCents,purchasedOn,note}) {
       const open=activeCycle(item);
@@ -801,9 +799,21 @@
       });
 
       const note=document.createElement("p"); note.className="item-note";
-      const activeText=a.active ? (a.active.qty + " " + item.unit + " bought " + displayDate(a.active.purchasedOn)) : "No active purchase.";
-      const prediction=a.predictedDate ? " Predicted run-out: " + displayDate(a.predictedDate) + "." : "";
-      note.textContent=activeText + prediction + " " + a.priceTrend + ".";
+      const activeText=!item.cycles.length
+  ? "Tracking starts with your next purchase."
+  : a.active
+    ? (a.active.qty + " " + item.unit + " bought " + displayDate(a.active.purchasedOn))
+    : "Last recorded stock has run out.";
+
+const prediction=a.predictedDate
+  ? " Predicted run-out: " + displayDate(a.predictedDate) + "."
+  : "";
+
+const priceText=item.cycles.length
+  ? " " + a.priceTrend + "."
+  : "";
+
+note.textContent=activeText + prediction + priceText;
 
       const actions=document.createElement("div"); actions.className="item-actions";
       const purchase=document.createElement("button"); purchase.className="button primary"; purchase.type="button"; purchase.textContent="Record purchase";
@@ -879,34 +889,60 @@
     }
 
     async function addItem(event) {
-      event.preventDefault();
-      const name=el("itemName").value.trim(), unit=el("itemUnit").value.trim();
-      const qty=numberValue(el("itemQty").value), amountCents=centsFromInput(el("itemAmount").value);
-      const purchasedOn=el("itemPurchaseDate").value;
-      if (!name || !unit || !qty || amountCents===null || !purchasedOn) { showMessage("Complete all purchase fields.",true); return; }
-      try {
-        if (stockStorageMode==="dedicated") {
-          await createDedicatedItem({
-            name,
-            category:el("itemCategory").value,
-            unit,
-            qty,
-            amountCents,
-            purchasedOn
-          });
-        } else {
-          const item={
-            id:uid(),name,category:el("itemCategory").value,unit,archived:false,
-            cycles:[{id:uid(),purchasedOn,qty,amountCents,runOutOn:"",endedReason:"",endedOn:"",note:""}],
-            createdAt:new Date().toISOString(),updatedAt:new Date().toISOString()
-          };
-          await saveLegacyItem(item);
-        }
+  event.preventDefault();
 
-        el("newItemForm").reset(); el("itemPurchaseDate").value=localToday();
-        el("newItemPanel").open=false; showMessage(name + " added to Stock & Restock.");
-      } catch (error) { showMessage(error.message || "Could not add item.",true); }
+  const name=el("itemName").value.trim();
+  const unit=el("itemUnit").value.trim();
+
+  if (!name || !unit) {
+    showMessage("Enter an item name and unit.",true);
+    return;
+  }
+
+  const duplicate=items.find((item)=>
+    item.name.trim().toLowerCase()===name.toLowerCase()
+  );
+
+  if (duplicate) {
+    showMessage(name + " is already being tracked.",true);
+    return;
+  }
+
+  try {
+    if (stockStorageMode==="dedicated") {
+      await createDedicatedItem({
+        name,
+        category:el("itemCategory").value,
+        unit
+      });
+    } else {
+      const item={
+        id:uid(),
+        name,
+        category:el("itemCategory").value,
+        unit,
+        archived:false,
+        cycles:[],
+        createdAt:new Date().toISOString(),
+        updatedAt:new Date().toISOString()
+      };
+
+      await saveLegacyItem(item);
     }
+
+    el("newItemForm").reset();
+    el("newItemPanel").open=false;
+
+    showMessage(
+      name + " added. Tracking will start with the next purchase."
+    );
+  } catch (error) {
+    showMessage(
+      error.message || "Could not add item.",
+      true
+    );
+  }
+}
 
     async function recordPurchase(event) {
       event.preventDefault();
@@ -995,7 +1031,7 @@
 
     async function init() {
       setThemeButton();
-      el("itemPurchaseDate").value=localToday();
+      
       try {
         const allowed=await verifyAdmin();
         if (!allowed) { el("unauthorized").hidden=false; return; }

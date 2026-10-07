@@ -171,8 +171,8 @@ select
   nullif(cycle ->> 'endedReason', ''),
   nullif(cycle ->> 'endedOn', '')::date,
   b.created_by,
-  coalesce(b.created_at, now()),
-  coalesce(b.updated_at, now())
+  now(),
+  now()
 from public.dhaftar_bills b
 cross join lateral jsonb_array_elements(
   coalesce(b.notes::jsonb -> 'cycles', '[]'::jsonb)

@@ -24,6 +24,9 @@ create index if not exists dhaftar_spending_entries_date_idx
 create index if not exists dhaftar_spending_entries_type_date_idx
   on public.dhaftar_spending_entries (spending_type, expense_date desc);
 
+create index if not exists dhaftar_spending_entries_created_by_idx
+  on public.dhaftar_spending_entries (created_by);
+
 drop trigger if exists dhaftar_spending_entries_set_updated_at
   on public.dhaftar_spending_entries;
 

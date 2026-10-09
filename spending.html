@@ -95,7 +95,7 @@
     .history-side strong{color:var(--brand);font-size:.82rem}
     .delete-small{border:0;background:transparent;color:var(--danger);font-size:.68rem;font-weight:850;padding:4px}
     .empty{padding:18px;text-align:center;color:var(--muted);font-size:.8rem;border:1px dashed var(--line);border-radius:13px}
-    .bottom-nav{position:fixed;left:0;right:0;bottom:0;z-index:80;display:grid;grid-template-columns:repeat(5,1fr);padding:8px max(10px,env(safe-area-inset-right)) calc(8px + env(safe-area-inset-bottom)) max(10px,env(safe-area-inset-left));border:1px solid var(--line);border-bottom:0;border-radius:20px 20px 0 0;background:#030304}
+    .bottom-nav{position:fixed;left:0;right:0;bottom:0;z-index:80;display:grid;grid-template-columns:repeat(6,1fr);padding:8px max(10px,env(safe-area-inset-right)) calc(8px + env(safe-area-inset-bottom)) max(10px,env(safe-area-inset-left));border:1px solid var(--line);border-bottom:0;border-radius:20px 20px 0 0;background:#030304}
     .bottom-nav::after{content:"";position:absolute;left:0;right:0;top:100%;height:max(24px,env(safe-area-inset-bottom));background:#030304}
     .bottom-nav a{min-height:48px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;color:var(--muted);text-decoration:none;font-size:.61rem;font-weight:800;border-radius:10px}
     .bottom-nav .icon{color:var(--brand);font-size:1rem}
@@ -242,6 +242,7 @@
   <a href="stock.html"><span class="icon">▣</span><span>Stock</span></a>
   <a href="spending.html" class="active" aria-current="page"><span class="icon">◉</span><span>Spending</span></a>
   <a href="amanah.html"><span class="icon">↗</span><span>Amanah</span></a>
+  <a href="statements.html"><span class="icon">•••</span><span>More</span></a>
 </nav>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>

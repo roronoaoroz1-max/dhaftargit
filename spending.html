@@ -1,0 +1,493 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black">
+  <meta name="theme-color" content="#030304">
+  <meta name="description" content="Track Dhaftar enjoyment and medical spending with monthly summaries.">
+  <title>Spending · Dhaftar</title>
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="apple-touch-icon" href="assets/app-icon.png">
+  <style>
+    :root{
+      color-scheme:dark;
+      --bg:#030304;--surface:#0c0c0e;--surface-soft:#131316;--surface-2:#17171b;
+      --ink:#f6f2e7;--muted:#9d988c;--line:#2a2824;
+      --brand:#f0c64c;--brand-2:#d9a92d;--brand-soft:rgba(240,198,76,.10);
+      --success:#79d49b;--success-soft:rgba(121,212,155,.11);
+      --danger:#ff7770;--danger-soft:rgba(255,119,112,.10);
+      --info:#8eb8ff;--info-soft:rgba(142,184,255,.10);
+      --warning:#e7b55a;--warning-soft:rgba(231,181,90,.10);
+      --shadow:0 24px 70px rgba(0,0,0,.28);
+    }
+    *{box-sizing:border-box}
+    html,body{margin:0;min-height:100%;background:var(--bg);color:var(--ink);font-family:Inter,ui-sans-serif,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}
+    body{padding:max(56px,env(safe-area-inset-top)) 16px calc(94px + max(24px,env(safe-area-inset-bottom)))}
+    button,input,select,textarea{font:inherit}
+    a{color:inherit}
+    .wrap{width:min(980px,100%);margin:0 auto}
+    .topbar{display:flex;align-items:center;justify-content:space-between;gap:14px;margin-bottom:26px}
+    .logo-link{display:inline-flex;align-items:center;text-decoration:none}
+    .logo-link img{width:118px;height:auto;display:block}
+    .top-actions{display:flex;gap:8px}
+    .icon-btn{min-width:44px;min-height:44px;border:1px solid var(--line);border-radius:12px;background:var(--surface);color:var(--brand);font-weight:800}
+    .eyebrow{margin:0 0 7px;color:var(--brand);font-size:.72rem;font-weight:900;letter-spacing:.13em}
+    h1{margin:0;font-size:clamp(1.8rem,7vw,3rem);line-height:1}
+    .intro{margin:10px 0 0;color:var(--muted);font-size:.88rem;line-height:1.55;max-width:650px}
+    .message{display:none;margin:0 0 16px;padding:12px 14px;border:1px solid var(--line);border-radius:12px;font-size:.82rem}
+    .message.show{display:block}
+    .message.success{color:var(--success);background:var(--success-soft);border-color:rgba(121,212,155,.32)}
+    .message.error{color:var(--danger);background:var(--danger-soft);border-color:rgba(255,119,112,.32)}
+    .unauth{padding:24px;border:1px solid var(--line);border-radius:18px;background:var(--surface)}
+    .button{min-height:44px;padding:9px 13px;border:1px solid rgba(240,198,76,.2);border-radius:11px;background:var(--brand-soft);color:var(--brand);font-weight:850;cursor:pointer;text-decoration:none;display:inline-flex;align-items:center;justify-content:center}
+    .button.primary{color:#080809;background:linear-gradient(180deg,#f2ce63,#d7aa2d);border-color:#d7aa2d}
+    .button.danger{color:var(--danger);background:var(--danger-soft);border-color:rgba(255,119,112,.22)}
+    .workspace{display:none}
+    .workspace.show{display:block}
+    .period-row{display:flex;align-items:end;justify-content:space-between;gap:12px;flex-wrap:wrap;margin:22px 0 16px}
+    .month-box{display:flex;gap:8px;align-items:center}
+    .month-box button{width:44px;min-height:44px;border:1px solid var(--line);border-radius:11px;background:var(--surface);color:var(--brand);font-weight:900}
+    .month-box input{min-height:44px;border:1px solid var(--line);border-radius:11px;background:var(--surface);color:var(--ink);padding:0 11px}
+    .metrics{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;margin-bottom:16px}
+    .metric{min-width:0;padding:15px;border:1px solid var(--line);border-radius:16px;background:var(--surface)}
+    .metric span{display:block;color:var(--muted);font-size:.69rem;font-weight:800}
+    .metric strong{display:block;margin-top:6px;font-size:1.04rem;overflow-wrap:anywhere}
+    .metric strong.gold{color:var(--brand)}
+    .card{border:1px solid var(--line);border-radius:18px;background:var(--surface);box-shadow:var(--shadow)}
+    .entry-card{padding:18px;margin-bottom:16px}
+    .section-head{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;flex-wrap:wrap}
+    .section-head h2{margin:0;font-size:1.1rem}
+    .section-head p{margin:5px 0 0;color:var(--muted);font-size:.78rem;line-height:1.45}
+    .mode-tabs{display:grid;grid-template-columns:1fr 1fr;gap:7px;margin:16px 0}
+    .mode-tab{min-height:46px;border:1px solid var(--line);border-radius:12px;background:var(--surface-soft);color:var(--muted);font-weight:850}
+    .mode-tab.active{color:#080809;background:linear-gradient(180deg,#f2ce63,#d7aa2d);border-color:#d7aa2d}
+    .form-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:11px}
+    .field{min-width:0}
+    label{display:block;margin:0 0 7px;font-size:.75rem;font-weight:850}
+    input,select,textarea{width:100%;min-width:0;min-height:48px;padding:0 12px;border:1px solid var(--line);border-radius:11px;background:var(--surface-soft);color:var(--ink)}
+    textarea{min-height:82px;padding:11px 12px;resize:vertical}
+    input[type="date"],input[type="month"]{-webkit-appearance:none;appearance:none}
+    .span-2{grid-column:1/-1}
+    .form-actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:14px}
+    .insights{display:grid;grid-template-columns:1.2fr .8fr;gap:12px;margin-bottom:16px}
+    .panel{padding:18px}
+    .breakdown{display:grid;gap:9px;margin-top:14px}
+    .break-row{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:10px;align-items:center;padding:10px 11px;border-radius:12px;background:var(--surface-soft);border:1px solid var(--line)}
+    .break-row strong{font-size:.8rem}
+    .break-row span{font-size:.72rem;color:var(--muted)}
+    .bar{height:5px;border-radius:999px;background:#28261f;overflow:hidden;margin-top:7px}
+    .bar i{display:block;height:100%;border-radius:inherit;background:linear-gradient(90deg,var(--brand-2),var(--brand))}
+    .summary-stack{display:grid;gap:10px;margin-top:14px}
+    .summary-mini{padding:12px;border:1px solid var(--line);border-radius:13px;background:var(--surface-soft)}
+    .summary-mini span{display:block;color:var(--muted);font-size:.7rem;font-weight:800}
+    .summary-mini strong{display:block;margin-top:5px;font-size:.92rem}
+    .history-card{padding:18px}
+    .toolbar{display:flex;gap:8px;flex-wrap:wrap;margin:14px 0}
+    .toolbar input,.toolbar select{flex:1 1 180px}
+    .history{display:grid;gap:8px}
+    .history-row{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:12px;align-items:start;padding:12px;border:1px solid var(--line);border-radius:13px;background:var(--surface-soft)}
+    .history-title{font-size:.84rem;font-weight:900}
+    .history-meta{margin-top:4px;color:var(--muted);font-size:.71rem;line-height:1.45}
+    .history-note{margin-top:4px;color:#c8c2b5;font-size:.72rem;line-height:1.45}
+    .history-side{text-align:right;display:grid;gap:7px;justify-items:end}
+    .history-side strong{color:var(--brand);font-size:.82rem}
+    .delete-small{border:0;background:transparent;color:var(--danger);font-size:.68rem;font-weight:850;padding:4px}
+    .empty{padding:18px;text-align:center;color:var(--muted);font-size:.8rem;border:1px dashed var(--line);border-radius:13px}
+    .bottom-nav{position:fixed;left:0;right:0;bottom:0;z-index:80;display:grid;grid-template-columns:repeat(5,1fr);padding:8px max(10px,env(safe-area-inset-right)) calc(8px + env(safe-area-inset-bottom)) max(10px,env(safe-area-inset-left));border:1px solid var(--line);border-bottom:0;border-radius:20px 20px 0 0;background:#030304}
+    .bottom-nav::after{content:"";position:absolute;left:0;right:0;top:100%;height:max(24px,env(safe-area-inset-bottom));background:#030304}
+    .bottom-nav a{min-height:48px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;color:var(--muted);text-decoration:none;font-size:.61rem;font-weight:800;border-radius:10px}
+    .bottom-nav .icon{color:var(--brand);font-size:1rem}
+    .bottom-nav a.active{color:var(--brand);background:var(--brand-soft)}
+    @media(max-width:720px){
+      .metrics{grid-template-columns:repeat(2,minmax(0,1fr))}
+      .insights{grid-template-columns:1fr}
+      .form-grid{grid-template-columns:1fr}
+      .span-2{grid-column:auto}
+      .history-row{grid-template-columns:1fr auto}
+    }
+  </style>
+</head>
+<body>
+<div class="wrap">
+  <header class="topbar">
+    <a href="index.html" class="logo-link" aria-label="Dhaftar overview"><img src="assets/logo.png" alt="Dhaftar"></a>
+    <div class="top-actions">
+      <button type="button" class="icon-btn" id="themeToggle" aria-label="Toggle theme">☀️</button>
+    </div>
+  </header>
+
+  <section id="unauthorized" class="unauth" hidden>
+    <h2>Administrator access required</h2>
+    <p>Spending records are private to your Dhaftar administrator account.</p>
+    <a class="button primary" href="admin.html">Open Admin sign in</a>
+  </section>
+
+  <main id="app" class="workspace">
+    <p class="eyebrow">HOUSEHOLD SPENDING</p>
+    <h1>Spending</h1>
+    <p class="intro">Keep enjoyment and medical costs separate from household Stock. Dhaftar summarizes where the money went each month without treating these expenses like consumable inventory.</p>
+
+    <div id="message" class="message" role="status" aria-live="polite"></div>
+
+    <div class="period-row">
+      <div>
+        <p class="eyebrow">VIEWING MONTH</p>
+        <strong id="monthTitle">—</strong>
+      </div>
+      <div class="month-box">
+        <button type="button" id="prevMonth" aria-label="Previous month">‹</button>
+        <input type="month" id="monthPicker" aria-label="Month">
+        <button type="button" id="nextMonth" aria-label="Next month">›</button>
+      </div>
+    </div>
+
+    <section class="metrics" aria-label="Monthly spending summary">
+      <div class="metric"><span>Total spending</span><strong class="gold" id="metricTotal">MVR 0.00</strong></div>
+      <div class="metric"><span>Enjoyments</span><strong id="metricEnjoyment">MVR 0.00</strong></div>
+      <div class="metric"><span>Medical</span><strong id="metricMedical">MVR 0.00</strong></div>
+      <div class="metric"><span>Entries</span><strong id="metricEntries">0</strong></div>
+    </section>
+
+    <section class="card entry-card">
+      <div class="section-head">
+        <div>
+          <h2>Add spending</h2>
+          <p>Choose the type first so Dhaftar asks only for relevant details.</p>
+        </div>
+      </div>
+
+      <div class="mode-tabs" role="tablist">
+        <button type="button" class="mode-tab active" id="modeEnjoyment">Enjoyment</button>
+        <button type="button" class="mode-tab" id="modeMedical">Medical</button>
+      </div>
+
+      <form id="entryForm">
+        <div class="form-grid">
+          <div class="field">
+            <label for="expenseDate">Date</label>
+            <input id="expenseDate" type="date" required>
+          </div>
+          <div class="field">
+            <label for="amount">Amount (MVR)</label>
+            <input id="amount" type="number" min="0.01" step="0.01" inputmode="decimal" required placeholder="0.00">
+          </div>
+          <div class="field">
+            <label for="category">Category</label>
+            <select id="category" required></select>
+          </div>
+          <div class="field" id="personField">
+            <label for="personName">Person</label>
+            <input id="personName" maxlength="80" placeholder="Dad, Malsa, Imaad…">
+          </div>
+          <div class="field">
+            <label for="providerName" id="providerLabel">Place / provider</label>
+            <input id="providerName" maxlength="120" placeholder="Restaurant, café, clinic…">
+          </div>
+          <div class="field">
+            <label for="activityGroup" id="groupLabel">Occasion / outing</label>
+            <input id="activityGroup" maxlength="120" placeholder="Friday dinner, family outing…">
+          </div>
+          <div class="field span-2">
+            <label for="notes">Notes</label>
+            <textarea id="notes" maxlength="500" placeholder="Optional details"></textarea>
+          </div>
+        </div>
+        <div class="form-actions">
+          <button type="submit" class="button primary">Save expense</button>
+        </div>
+      </form>
+    </section>
+
+    <section class="insights">
+      <div class="card panel">
+        <div class="section-head">
+          <div><h2>Where the money went</h2><p>Monthly category breakdown.</p></div>
+        </div>
+        <div id="categoryBreakdown" class="breakdown"></div>
+      </div>
+      <div class="card panel">
+        <div class="section-head">
+          <div><h2>This month</h2><p>Quick patterns from your entries.</p></div>
+        </div>
+        <div class="summary-stack">
+          <div class="summary-mini"><span>Average per entry</span><strong id="avgEntry">MVR 0.00</strong></div>
+          <div class="summary-mini"><span>Highest expense</span><strong id="highestExpense">—</strong></div>
+          <div class="summary-mini"><span>Most used category</span><strong id="topCategory">—</strong></div>
+        </div>
+      </div>
+    </section>
+
+    <section class="card history-card">
+      <div class="section-head">
+        <div><h2>History</h2><p>Enjoyment and medical entries for the selected month.</p></div>
+      </div>
+      <div class="toolbar">
+        <input id="search" type="search" placeholder="Search person, provider, notes…">
+        <select id="typeFilter">
+          <option value="all">All spending</option>
+          <option value="enjoyment">Enjoyments</option>
+          <option value="medical">Medical</option>
+        </select>
+      </div>
+      <div id="history" class="history"></div>
+    </section>
+  </main>
+</div>
+
+<nav class="bottom-nav" id="bottomNav" hidden aria-label="Dhaftar navigation">
+  <a href="index.html"><span class="icon">⌂</span><span>Overview</span></a>
+  <a href="admin.html"><span class="icon">✓</span><span>Admin</span></a>
+  <a href="stock.html"><span class="icon">▣</span><span>Stock</span></a>
+  <a href="spending.html" class="active" aria-current="page"><span class="icon">◉</span><span>Spending</span></a>
+  <a href="amanah.html"><span class="icon">↗</span><span>Amanah</span></a>
+</nav>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="supabase-client.js"></script>
+<script>
+  const ENJOYMENT_CATEGORIES=["Eating out","Takeaway","Café / dessert","Entertainment","Outing","Special food","Other"];
+  const MEDICAL_CATEGORIES=["Consultation","Injection / procedure","Lab / diagnostics","Pharmacy","Hospital / treatment","Transport","Other"];
+  let currentUser=null,currentProfile=null,currentType="enjoyment",entries=[];
+
+  const el=(id)=>document.getElementById(id);
+
+  function money(value){
+    return new Intl.NumberFormat("en-US",{style:"currency",currency:"MVR",minimumFractionDigits:2}).format(Number(value)||0);
+  }
+
+  function localToday(){
+    const parts=new Intl.DateTimeFormat("en-CA",{timeZone:"Indian/Maldives",year:"numeric",month:"2-digit",day:"2-digit"}).formatToParts(new Date());
+    const get=(type)=>parts.find((p)=>p.type===type)?.value||"";
+    return get("year")+"-"+get("month")+"-"+get("day");
+  }
+
+  function currentMonth(){ return localToday().slice(0,7); }
+
+  function monthRange(month){
+    const [y,m]=month.split("-").map(Number);
+    const start=month+"-01";
+    const end=new Date(Date.UTC(y,m,1)).toISOString().slice(0,10);
+    return {start,end};
+  }
+
+  function moveMonth(month,delta){
+    const [y,m]=month.split("-").map(Number);
+    const d=new Date(Date.UTC(y,m-1+delta,1));
+    return d.toISOString().slice(0,7);
+  }
+
+  function monthLabel(month){
+    const [y,m]=month.split("-").map(Number);
+    return new Intl.DateTimeFormat("en-US",{month:"long",year:"numeric",timeZone:"UTC"}).format(new Date(Date.UTC(y,m-1,1)));
+  }
+
+  function displayDate(value){
+    if(!value)return "—";
+    const [y,m,d]=value.split("-").map(Number);
+    return new Intl.DateTimeFormat("en-GB",{day:"numeric",month:"short",year:"numeric",timeZone:"UTC"}).format(new Date(Date.UTC(y,m-1,d)));
+  }
+
+  function showMessage(text,error=false){
+    const n=el("message");
+    n.textContent=text||"";
+    n.className="message"+(text?" show "+(error?"error":"success"):"");
+    if(text)setTimeout(()=>{if(n.textContent===text)n.className="message";},4200);
+  }
+
+  function setMode(type){
+    currentType=type;
+    el("modeEnjoyment").classList.toggle("active",type==="enjoyment");
+    el("modeMedical").classList.toggle("active",type==="medical");
+    const cats=type==="enjoyment"?ENJOYMENT_CATEGORIES:MEDICAL_CATEGORIES;
+    el("category").replaceChildren(...cats.map((name)=>{
+      const o=document.createElement("option");o.value=name;o.textContent=name;return o;
+    }));
+    el("personField").style.display=type==="medical"?"block":"none";
+    el("providerLabel").textContent=type==="medical"?"Clinic / hospital / provider":"Place / provider";
+    el("providerName").placeholder=type==="medical"?"Clinic, hospital, pharmacy…":"Restaurant, café, cinema…";
+    el("groupLabel").textContent=type==="medical"?"Treatment / visit group":"Occasion / outing";
+    el("activityGroup").placeholder=type==="medical"?"Injection series, follow-up…":"Friday dinner, family outing…";
+  }
+
+  async function verifyAdmin(){
+    const {data:sessionData,error:sessionError}=await supabaseClient.auth.getSession();
+    if(sessionError)throw sessionError;
+    const session=sessionData.session;
+    if(!session)return false;
+    const {data:profile,error:profileError}=await supabaseClient.from("profiles").select("id,email,full_name,role").eq("id",session.user.id).single();
+    if(profileError)throw profileError;
+    if(profile.role!=="admin")return false;
+    currentUser=session.user;currentProfile=profile;return true;
+  }
+
+  async function loadEntries(){
+    const month=el("monthPicker").value||currentMonth();
+    const {start,end}=monthRange(month);
+    const {data,error}=await supabaseClient.from("dhaftar_spending_entries")
+      .select("id,spending_type,category,expense_date,amount,person_name,provider_name,activity_group,notes,created_at")
+      .gte("expense_date",start).lt("expense_date",end)
+      .order("expense_date",{ascending:false}).order("created_at",{ascending:false});
+    if(error)throw error;
+    entries=data||[];
+    render();
+  }
+
+  function filteredEntries(){
+    const q=el("search").value.trim().toLowerCase();
+    const type=el("typeFilter").value;
+    return entries.filter((row)=>{
+      const matchesType=type==="all"||row.spending_type===type;
+      const hay=[row.category,row.person_name,row.provider_name,row.activity_group,row.notes].filter(Boolean).join(" ").toLowerCase();
+      return matchesType&&(!q||hay.includes(q));
+    });
+  }
+
+  function renderMetrics(){
+    const total=entries.reduce((s,r)=>s+Number(r.amount||0),0);
+    const enjoyment=entries.filter(r=>r.spending_type==="enjoyment").reduce((s,r)=>s+Number(r.amount||0),0);
+    const medical=entries.filter(r=>r.spending_type==="medical").reduce((s,r)=>s+Number(r.amount||0),0);
+    el("metricTotal").textContent=money(total);
+    el("metricEnjoyment").textContent=money(enjoyment);
+    el("metricMedical").textContent=money(medical);
+    el("metricEntries").textContent=String(entries.length);
+    el("monthTitle").textContent=monthLabel(el("monthPicker").value);
+  }
+
+  function renderBreakdown(){
+    const container=el("categoryBreakdown");
+    container.replaceChildren();
+    if(!entries.length){
+      const empty=document.createElement("div");empty.className="empty";empty.textContent="No spending recorded for this month.";container.appendChild(empty);return;
+    }
+    const totals=new Map();
+    for(const row of entries){
+      const key=(row.spending_type==="medical"?"Medical · ":"Enjoyment · ")+row.category;
+      totals.set(key,(totals.get(key)||0)+Number(row.amount||0));
+    }
+    const sorted=[...totals.entries()].sort((a,b)=>b[1]-a[1]);
+    const max=sorted[0]?.[1]||1;
+    for(const [name,amount] of sorted){
+      const row=document.createElement("div");row.className="break-row";
+      const left=document.createElement("div");
+      const strong=document.createElement("strong");strong.textContent=name;
+      const bar=document.createElement("div");bar.className="bar";
+      const fill=document.createElement("i");fill.style.width=Math.max(4,Math.round(amount/max*100))+"%";bar.appendChild(fill);
+      left.append(strong,bar);
+      const val=document.createElement("span");val.textContent=money(amount);
+      row.append(left,val);container.appendChild(row);
+    }
+  }
+
+  function renderQuickInsights(){
+    const total=entries.reduce((s,r)=>s+Number(r.amount||0),0);
+    el("avgEntry").textContent=entries.length?money(total/entries.length):money(0);
+    const highest=entries.slice().sort((a,b)=>Number(b.amount)-Number(a.amount))[0];
+    el("highestExpense").textContent=highest?highest.category+" · "+money(highest.amount):"—";
+    const counts=new Map();
+    for(const row of entries)counts.set(row.category,(counts.get(row.category)||0)+1);
+    const top=[...counts.entries()].sort((a,b)=>b[1]-a[1])[0];
+    el("topCategory").textContent=top?top[0]+" · "+top[1]+" entr"+(top[1]===1?"y":"ies"):"—";
+  }
+
+  function renderHistory(){
+    const container=el("history");container.replaceChildren();
+    const rows=filteredEntries();
+    if(!rows.length){
+      const empty=document.createElement("div");empty.className="empty";empty.textContent=entries.length?"No entries match this filter.":"No spending recorded for this month.";container.appendChild(empty);return;
+    }
+    for(const row of rows){
+      const item=document.createElement("div");item.className="history-row";
+      const main=document.createElement("div");
+      const title=document.createElement("div");title.className="history-title";
+      title.textContent=(row.spending_type==="medical"?"Medical":"Enjoyment")+" · "+row.category;
+      const meta=document.createElement("div");meta.className="history-meta";
+      const parts=[displayDate(row.expense_date),row.person_name,row.provider_name,row.activity_group].filter(Boolean);
+      meta.textContent=parts.join(" · ");
+      main.append(title,meta);
+      if(row.notes){
+        const note=document.createElement("div");note.className="history-note";note.textContent=row.notes;main.appendChild(note);
+      }
+      const side=document.createElement("div");side.className="history-side";
+      const amount=document.createElement("strong");amount.textContent=money(row.amount);
+      const del=document.createElement("button");del.type="button";del.className="delete-small";del.textContent="Delete";
+      del.addEventListener("click",()=>deleteEntry(row));
+      side.append(amount,del);item.append(main,side);container.appendChild(item);
+    }
+  }
+
+  function render(){renderMetrics();renderBreakdown();renderQuickInsights();renderHistory();}
+
+  async function saveEntry(event){
+    event.preventDefault();
+    const amount=Number(el("amount").value);
+    const expenseDate=el("expenseDate").value;
+    if(!expenseDate||!Number.isFinite(amount)||amount<=0){showMessage("Enter a valid date and amount.",true);return;}
+    const payload={
+      spending_type:currentType,
+      category:el("category").value,
+      expense_date:expenseDate,
+      amount:Math.round(amount*100)/100,
+      person_name:currentType==="medical"?(el("personName").value.trim()||null):null,
+      provider_name:el("providerName").value.trim()||null,
+      activity_group:el("activityGroup").value.trim()||null,
+      notes:el("notes").value.trim()||null,
+      created_by:currentUser.id
+    };
+    const {error}=await supabaseClient.from("dhaftar_spending_entries").insert(payload);
+    if(error){showMessage(error.message||"Could not save expense.",true);return;}
+    const savedType=currentType;
+    el("entryForm").reset();
+    el("expenseDate").value=localToday();
+    setMode(savedType);
+    showMessage("Expense saved.");
+    await loadEntries();
+  }
+
+  async function deleteEntry(row){
+    if(!confirm("Delete this "+row.category+" expense of "+money(row.amount)+"?"))return;
+    const {error}=await supabaseClient.from("dhaftar_spending_entries").delete().eq("id",row.id);
+    if(error){showMessage(error.message||"Could not delete expense.",true);return;}
+    showMessage("Expense deleted.");
+    await loadEntries();
+  }
+
+  function setThemeButton(){el("themeToggle").textContent=document.documentElement.dataset.theme==="dark"?"☀️":"🌙";}
+
+  async function init(){
+    setThemeButton();
+    el("monthPicker").value=currentMonth();
+    el("expenseDate").value=localToday();
+    setMode("enjoyment");
+    try{
+      const allowed=await verifyAdmin();
+      if(!allowed){el("unauthorized").hidden=false;return;}
+      el("app").classList.add("show");
+      el("bottomNav").hidden=false;
+      await loadEntries();
+    }catch(error){
+      el("unauthorized").hidden=false;
+      showMessage(error.message||"Could not load Spending.",true);
+    }
+  }
+
+  el("modeEnjoyment").addEventListener("click",()=>setMode("enjoyment"));
+  el("modeMedical").addEventListener("click",()=>setMode("medical"));
+  el("entryForm").addEventListener("submit",saveEntry);
+  el("search").addEventListener("input",renderHistory);
+  el("typeFilter").addEventListener("change",renderHistory);
+  el("monthPicker").addEventListener("change",loadEntries);
+  el("prevMonth").addEventListener("click",()=>{el("monthPicker").value=moveMonth(el("monthPicker").value,-1);loadEntries();});
+  el("nextMonth").addEventListener("click",()=>{el("monthPicker").value=moveMonth(el("monthPicker").value,1);loadEntries();});
+  el("themeToggle").addEventListener("click",()=>{
+    const dark=document.documentElement.dataset.theme==="dark";
+    document.documentElement.dataset.theme=dark?"light":"dark";
+    localStorage.setItem("dhaftar-theme",document.documentElement.dataset.theme);
+    setThemeButton();
+  });
+  document.documentElement.dataset.theme=localStorage.getItem("dhaftar-theme")||"dark";
+  init();
+</script>
+</body>
+</html>

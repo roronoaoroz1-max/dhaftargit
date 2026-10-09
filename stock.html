@@ -102,6 +102,7 @@
     .status.buy-soon { color:var(--warning); background:var(--warning-soft); }
     .status.okay { color:var(--success); background:var(--success-soft); }
     .status.learning { color:var(--info); background:var(--info-soft); }
+    .status.waiting { color:var(--muted); background:var(--surface-soft); border:1px solid var(--line); }
 
     .new-item { margin-bottom:18px; overflow:hidden; }
     .new-item > summary { list-style:none; cursor:pointer; padding:17px 19px; font-weight:900; display:flex; justify-content:space-between; gap:12px; }
@@ -212,7 +213,7 @@
         <div>
           <p class="eyebrow">HOUSEHOLD CONSUMABLES</p>
           <h1>Stock & Restock</h1>
-          <p class="intro">Record what you buy and when it runs out. Dhaftar learns how long things normally last and when you are likely to need them again.</p>
+          <p class="intro">Record each purchase. Dhaftar learns your normal restock rhythm from purchase-to-purchase patterns; “Ran out completely” is optional extra information.</p>
         </div>
       </div>
 
@@ -229,7 +230,7 @@
         <div class="section-head">
           <div>
             <h2>Shopping list</h2>
-            <p>Automatically built from items that are out or predicted to run low soon.</p>
+            <p>Automatically built from items that are completely out or approaching their usual restock time.</p>
           </div>
           <span id="shoppingCount" class="count-badge">All clear</span>
         </div>
@@ -272,6 +273,7 @@
           <option value="buy-now">Buy now</option>
           <option value="buy-soon">Buy soon</option>
           <option value="okay">Okay for now</option>
+          <option value="waiting">Waiting for first purchase</option>
           <option value="learning">Learning</option>
         </select>
       </div>
@@ -304,13 +306,13 @@
   <dialog id="runoutDialog">
     <div class="dialog-body">
       <div class="dialog-head">
-        <div><h2>Mark as ran out</h2><p id="runoutItemName"></p></div>
+        <div><h2>Ran out completely</h2><p id="runoutItemName"></p></div>
         <button class="dialog-close" type="button" data-close-dialog="runoutDialog">×</button>
       </div>
       <form id="runoutForm">
-        <div class="field"><label for="runoutDate">Ran out date</label><input id="runoutDate" type="date" required></div>
+        <div class="field"><label for="runoutDate">Completely ran out date</label><input id="runoutDate" type="date" required></div>
         <div class="actions">
-          <button class="button primary" type="submit">Save run-out date</button>
+          <button class="button primary" type="submit">Save as completely out</button>
           <button class="button" type="button" data-close-dialog="runoutDialog">Cancel</button>
         </div>
       </form>
@@ -501,44 +503,71 @@
     function itemAnalytics(item) {
       const complete=completedCycles(item);
       const active=activeCycle(item);
-      const dailyRates=complete.map((cycle) => {
+      const purchases=item.cycles.slice().sort((a,b)=>a.purchasedOn.localeCompare(b.purchasedOn));
+
+      // Primary learning signal: how often this household actually restocks.
+      // Use the most recent intervals so the prediction can adapt when habits change.
+      const intervals=[];
+      const restockRates=[];
+      for(let i=1;i<purchases.length;i++) {
+        const previous=purchases[i-1];
+        const current=purchases[i];
+        const d=daysBetween(previous.purchasedOn,current.purchasedOn);
+        if (d!==null && d>0) {
+          intervals.push(d);
+          if (previous.qty>0) restockRates.push(previous.qty/d);
+        }
+      }
+      const recentIntervals=intervals.slice(-6);
+      const recentRates=restockRates.slice(-6);
+      const avgInterval=average(recentIntervals);
+      const restockDaily=average(recentRates);
+
+      // Optional extra evidence from the less-common "Ran out completely" action.
+      const runoutRates=complete.map((cycle) => {
         const days=daysBetween(cycle.purchasedOn,cycle.runOutOn);
         return days>0 ? cycle.qty/days : NaN;
       });
-      const daily=average(dailyRates);
-      const durations=complete.map((cycle)=>daysBetween(cycle.purchasedOn,cycle.runOutOn));
-      const typicalDays=average(durations);
-
-      const purchases=item.cycles.slice().sort((a,b)=>a.purchasedOn.localeCompare(b.purchasedOn));
-      const intervals=[];
-      for(let i=1;i<purchases.length;i++) {
-        const d=daysBetween(purchases[i-1].purchasedOn,purchases[i].purchasedOn);
-        if (d!==null && d>0) intervals.push(d);
-      }
-      const avgInterval=average(intervals);
+      const runoutDaily=average(runoutRates);
+      const runoutDurations=complete.map((cycle)=>daysBetween(cycle.purchasedOn,cycle.runOutOn));
+      const typicalRunoutDays=average(runoutDurations);
 
       let predictedDays=null;
-      if (active && daily && daily>0) predictedDays=active.qty/daily;
-      else if (active && typicalDays) predictedDays=typicalDays;
+      let predictionSource="none";
+
+      if (active && restockDaily && restockDaily>0) {
+        // Quantity-aware prediction learned entirely from purchase history.
+        predictedDays=active.qty/restockDaily;
+        predictionSource="restock-rate";
+      } else if (active && avgInterval) {
+        predictedDays=avgInterval;
+        predictionSource="restock-interval";
+      } else if (active && runoutDaily && runoutDaily>0) {
+        predictedDays=active.qty/runoutDaily;
+        predictionSource="runout-rate";
+      } else if (active && typicalRunoutDays) {
+        predictedDays=typicalRunoutDays;
+        predictionSource="runout-duration";
+      }
 
       const predictedDate=active && predictedDays ? addDays(active.purchasedOn,predictedDays) : "";
       const daysLeft=predictedDate ? daysBetween(localToday(),predictedDate) : null;
 
       let statusKey="learning", statusLabel="Learning";
-
-if (!purchases.length) {
-  statusKey="waiting";
-  statusLabel="Waiting";
-} else if (!active) {
-  statusKey="buy-now";
-  statusLabel="Buy now";
-} else if (daysLeft!==null) {
+      if (!purchases.length) {
+        statusKey="waiting";
+        statusLabel="Waiting";
+      } else if (!active) {
+        statusKey="buy-now";
+        statusLabel="Buy now";
+      } else if (daysLeft!==null) {
         if (daysLeft<=0) { statusKey="buy-now"; statusLabel="Buy now"; }
         else if (daysLeft<=5) { statusKey="buy-soon"; statusLabel="Buy soon"; }
         else { statusKey="okay"; statusLabel="Okay"; }
       }
 
-      const confidence=complete.length>=4 ? "High" : complete.length>=2 ? "Medium" : "Low";
+      const intervalEvidence=recentIntervals.length;
+      const confidence=intervalEvidence>=4 ? "High" : intervalEvidence>=2 ? "Medium" : "Low";
 
       const priced=item.cycles.filter((cycle)=>cycle.qty>0 && cycle.amountCents>=0);
       const unitPrices=priced.map((cycle)=>cycle.amountCents/cycle.qty);
@@ -552,7 +581,13 @@ if (!purchases.length) {
         else priceTrend=Math.abs(Math.round(pct)) + "% " + (pct>0 ? "above" : "below") + " usual";
       }
 
-      return { complete,active,daily,typicalDays,avgInterval,predictedDays,predictedDate,daysLeft,statusKey,statusLabel,confidence,avgUnitPrice,lastUnitPrice,priceTrend,latest };
+      return {
+        complete,active,purchases,avgInterval,restockDaily,
+        daily:runoutDaily,typicalDays:typicalRunoutDays,
+        predictedDays,predictedDate,daysLeft,predictionSource,
+        intervalEvidence,statusKey,statusLabel,confidence,
+        avgUnitPrice,lastUnitPrice,priceTrend,latest
+      };
     }
 
     function serializeItem(item) {
@@ -751,8 +786,8 @@ if (!purchases.length) {
         const title=document.createElement("strong"); title.textContent=item.name;
         const sub=document.createElement("span");
         sub.textContent=a.statusKey==="buy-now"
-          ? (a.active ? "Predicted stock has run out" : "No active stock")
-          : "Predicted " + a.daysLeft + (a.daysLeft===1 ? " day" : " days") + " left";
+          ? (a.active ? "Usual restock time reached" : "Marked completely out")
+          : "Likely restock in " + a.daysLeft + (a.daysLeft===1 ? " day" : " days");
         main.append(title,sub);
         const side=document.createElement("div"); side.className="shopping-side";
         const badge=document.createElement("span"); badge.className="status " + a.statusKey; badge.textContent=a.statusLabel;
@@ -763,10 +798,11 @@ if (!purchases.length) {
     }
 
     function statusText(a) {
-      if (a.statusKey==="buy-now") return a.active ? "Predicted out now" : "No active stock";
-      if (a.statusKey==="buy-soon") return "About " + a.daysLeft + (a.daysLeft===1 ? " day" : " days") + " left";
-      if (a.statusKey==="okay") return "About " + a.daysLeft + " days left";
-      return "Need a run-out cycle to learn";
+      if (a.statusKey==="waiting") return "Waiting for the first purchase";
+      if (a.statusKey==="buy-now") return a.active ? "Usual restock time reached" : "Marked completely out";
+      if (a.statusKey==="buy-soon") return "Likely restock in " + a.daysLeft + (a.daysLeft===1 ? " day" : " days");
+      if (a.statusKey==="okay") return "Likely restock in about " + a.daysLeft + " days";
+      return "Record another purchase to learn the restock rhythm";
     }
 
     function itemCard(item) {
@@ -787,11 +823,17 @@ if (!purchases.length) {
       badge.style.display="inline-block"; badge.style.marginTop="12px";
 
       const stats=document.createElement("div"); stats.className="item-stats";
-      const statsData=[
-        ["Purchase frequency",a.avgInterval ? "Every ~" + Math.round(a.avgInterval) + " days" : "Learning"],
-        ["Typical duration",a.typicalDays ? "~" + Math.round(a.typicalDays) + " days" : "Learning"],
-        ["Confidence",a.confidence]
-      ];
+      const statsData=!item.cycles.length
+        ? [
+            ["Typical restock interval","Not started"],
+            ["Next likely restock","Not started"],
+            ["Confidence","—"]
+          ]
+        : [
+            ["Typical restock interval",a.avgInterval ? "Every ~" + Math.round(a.avgInterval) + " days" : "Learning"],
+            ["Next likely restock",a.predictedDate ? displayDate(a.predictedDate) : "Learning"],
+            ["Confidence",a.confidence]
+          ];
       statsData.forEach(([label,value])=>{
         const box=document.createElement("div"); box.className="mini";
         const s=document.createElement("span"); s.textContent=label;
@@ -807,8 +849,8 @@ if (!purchases.length) {
     : "Last recorded stock has run out.";
 
 const prediction=a.predictedDate
-  ? " Predicted run-out: " + displayDate(a.predictedDate) + "."
-  : "";
+  ? " Likely next restock: " + displayDate(a.predictedDate) + "."
+  : (a.active ? " Record the next purchase and Dhaftar will learn the restock interval." : "");
 
 const priceText=item.cycles.length
   ? " " + a.priceTrend + "."
@@ -819,7 +861,7 @@ note.textContent=activeText + prediction + priceText;
       const actions=document.createElement("div"); actions.className="item-actions";
       const purchase=document.createElement("button"); purchase.className="button primary"; purchase.type="button"; purchase.textContent="Record purchase";
       purchase.addEventListener("click",()=>openPurchase(item.id));
-      const ranout=document.createElement("button"); ranout.className="button"; ranout.type="button"; ranout.textContent="Ran out";
+      const ranout=document.createElement("button"); ranout.className="button"; ranout.type="button"; ranout.textContent="Ran out completely";
       ranout.disabled=!a.active; ranout.addEventListener("click",()=>openRunout(item.id));
       actions.append(purchase,ranout);
       main.append(top,badge,stats,note,actions);
@@ -838,7 +880,7 @@ note.textContent=activeText + prediction + priceText;
           if (cycle.runOutOn) {
             const d=daysBetween(cycle.purchasedOn,cycle.runOutOn);
             ending=" · ran out " + displayDate(cycle.runOutOn) + (d>0 ? " · lasted " + d + " days" : "");
-          } else if (cycle.endedReason==="restocked") ending=" · restocked before run-out";
+          } else if (cycle.endedReason==="restocked") ending=" · restocked while low";
           else ending=" · current stock";
           left.textContent=displayDate(cycle.purchasedOn) + " · " + cycle.qty + " " + item.unit + ending + (cycle.note ? " · " + cycle.note : "");
           const right=document.createElement("strong"); right.textContent=money(cycle.amountCents);
@@ -994,7 +1036,7 @@ note.textContent=activeText + prediction + priceText;
         el("runoutDialog").close();
         const refreshed=items.find((x)=>x.id===item.id) || item;
         const a=itemAnalytics(refreshed);
-        showMessage(item.name + " marked ran out. Dhaftar now has " + a.complete.length + " completed usage cycle" + (a.complete.length===1 ? "." : "s."));
+        showMessage(item.name + " marked completely out. This gives Dhaftar an extra usage data point in addition to normal restock learning.");
       } catch (error) { showMessage(error.message || "Could not save run-out date.",true); }
     }
 

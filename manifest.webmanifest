@@ -1,7 +1,7 @@
 {
   "name": "Dhaftar",
   "short_name": "Dhaftar",
-  "description": "Household payments, bills, balances and Amanah.",
+  "description": "Household payments, bills, Stock, Spending and Amanah.",
   "start_url": "./index.html",
   "scope": "./",
   "display": "standalone",

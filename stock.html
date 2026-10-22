@@ -740,7 +740,8 @@
           .eq("stock_item_id",item.id);
 
         if (updateError) {
-          await supabaseClient.from("stock_purchases").delete().eq("id",newPurchase.id);
+          // Preserve the purchase if the follow-up update fails: deleting it
+          // after a network error could erase a successfully committed purchase.
           throw updateError;
         }
       }
@@ -963,7 +964,7 @@ note.textContent=activeText + prediction + priceText;
 
     function openPurchase(id) {
       const item=items.find((x)=>x.id===id); if (!item) return;
-      purchaseTargetId=id; const a=itemAnalytics(item);
+      purchaseTargetId=id; pendingPurchase=null; const a=itemAnalytics(item);
       el("purchaseItemName").textContent=item.name + " · " + item.unit;
       el("purchaseQty").value=a.latest?.qty || "";
       el("purchaseAmount").value="";

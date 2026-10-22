@@ -628,7 +628,8 @@
           .eq("archived",false)
           .order("name",{ascending:true}),
         supabaseClient.from("stock_purchases")
-          .select("id,stock_item_id,purchased_on,quantity,amount,note,run_out_on,ended_reason,ended_on,created_by,created_at,updated_at")
+          .select("id,stock_item_id,purchased_on,quantity,amount,note,run_out_on,ended_reason,ended_on,created_by,created_at,updated_at,voided_at")
+          .is("voided_at",null)
           .order("purchased_on",{ascending:true})
       ]);
 
@@ -745,6 +746,26 @@
       }
 
       await loadDedicatedItems();
+    }
+
+    async function voidDuplicatePurchase(item,cycle,button) {
+      if (stockStorageMode!=="dedicated") return;
+      const reason=window.prompt("Reason for voiding this purchase (required):","Duplicate entry due to slow network");
+      if (reason===null) return;
+      if (!reason.trim()) { showMessage("A reason is required.",true); return; }
+      if (!window.confirm("Void "+item.name+" purchase of "+cycle.qty+" "+item.unit+" on "+displayDate(cycle.purchasedOn)+"? This will remove it from spending and restock predictions. The record remains in the audit history.")) return;
+      button.disabled=true;
+      try {
+        const {error}=await supabaseClient.rpc("dhaftar_void_stock_purchase",{
+          p_purchase_id:cycle.id,p_reason:reason.trim()
+        });
+        if (error) throw error;
+        await loadDedicatedItems();
+        showMessage("Purchase voided. Restock predictions and spending recalculated.");
+      } catch(error) {
+        showMessage(error.message || "Could not void purchase.",true);
+        button.disabled=false;
+      }
     }
 
     async function markDedicatedRunout(item,cycle,date) {
@@ -900,7 +921,17 @@ note.textContent=activeText + prediction + priceText;
           else ending=" · current stock";
           left.textContent=displayDate(cycle.purchasedOn) + " · " + cycle.qty + " " + item.unit + ending + (cycle.note ? " · " + cycle.note : "");
           const right=document.createElement("strong"); right.textContent=money(cycle.amountCents);
-          row.append(left,right); history.appendChild(row);
+          row.append(left,right);
+          if (stockStorageMode==="dedicated") {
+            const voidButton=document.createElement("button");
+            voidButton.className="button danger";
+            voidButton.type="button";
+            voidButton.textContent="Void duplicate";
+            voidButton.setAttribute("aria-label","Void purchase dated "+displayDate(cycle.purchasedOn));
+            voidButton.addEventListener("click",()=>voidDuplicatePurchase(item,cycle,voidButton));
+            row.appendChild(voidButton);
+          }
+          history.appendChild(row);
         });
       }
       const archive=document.createElement("button"); archive.className="button danger"; archive.type="button"; archive.textContent="Archive item";

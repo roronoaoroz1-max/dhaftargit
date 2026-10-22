@@ -696,11 +696,16 @@
   await loadDedicatedItems();
 }
 
-    async function addDedicatedPurchase(item,{qty,amountCents,purchasedOn,note}) {
+    // One UUID per purchase intent. Retrying a timed-out request reuses this UUID.
+    let pendingPurchase = null;
+    let purchaseSaving = false;
+
+    async function addDedicatedPurchase(item,{qty,amountCents,purchasedOn,note,requestId}) {
       const open=activeCycle(item);
 
       const { data:newPurchase,error:insertError }=await supabaseClient.from("stock_purchases")
         .insert({
+          id:requestId,
           stock_item_id:item.id,
           purchased_on:purchasedOn,
           quantity:qty,
@@ -711,7 +716,18 @@
         .select("id")
         .single();
 
-      if (insertError) throw insertError;
+      if (insertError) {
+        if (String(insertError.code)==="23505") {
+          // A previous attempt was committed even though its response was lost.
+          const {data:existing,error:lookupError}=await supabaseClient.from("stock_purchases")
+            .select("id,stock_item_id").eq("id",requestId).maybeSingle();
+          if (!lookupError && existing && existing.stock_item_id===item.id) {
+            await loadDedicatedItems();
+            return;
+          }
+        }
+        throw insertError;
+      }
 
       if (open) {
         const { error:updateError }=await supabaseClient.from("stock_purchases")
@@ -989,17 +1005,28 @@ note.textContent=activeText + prediction + priceText;
 
     async function recordPurchase(event) {
       event.preventDefault();
+      if (purchaseSaving) return;
       const item=items.find((x)=>x.id===purchaseTargetId); if (!item) return;
       const qty=numberValue(el("purchaseQty").value), amountCents=centsFromInput(el("purchaseAmount").value);
       const purchasedOn=el("purchaseDate").value;
       if (!qty || amountCents===null || !purchasedOn) { showMessage("Enter quantity, amount and purchase date.",true); return; }
+      const note=el("purchaseNote").value.trim();
+      const signature=JSON.stringify([item.id,qty,amountCents,purchasedOn,note]);
+      if (!pendingPurchase || pendingPurchase.signature!==signature) {
+        pendingPurchase={signature,id:crypto.randomUUID()};
+      }
+      purchaseSaving=true;
+      const saveButton=el("purchaseForm").querySelector('button[type="submit"]');
+      saveButton.disabled=true;
+      saveButton.textContent="Saving purchase…";
       try {
         if (stockStorageMode==="dedicated") {
           await addDedicatedPurchase(item,{
             qty,
             amountCents,
             purchasedOn,
-            note:el("purchaseNote").value.trim()
+            note,
+            requestId:pendingPurchase.id
           });
         } else {
           const open=activeCycle(item);
@@ -1015,8 +1042,15 @@ note.textContent=activeText + prediction + priceText;
           await saveLegacyItem(item);
         }
 
+        pendingPurchase=null;
         el("purchaseDialog").close(); showMessage(item.name + " purchase recorded.");
-      } catch (error) { showMessage(error.message || "Could not save purchase.",true); }
+      } catch (error) {
+        showMessage((error.message || "Could not confirm purchase.") + " Check purchase history before entering a new purchase. Retry with the same details to avoid duplicates.",true);
+      } finally {
+        purchaseSaving=false;
+        saveButton.disabled=false;
+        saveButton.textContent="Save purchase";
+      }
     }
 
     async function recordRunout(event) {

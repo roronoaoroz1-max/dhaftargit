@@ -737,6 +737,20 @@
       font-size: 0.88rem;
     }
 
+    .old-household-card { grid-column: 1 / -1; padding: clamp(20px, 4vw, 30px); }
+    .old-household-card .section-copy { margin-bottom: 16px; }
+    .old-household-totals { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; }
+    .old-household-totals > div { padding: 14px; border: 1px solid var(--line); border-radius: 12px; background: var(--surface-soft); }
+    .old-household-totals span { display: block; font-size: .76rem; color: var(--muted); margin-bottom: 7px; }
+    .old-household-totals strong { font-size: clamp(.85rem, 2.5vw, 1.12rem); }
+    .old-household-progress { margin-top: 18px; height: 9px; background: var(--line); border-radius: 99px; overflow: hidden; }
+    .old-household-progress span { display: block; width: 25%; height: 100%; background: var(--success); }
+    .old-household-caption { color: var(--muted); font-size: .8rem; line-height: 1.5; }
+    .old-household-subtitle { margin: 20px 0 9px; font-size: 1rem; }
+    .old-household-row { display: flex; justify-content: space-between; gap: 12px; padding: 10px 0; border-bottom: 1px solid var(--line); font-size: .9rem; }
+    .old-household-total { font-weight: 800; border-bottom: 0; }
+    @media (max-width: 440px) { .old-household-totals { grid-template-columns: 1fr; } }
+
     .debt-card {
       position: sticky;
       top: 24px;
@@ -1596,6 +1610,26 @@
 
         </section>
 
+      </section>
+
+      <!-- HISTORICAL HOUSEHOLD SETTLEMENT: separate from current monthly bills -->
+      <section class="card old-household-card" aria-labelledby="old-household-title">
+        <h2 id="old-household-title" class="section-heading">Old household payment</h2>
+        <p class="section-copy">Outstanding historical household amount · repayment plan starts November 2026</p>
+        <div class="old-household-totals">
+          <div><span>Original amount</span><strong>MVR 12,000.00</strong></div>
+          <div><span>Already paid</span><strong>MVR 3,000.00</strong></div>
+          <div><span>Remaining</span><strong>MVR 9,000.00</strong></div>
+        </div>
+        <div class="old-household-progress" role="img" aria-label="25 percent paid"><span></span></div>
+        <p class="old-household-caption">25% paid · 75% outstanding</p>
+        <h3 class="old-household-subtitle">Monthly repayment plan</h3>
+        <div class="old-household-row"><span>Inaad room</span><strong>MVR 1,000.00</strong></div>
+        <div class="old-household-row"><span>Imaad room</span><strong>MVR 1,000.00</strong></div>
+        <div class="old-household-row"><span>Dad room</span><strong>MVR 1,000.00</strong></div>
+        <div class="old-household-row old-household-total"><span>Monthly total</span><strong>MVR 3,000.00</strong></div>
+        <p class="old-household-caption">Planned installments: November 2026, December 2026, January 2027 (MVR 3,000 each).</p>
+        <p class="old-household-caption">Starting balance only. Future payments are not marked paid automatically; update the recorded amount when repayments are confirmed.</p>
       </section>
 
       <!-- AMANAH DAD BALANCES -->

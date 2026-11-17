@@ -333,6 +333,14 @@
       align-items: start;
     }
 
+    .layout.no-debts {
+      grid-template-columns: minmax(0, 1fr);
+    }
+
+    [hidden] {
+      display: none !important;
+    }
+
     .card {
       background: var(--surface);
 
@@ -1593,6 +1601,8 @@
       <!-- AMANAH DAD BALANCES -->
       <aside
         class="card debt-card"
+        id="dadDebtCard"
+        hidden
         aria-labelledby="dad-debts-title"
       >
 
@@ -2215,22 +2225,27 @@
         });
       }
 
-      expectedNames.forEach(
-        (name) => {
-          elements.debtList.appendChild(
-            createDebtItem(
-              name,
-              debtMap.get(
-                name.toLowerCase()
-              ) || 0
-            )
-          );
-        }
-      );
+      const activeDebts = expectedNames
+        .map((name) => ({
+          name,
+          amount: debtMap.get(name.toLowerCase()) || 0
+        }))
+        .filter(({ amount }) => Math.abs(amount) >= 0.005);
+
+      const card = document.getElementById("dadDebtCard");
+      card.hidden = activeDebts.length === 0;
+      card.closest(".layout").classList.toggle("no-debts", card.hidden);
+
+      activeDebts.forEach(({ name, amount }) => {
+        elements.debtList.appendChild(createDebtItem(name, amount));
+      });
     }
 
 
     function showDadDebtsError() {
+      const card = document.getElementById("dadDebtCard");
+      card.hidden = false;
+      card.closest(".layout").classList.remove("no-debts");
       const message = document.createElement("div");
       message.className = "debt-loading";
       message.textContent = "Unable to load current balances. Tap Refresh balance to retry.";

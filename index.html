@@ -2566,58 +2566,60 @@
 
     // Medication renewal repeats every three calendar months from 17 November 2026.
     // The first renewal is 17 February 2027; the reminder begins five days earlier.
-    const MEDICATION_RENEWAL_STORAGE_KEY = "dhaftar-dad-medication-renewals-v1";
+    // Store only the next renewal date, not a purchase history.
+    const MEDICATION_RENEWAL_STORAGE_KEY = "dhaftar-dad-medication-next-date-v2";
 
-    function medicationRenewalRecords() {
+    function medicationDateKey(date) {
+      return date.getFullYear() + "-" + String(date.getMonth() + 1).padStart(2, "0") + "-" + String(date.getDate()).padStart(2, "0");
+    }
+
+    function medicationNextDate() {
       try {
-        const records = JSON.parse(localStorage.getItem(MEDICATION_RENEWAL_STORAGE_KEY) || "{}");
-        return records && typeof records === "object" && !Array.isArray(records) ? records : {};
-      } catch (_) { return {}; }
+        const saved = localStorage.getItem(MEDICATION_RENEWAL_STORAGE_KEY);
+        if (saved && /^\\d{4}-\\d{2}-\\d{2}$/.test(saved)) {
+          const [y, m, d] = saved.split("-").map(Number);
+          const parsed = new Date(y, m - 1, d);
+          if (medicationDateKey(parsed) === saved) return parsed;
+        }
+      } catch (_) {}
+      // First renewal: three months after the original 17 November 2026 start.
+      return new Date(2027, 1, 17);
     }
 
     function renderDadMedicationReminder() {
       const today = new Date();
-      const todayUTC = Date.UTC(today.getFullYear(), today.getMonth(), today.getDate());
-      const records = medicationRenewalRecords();
-      let year = 2027;
-      let month = 1;
-      let renewalUTC = Date.UTC(year, month, 17);
-      // Advance past earlier cycles and any renewal confirmed as purchased.
-      while (renewalUTC < todayUTC || records[new Date(renewalUTC).toISOString().slice(0, 10)]) {
-        month += 3;
-        year += Math.floor(month / 12);
-        month %= 12;
-        renewalUTC = Date.UTC(year, month, 17);
-      }
-      const renewalKey = new Date(renewalUTC).toISOString().slice(0, 10);
-      const days = Math.round((renewalUTC - todayUTC) / 86400000);
-      const renewalDate = new Date(renewalUTC).toLocaleDateString("en-GB", {
-        day: "numeric", month: "long", year: "numeric", timeZone: "UTC"
-      });
+      today.setHours(0, 0, 0, 0);
+      const next = medicationNextDate();
+      const days = Math.round((next.getTime() - today.getTime()) / 86400000);
+      const renewalDate = next.toLocaleDateString("en-GB", {day:"numeric", month:"long", year:"numeric"});
       const urgent = document.getElementById("medicationUrgent");
       const regular = document.getElementById("medicationRegular");
       urgent.hidden = days > 5;
       regular.hidden = days <= 5;
       document.getElementById("medicationRegularDetails").textContent =
-        "Next renewal: " + renewalDate + " · " + days + " days remaining · Every 3 months";
+        "Next renewal: " + renewalDate + " · " + (days < 0 ? Math.abs(days) + " days overdue" : days + " days remaining") + " · Every 3 months after purchase";
       if (days <= 5) {
         const heading = document.createElement("strong");
-        heading.textContent = days === 0 ? "Dad’s medication renewal is due today" :
+        heading.textContent = days < 0 ? "Dad’s medication renewal is overdue by " + Math.abs(days) + " days" :
+          days === 0 ? "Dad’s medication renewal is due today" :
           "Dad’s medication renewal is due in " + days + (days === 1 ? " day" : " days");
         const details = document.createElement("p");
-        details.textContent = "Renew by " + renewalDate + " · Every 3 months";
+        details.textContent = "Scheduled renewal: " + renewalDate;
         const button = document.createElement("button");
         button.type = "button";
         button.className = "medication-renew-button";
         button.textContent = "Renew";
         button.addEventListener("click", () => {
-          if (!window.confirm("Confirm Dad’s medication has been purchased for the next 3 months?")) return;
-          const updated = medicationRenewalRecords();
-          updated[renewalKey] = new Date().toISOString();
+          if (!window.confirm("Confirm Dad’s medication has been purchased today? The next renewal will be 3 months from today.")) return;
+          const purchased = new Date();
+          const renewal = new Date(purchased.getFullYear(), purchased.getMonth() + 3, 1);
+          // Clamp month-end dates (e.g. 31 January -> 30 April).
+          const lastDay = new Date(renewal.getFullYear(), renewal.getMonth() + 1, 0).getDate();
+          renewal.setDate(Math.min(purchased.getDate(), lastDay));
           try {
-            localStorage.setItem(MEDICATION_RENEWAL_STORAGE_KEY, JSON.stringify(updated));
+            localStorage.setItem(MEDICATION_RENEWAL_STORAGE_KEY, medicationDateKey(renewal));
           } catch (_) {
-            window.alert("Could not save the renewal on this device. Please check browser storage and try again.");
+            window.alert("Could not save the new renewal date on this device. Please try again.");
             return;
           }
           renderDadMedicationReminder();

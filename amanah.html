@@ -633,6 +633,16 @@
       font-weight: 700;
     }
 
+    .personal-savings-card { margin-top: 18px; }
+    .personal-savings-card h3 { font-size: 1rem; margin: 16px 0 10px; }
+    .savings-entry-form,.savings-reconciliation,.savings-activity { margin-top: 20px; padding-top: 14px; border-top: 1px solid var(--line); }
+    .savings-fields { display: grid; grid-template-columns: repeat(auto-fit,minmax(180px,1fr)); gap: 12px; margin-bottom: 14px; }
+    .personal-savings-card label { display: grid; gap: 6px; font-size: .85rem; color: var(--ink); }
+    .personal-savings-card input,.personal-savings-card select { width: 100%; min-width: 0; padding: 11px; border: 1px solid var(--line); border-radius: 10px; background: var(--surface-soft); color: var(--ink); font: inherit; }
+    .personal-savings-card button[type="submit"] { padding: 12px 16px; border: 0; border-radius: 10px; background: var(--accent, #2563eb); color: white; font: inherit; font-weight: 700; cursor: pointer; }
+    .personal-savings-card button:disabled { opacity: .6; cursor: wait; }
+    .savings-history-row { display: flex; justify-content: space-between; gap: 10px; padding: 9px 0; border-bottom: 1px solid var(--line); font-size: .85rem; }
+    .savings-history-row small { display: block; color: var(--muted); margin-top: 4px; }
     .empty-box {
       grid-column: 1 / -1;
 
@@ -1574,6 +1584,49 @@
             </p>
           </article>
 
+        </div>
+      </section>
+
+      <!-- PRIVATE PERSONAL SAVINGS (separate from Dad's existing balances) -->
+      <section class="card personal-savings-card" aria-labelledby="personalSavingsTitle">
+        <div class="overview-heading">
+          <div>
+            <h2 id="personalSavingsTitle">Shared savings account</h2>
+            <p>Dad's money and my savings are tracked separately, even when held in one bank account.</p>
+          </div>
+        </div>
+        <div class="private-balance-grid">
+          <article class="private-balance-card">
+            <span class="balance-label">My savings</span>
+            <button class="masked-amount" type="button" data-balance-key="mySavings" aria-pressed="false" aria-label="Show my savings"><span class="masked-value">MVR ••••••</span><span class="reveal-hint">Show</span></button>
+            <p class="balance-note">Deposits less withdrawals. This is not Dad's money.</p>
+          </article>
+          <article class="private-balance-card total-card">
+            <span class="balance-label">Total money I should account for (Dad + mine)</span>
+            <button class="masked-amount" type="button" data-balance-key="combinedTotal" aria-pressed="false" aria-label="Show combined total"><span class="masked-value">MVR ••••••</span><span class="reveal-hint">Show</span></button>
+            <p class="balance-note">Dad's existing total plus my savings. Dad's total above stays unchanged.</p>
+          </article>
+        </div>
+        <form id="personalSavingsForm" class="savings-entry-form">
+          <h3>Add or withdraw my savings</h3>
+          <div class="savings-fields">
+            <label>Action<select id="personalSavingsType" required><option value="deposit">Add savings</option><option value="withdrawal">Withdraw savings</option></select></label>
+            <label>Amount (MVR)<input id="personalSavingsAmount" type="number" min="0.01" step="0.01" inputmode="decimal" required></label>
+            <label>Date<input id="personalSavingsDate" type="date" required></label>
+            <label>Note (optional)<input id="personalSavingsNote" type="text" maxlength="200" placeholder="e.g. monthly savings"></label>
+          </div>
+          <button id="personalSavingsSubmit" type="submit">Save savings transaction</button>
+          <p id="personalSavingsMessage" role="status" aria-live="polite"></p>
+        </form>
+        <div class="savings-reconciliation">
+          <h3>Optional bank balance check</h3>
+          <p class="balance-note">Compare your bank balance against Dad's cash held in custody plus your savings. Outstanding loans are excluded because they are not cash in the bank.</p>
+          <label>Actual bank balance (MVR)<input id="actualSharedBankBalance" type="number" min="0" step="0.01" inputmode="decimal" placeholder="Enter current bank balance"></label>
+          <p id="sharedBankDifference" role="status">Enter your bank balance to compare.</p>
+        </div>
+        <div class="savings-activity">
+          <h3>Recent savings transactions</h3>
+          <div id="personalSavingsHistory" class="savings-history">No savings transactions yet.</div>
         </div>
       </section>
 
@@ -2705,8 +2758,12 @@
     const privateBalanceValues = {
       dadCash: 0,
       dadLoans: 0,
-      dadTotal: 0
+      dadTotal: 0,
+      mySavings: 0,
+      combinedTotal: 0
     };
+    let personalSavingsTransactions = [];
+    let savingsSubmitPending = false;
 
     const revealedBalanceKeys =
       new Set();
@@ -3373,6 +3430,12 @@
             .limit(1000),
 
           supabaseClient
+            .from("amanah_personal_savings_transactions")
+            .select("id,transaction_date,transaction_type,amount,note,created_at")
+            .order("created_at",{ascending:false})
+            .limit(1000),
+
+          supabaseClient
             .from(
               "account_transactions"
             )
@@ -3412,7 +3475,8 @@
         results[4].data || [];
 
       transactions =
-        results[5].data || [];
+        results[6].data || [];
+      personalSavingsTransactions = results[5].data || [];
 
       populateSelectors();
       renderAll();
@@ -3977,6 +4041,8 @@
       privateBalanceValues.dadTotal =
         custodyCash +
         remainingDadLoans;
+      privateBalanceValues.mySavings = personalSavingsTransactions.reduce((sum, tx) => sum + (tx.transaction_type === "deposit" ? 1 : -1) * Number(tx.amount || 0), 0);
+      privateBalanceValues.combinedTotal = privateBalanceValues.dadTotal + privateBalanceValues.mySavings;
 
       Object.keys(
         privateBalanceValues
@@ -3985,6 +4051,89 @@
       );
     }
 
+
+    function renderPersonalSavings() {
+      const container = document.getElementById("personalSavingsHistory");
+      container.replaceChildren();
+      if (!personalSavingsTransactions.length) {
+        container.textContent = "No savings transactions yet.";
+      } else {
+        personalSavingsTransactions.slice(0, 10).forEach(tx => {
+          const row = document.createElement("div");
+          row.className = "savings-history-row";
+          const left = document.createElement("div");
+          const title = document.createElement("strong");
+          title.textContent = tx.transaction_type === "deposit" ? "Added savings" : "Withdrew savings";
+          const note = document.createElement("small");
+          note.textContent = tx.transaction_date + (tx.note ? " · " + tx.note : "");
+          left.append(title, note);
+          const amount = document.createElement("strong");
+          amount.textContent = (tx.transaction_type === "deposit" ? "+" : "−") + formatMoney(tx.amount, "MVR");
+          row.append(left, amount);
+          container.append(row);
+        });
+      }
+      renderSharedBankDifference();
+    }
+
+    function renderSharedBankDifference() {
+      const input = document.getElementById("actualSharedBankBalance");
+      const output = document.getElementById("sharedBankDifference");
+      if (input.value.trim() === "") {
+        output.textContent = "Enter your bank balance to compare.";
+        return;
+      }
+      const actual = Number(input.value);
+      if (!Number.isFinite(actual) || actual < 0) {
+        output.textContent = "Enter a valid non-negative bank balance.";
+        return;
+      }
+      const expected = privateBalanceValues.dadCash + privateBalanceValues.mySavings;
+      const difference = Math.round((actual - expected) * 100) / 100;
+      output.textContent = "Expected bank cash: " + formatMoney(expected, "MVR") +
+        " · Difference: " + formatMoney(difference, "MVR") +
+        (Math.abs(difference) < .005 ? " · Matched" : " · Please investigate");
+    }
+
+    async function submitPersonalSavings(event) {
+      event.preventDefault();
+      if (savingsSubmitPending) return;
+      const type = document.getElementById("personalSavingsType").value;
+      const amount = Number(document.getElementById("personalSavingsAmount").value);
+      const date = document.getElementById("personalSavingsDate").value;
+      const note = document.getElementById("personalSavingsNote").value.trim();
+      const status = document.getElementById("personalSavingsMessage");
+      if (!["deposit","withdrawal"].includes(type) || !Number.isFinite(amount) ||
+          amount <= 0 || Math.round(amount * 100) !== amount * 100 || !date) {
+        status.textContent = "Enter a valid amount (maximum 2 decimal places) and date.";
+        return;
+      }
+      if (type === "withdrawal" && Math.round(amount * 100) > Math.round(privateBalanceValues.mySavings * 100)) {
+        status.textContent = "Withdrawal cannot exceed your savings balance.";
+        return;
+      }
+      if (!window.confirm((type === "deposit" ? "Add " : "Withdraw ") + formatMoney(amount,"MVR") + " " + (type === "deposit" ? "to" : "from") + " your savings?")) return;
+      savingsSubmitPending = true;
+      const button = document.getElementById("personalSavingsSubmit");
+      button.disabled = true;
+      status.textContent = "Saving…";
+      try {
+        const { error } = await supabaseClient.from("amanah_personal_savings_transactions")
+          .insert({user_id:currentUser.id,transaction_date:date,transaction_type:type,amount,note:note || null});
+        if (error) throw error;
+        document.getElementById("personalSavingsAmount").value = "";
+        document.getElementById("personalSavingsNote").value = "";
+        status.textContent = "Saved. Refreshing balances…";
+        await loadData();
+        status.textContent = "Savings transaction saved successfully.";
+      } catch (error) {
+        status.textContent = "Could not complete refresh or save: " + (error.message || "Unknown error") +
+          ". Check the transaction list before trying again.";
+      } finally {
+        savingsSubmitPending = false;
+        button.disabled = false;
+      }
+    }
 
     function renderPersonLoanTotals() {
       const container =
@@ -4579,6 +4728,7 @@
 
     function renderAll() {
       renderPrivateMoneyPosition();
+      renderPersonalSavings();
       renderPersonLoanTotals();
       renderBorrowerLedgers();
       renderLoans();
@@ -5334,6 +5484,9 @@
       });
 
 
+    document.getElementById("personalSavingsForm").addEventListener("submit", submitPersonalSavings);
+    document.getElementById("actualSharedBankBalance").addEventListener("input", renderSharedBankDifference);
+
     document
       .getElementById(
         "personForm"
@@ -5425,6 +5578,7 @@
 
         [
           "transactionDate",
+          "personalSavingsDate",
           "loanDate",
           "repaymentDate"
         ].forEach((id) => {

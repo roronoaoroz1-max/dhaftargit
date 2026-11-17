@@ -3657,7 +3657,7 @@
 
     async function submitPayment() {
       const state = householdQuickState;
-      if (state.saving || !currentUser) return;
+      if (state.saving || state.submitting || !currentUser) return;
       const form = paymentElement("paymentForm");
       if (!form.reportValidity()) return;
       const amountInput = paymentElement("paymentAmount");
@@ -3667,6 +3667,9 @@
         amountInput.focus();
         return;
       }
+      // Lock before the first network request so rapid taps cannot submit twice.
+      state.submitting = true;
+      try {
       const month = householdMonth();
       if (typeof monthIsClosed === "function" && await monthIsClosed(month)) {
         showMessage(displayMonth(month) + " is closed. Unlock the month before adding another household payment.", true);
@@ -3735,6 +3738,9 @@
           syncHouseholdQuickButtons();
           if (saved) await loadHouseholdBalance();
         }
+      }
+      } finally {
+        state.submitting = false;
       }
     }
 

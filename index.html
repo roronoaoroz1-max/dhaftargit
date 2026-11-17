@@ -737,6 +737,11 @@
       font-size: 0.88rem;
     }
 
+    .medication-reminder { padding: 20px 24px; border-radius: 18px; }
+    .medication-reminder p { margin: 8px 0 0; line-height: 1.5; }
+    .medication-regular { grid-column: 1 / -1; }
+    .medication-urgent { margin: 0 0 20px; background: #fff0d8; color: #633700; border: 2px solid #d97706; }
+    :root[data-theme="dark"] .medication-urgent { background: #3b230a; color: #ffe2a8; border-color: #f59e0b; }
     .old-household-card { grid-column: 1 / -1; padding: clamp(20px, 4vw, 30px); }
     .old-household-card .section-copy { margin-bottom: 16px; }
     .old-household-totals { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; }
@@ -1401,6 +1406,8 @@
 
     </section>
 
+    <section id="medicationUrgent" class="medication-reminder medication-urgent" aria-live="polite" hidden></section>
+
     <div class="layout">
 
       <section
@@ -1630,6 +1637,11 @@
         <div class="old-household-row old-household-total"><span>Monthly total</span><strong>MVR 3,000.00</strong></div>
         <p class="old-household-caption">Planned installments: November 2026, December 2026, January 2027 (MVR 3,000 each).</p>
         <p class="old-household-caption">Starting balance only. Future payments are not marked paid automatically; update the recorded amount when repayments are confirmed.</p>
+      </section>
+
+      <section id="medicationRegular" class="card medication-reminder medication-regular" aria-labelledby="medicationRegularTitle" hidden>
+        <h2 id="medicationRegularTitle" class="section-heading">Dad’s medication renewal</h2>
+        <p id="medicationRegularDetails"></p>
       </section>
 
       <!-- AMANAH DAD BALANCES -->
@@ -2550,6 +2562,41 @@
     }
 
 
+    // Medication renewal repeats every three calendar months from 17 November 2026.
+    // The first renewal is 17 February 2027; the reminder begins five days earlier.
+    function renderDadMedicationReminder() {
+      const today = new Date();
+      const todayUTC = Date.UTC(today.getFullYear(), today.getMonth(), today.getDate());
+      const firstRenewal = Date.UTC(2027, 1, 17);
+      let year = 2027;
+      let month = 1;
+      let renewalUTC = firstRenewal;
+      while (renewalUTC < todayUTC) {
+        month += 3;
+        year += Math.floor(month / 12);
+        month %= 12;
+        renewalUTC = Date.UTC(year, month, 17);
+      }
+      const days = Math.round((renewalUTC - todayUTC) / 86400000);
+      const renewalDate = new Date(renewalUTC).toLocaleDateString("en-GB", {
+        day: "numeric", month: "long", year: "numeric", timeZone: "UTC"
+      });
+      const urgent = document.getElementById("medicationUrgent");
+      const regular = document.getElementById("medicationRegular");
+      urgent.hidden = days > 5;
+      regular.hidden = days <= 5;
+      document.getElementById("medicationRegularDetails").textContent =
+        "Next renewal: " + renewalDate + " · " + days + " days remaining · Every 3 months";
+      if (days <= 5) {
+        const heading = document.createElement("strong");
+        heading.textContent = days === 0 ? "Dad’s medication renewal is due today" :
+          "Dad’s medication renewal is due in " + days + (days === 1 ? " day" : " days");
+        const details = document.createElement("p");
+        details.textContent = "Renew by " + renewalDate + " · Every 3 months";
+        urgent.replaceChildren(heading, details);
+      }
+    }
+
     setTheme(
       document.documentElement.dataset.theme ||
       "light",
@@ -2596,6 +2643,7 @@
       "load",
       () => {
         initializePeriodSelectors();
+        renderDadMedicationReminder();
         getBalance();
 
         setTimeout(

@@ -633,7 +633,25 @@
       font-weight: 700;
     }
 
-    .personal-savings-card { margin-top: 18px; }
+    /* Match the spacing and balance-card treatment used throughout Amanah. */
+    .personal-savings-card {
+      margin: 0 0 20px;
+      padding: clamp(20px, 3vw, 28px);
+      box-shadow: var(--soft-shadow);
+    }
+    .personal-savings-card > .overview-heading { margin-bottom: 18px; }
+    .personal-savings-card .private-balance-grid { margin-top: 0; }
+    .personal-savings-card .private-balance-card { min-width: 0; }
+    .personal-savings-card .private-balance-card:not(.total-card)::before {
+      background: linear-gradient(90deg, var(--brand), rgba(77, 212, 196, 0.45));
+    }
+    .personal-savings-card .private-balance-card:not(.total-card) .masked-value { color: var(--brand); }
+    .personal-savings-card .private-balance-card.total-card::before {
+      background: linear-gradient(90deg, #3d63c7, #7e97df);
+    }
+    .personal-savings-card .private-balance-card.total-card .masked-value { color: #4968bd; }
+    :root[data-theme="dark"] .personal-savings-card .private-balance-card.total-card .masked-value { color: #9db1f4; }
+
     .personal-savings-card h3 { font-size: 1rem; margin: 16px 0 10px; }
     .savings-entry-form,.savings-reconciliation,.savings-activity { margin-top: 20px; padding-top: 14px; border-top: 1px solid var(--line); }
     .savings-fields { display: grid; grid-template-columns: repeat(auto-fit,minmax(180px,1fr)); gap: 12px; margin-bottom: 14px; }

@@ -1,0 +1,105 @@
+name: Phase 9 module regression tests
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - 'dhaftar-ux.js'
+      - 'dhaftar-ux.css'
+      - 'tests/phase9*'
+      - 'dhaftar-sections.js'
+      - 'dhaftar-sections.css'
+      - 'dhaftar-home.js'
+      - 'dhaftar-home.css'
+      - 'transaction-requests.js'
+      - 'notifications.js'
+      - 'notifications.css'
+      - 'today.html'
+      - 'statements.html'
+      - 'admin.html'
+      - 'index.html'
+      - 'amanah.html'
+      - 'stock.html'
+      - 'spending.html'
+      - '.github/workflows/phase9-verification.yml'
+permissions:
+  contents: read
+jobs:
+  phase9:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    services:
+      postgres:
+        image: postgres:17
+        env:
+          POSTGRES_USER: fixture
+          POSTGRES_PASSWORD: fixture-only
+          POSTGRES_DB: dhaftar_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U fixture -d dhaftar_test"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    env:
+      PGHOST: 127.0.0.1
+      PGPORT: 5432
+      PGUSER: fixture
+      PGPASSWORD: fixture-only
+      PGDATABASE: dhaftar_test
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+      - name: JavaScript request and syntax checks
+        run: node tests/phase1-requests.test.mjs
+      - name: Build isolated synthetic schema
+        run: psql -X -v ON_ERROR_STOP=1 -f tests/phase1-fixture.sql
+      - name: Apply migrations in order
+        run: |
+          set -eu
+          for migration in database/phase1a_transaction_reliability.sql database/phase1b_household_spending_reliability.sql database/phase1c_amanah_transaction_reliability.sql; do
+            psql -X -v ON_ERROR_STOP=1 -f "$migration"
+          done
+      - name: Run transactional regression tests
+        run: psql -X -v ON_ERROR_STOP=1 -f tests/phase1-database.test.sql
+      - name: Extend fixture for account reconciliation
+        run: psql -X -v ON_ERROR_STOP=1 -f tests/phase2-fixture.sql
+      - name: Apply Phase 2 migration
+        run: psql -X -v ON_ERROR_STOP=1 -f database/phase2_savings_goals.sql
+      - name: Verify Phase 2 interface integration
+        run: node tests/phase2-interface.test.mjs
+      - name: Verify Phase 2 database behavior
+        run: psql -X -v ON_ERROR_STOP=1 -f tests/phase2-database.test.sql
+      - name: Apply Phase 3 migration
+        run: psql -X -v ON_ERROR_STOP=1 -f database/phase3_recurring_payments.sql
+      - name: Verify Phase 3 interface
+        run: node tests/phase3-interface.test.mjs
+      - name: Verify Phase 3 database
+        run: psql -X -v ON_ERROR_STOP=1 -f tests/phase3-database.test.sql
+      - name: Apply Phase 4 migration
+        run: psql -X -v ON_ERROR_STOP=1 -f database/phase4_stock_improvements.sql
+      - name: Verify Phase 4 interface
+        run: node tests/phase4-interface.test.mjs
+      - name: Verify Phase 4 database
+        run: psql -X -v ON_ERROR_STOP=1 -f tests/phase4-database.test.sql
+      - name: Extend personal money fixture
+        run: psql -X -v ON_ERROR_STOP=1 -f tests/phase5-fixture.sql
+      - name: Apply Phase 5 migration
+        run: psql -X -v ON_ERROR_STOP=1 -f database/phase5_personal_assets.sql
+      - name: Verify Phase 5 interface
+        run: node tests/phase5-interface.test.mjs
+      - name: Verify Phase 5 database
+        run: psql -X -v ON_ERROR_STOP=1 -f tests/phase5-database.test.sql
+      - name: Apply Phase 6 migration
+        run: psql -X -v ON_ERROR_STOP=1 -f database/phase6_notification_centre.sql
+      - name: Verify Phase 6 interface
+        run: node tests/phase6-interface.test.mjs
+      - name: Verify Phase 6 database
+        run: psql -X -v ON_ERROR_STOP=1 -f tests/phase6-database.test.sql
+      - name: Recheck Phase 1 concurrent writes with Phase 6 installed
+        run: bash tests/phase1-concurrency.test.sh
+      - name: Verify shared navigation and design integration
+        run: node tests/phase7-interface.test.mjs
+      - name: Verify private dashboard and quick actions
+        run: node tests/phase8-interface.test.mjs
+      - name: Verify module tabs and form preservation
+        run: node tests/phase9-interface.test.mjs

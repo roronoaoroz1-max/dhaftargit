@@ -10,13 +10,14 @@ declare
   v_user uuid := auth.uid();
   v_existing public.stock_purchases%rowtype;
   v_previous public.stock_purchases%rowtype;
+  v_archived boolean;
 begin
   if v_user is null or not public.is_admin() then raise exception 'Administrator access required' using errcode='42501'; end if;
-  if p_request_id is null or p_item_id is null or p_date is null or p_quantity is null or p_quantity <= 0 or p_amount is null or p_amount < 0 or p_amount <> round(p_amount,2) then
+  if p_request_id is null or p_item_id is null or p_date is null or p_quantity is null or p_quantity <= 0 or p_quantity >= 100000000000 or p_quantity <> round(p_quantity,3) or p_quantity::text in ('NaN','Infinity','-Infinity') or p_amount is null or p_amount < 0 or p_amount >= 1000000000000 or p_amount <> round(p_amount,2) or p_amount::text in ('NaN','Infinity','-Infinity') then
     raise exception 'Invalid purchase details' using errcode='22023';
   end if;
   -- Serialize retries and new purchases for the same item.
-  perform 1 from public.stock_items where id=p_item_id and not archived for update;
+  select archived into v_archived from public.stock_items where id=p_item_id for update;
   if not found then raise exception 'Stock item unavailable'; end if;
   select * into v_existing from public.stock_purchases where id=p_request_id;
   if found then
@@ -24,6 +25,13 @@ begin
       raise exception 'Request ID already used for different details' using errcode='22023';
     end if;
     return v_existing.id;
+  end if;
+  if v_archived then raise exception 'Stock item unavailable'; end if;
+  if exists (select 1 from public.stock_purchases where stock_item_id=p_item_id and voided_at is null and purchased_on>p_date) then
+    raise exception 'Purchase date precedes existing stock history' using errcode='22023';
+  end if;
+  if (select count(*) from public.stock_purchases where stock_item_id=p_item_id and voided_at is null and run_out_on is null and ended_reason is null)>1 then
+    raise exception 'Multiple open stock cycles need review; no purchase was recorded' using errcode='23514';
   end if;
   select * into v_previous from public.stock_purchases
     where stock_item_id=p_item_id and voided_at is null and run_out_on is null and ended_reason is null
@@ -44,6 +52,7 @@ create or replace function public.dhaftar_validate_savings_insert_v1()
 returns trigger language plpgsql security invoker set search_path = '' as $$
 declare v_balance numeric;
 begin
+  if new.amount::text in ('NaN','Infinity','-Infinity') then raise exception 'Invalid savings amount' using errcode='22023'; end if;
   perform pg_catalog.pg_advisory_xact_lock(pg_catalog.hashtextextended('dhaftar-savings:' || new.user_id::text,0));
   if new.transaction_type='withdrawal' then
     select coalesce(sum(case when transaction_type='deposit' then amount else -amount end),0)

@@ -34,5 +34,6 @@
     // These server responses indicate that the transaction failed, not a lost response.
     return ["22023","22001","22003","23502","23503","23514","42501","P0001","PGRST202"].includes(String(error?.code||""));
   }
-  root.DhaftarRequests=Object.freeze({begin,finish,definiteRejection});
+  function hasPending(userId,scope) { return root.localStorage.getItem(keyFor(userId,scope)) !== null; }
+  root.DhaftarRequests=Object.freeze({begin,finish,definiteRejection,hasPending});
 })(globalThis);

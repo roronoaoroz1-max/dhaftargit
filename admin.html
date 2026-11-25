@@ -2544,6 +2544,35 @@
           </form>
         </section>
 
+        <section class="card defaults-card" id="recurringPersonalPanel" aria-labelledby="recurringPersonalTitle">
+          <h3 id="recurringPersonalTitle">Personal recurring payments</h3>
+          <p>Track subscriptions and other repeating payments. Confirm only after paying; this does not move money or create an Amanah transaction.</p>
+          <p id="recurringPersonalStatus" class="quick-status" role="status">Loading schedules…</p>
+          <div id="recurringPersonalCards" class="defaults-grid"></div>
+          <form id="recurringCreateForm">
+            <div class="defaults-grid">
+              <div class="field"><label for="recurringTitle">Name</label><input id="recurringTitle" required maxlength="100"></div>
+              <div class="field"><label for="recurringAmount">Expected amount</label><input id="recurringAmount" type="number" min="0" step="0.01" required></div>
+              <div class="field"><label for="recurringCurrency">Currency</label><select id="recurringCurrency"><option>MVR</option><option>USD</option></select></div>
+              <div class="field"><label for="recurringInterval">Frequency</label><select id="recurringInterval"><option value="1">Monthly</option><option value="2">Every two months</option><option value="3">Quarterly</option><option value="6">Every six months</option><option value="12">Yearly</option></select></div>
+              <div class="field"><label for="recurringDue">First due date</label><input id="recurringDue" type="date" required></div>
+              <div class="field"><label for="recurringReminder">Reminder days before due</label><input id="recurringReminder" type="number" min="0" max="30" step="1" value="5" required></div>
+            </div>
+            <button type="submit" class="history-button primary">Create schedule</button>
+          </form>
+          <details><summary>Recent payment history</summary><div id="recurringPersonalHistory"></div></details>
+          <form id="recurringConfirmForm" hidden>
+            <h4 id="recurringConfirmTitle">Confirm payment</h4>
+            <div class="defaults-grid">
+              <div class="field"><label for="recurringActual">Actual amount</label><input id="recurringActual" type="number" min="0" step="0.01" required></div>
+              <div class="field"><label for="recurringPaidOn">Paid on</label><input id="recurringPaidOn" type="date" required></div>
+              <div class="field"><label for="recurringNote">Note (optional)</label><input id="recurringNote" maxlength="200"></div>
+            </div>
+            <button class="history-button primary" type="submit">Confirm payment</button>
+            <button id="recurringCancel" class="history-button" type="button">Cancel</button>
+          </form>
+          <button id="recurringReload" class="history-button" type="button">Refresh recurring payments</button>
+        </section>
         <section class="card defaults-card" aria-labelledby="recurringDefaultsTitle">
           <h3 id="recurringDefaultsTitle">Recurring bill defaults</h3>
           <p>Save the usual monthly amounts. These are used by Smart Month Setup and never overwrite amounts already entered for a month.</p>
@@ -2993,6 +3022,7 @@
   <!-- Your project URL and publishable key -->
   <script src="supabase-client.js"></script>
   <script src="transaction-requests.js"></script>
+  <script src="recurring-payments.js"></script>
 
   <script>
     const MONTHS = [
@@ -5041,6 +5071,7 @@
         if (event === "SIGNED_OUT") {
           currentUser = null;
           currentProfile = null;
+          RecurringPayments.clear();
           showLoginBox();
         }
       });
@@ -7177,122 +7208,11 @@
         copyPrevious ? "Copying missing values from the previous month…" : "Applying recurring defaults to missing values…";
 
       try {
-        const [currentBills, currentStatus, rentRate] = await Promise.all([
-          readMonthlyBills(month),
-          readBillPaymentStatus(month),
-          readActiveRentForSetup(month)
-        ]);
-
-        const billPayloads = [];
-        const statusPayloads = [];
-
-        if (!copyPrevious) {
-          for (const item of RECURRING_DEFAULT_ITEMS) {
-            const cents = recurringDefaultCents(item.key);
-            if (cents === null) continue;
-
-            if (item.billType) {
-              if (!currentBills.has(item.billType)) {
-                billPayloads.push({
-                  bill_type: item.billType,
-                  billing_month: month,
-                  amount: cents / 100,
-                  notes: "Smart Month Setup default",
-                  created_by: currentUser.id,
-                  updated_by: currentUser.id
-                });
-              }
-            } else if (item.statusKey) {
-              const statusItem = BILL_PAYMENT_STATUS_ITEMS.find(entry => entry.key === item.statusKey);
-              const existing = currentStatus.rows.get(statusItem.marker);
-              const meta = billStatusParseNotes(existing?.notes);
-              if (!Number.isSafeInteger(Number(meta.dueCents))) {
-                statusPayloads.push({
-                  bill_type: statusItem.marker,
-                  billing_month: month,
-                  amount: 0,
-                  notes: JSON.stringify({
-                    ...meta,
-                    dueCents: cents,
-                    paidCents: Number(meta.paidCents) || 0,
-                    paidOn: String(meta.paidOn || "")
-                  }),
-                  created_by: existing?.created_by ?? currentUser.id,
-                  updated_by: currentUser.id
-                });
-              }
-            }
-          }
-        } else {
-          const previous = previousBillingMonth(month);
-          const [previousBills, previousStatus] = await Promise.all([
-            readMonthlyBills(previous),
-            readBillPaymentStatus(previous)
-          ]);
-
-          for (const type of ["Water", "Electricity", "WiFi", "TV"]) {
-            if (currentBills.has(type)) continue;
-            const saved = previousBills.get(type);
-            if (!saved) continue;
-            billPayloads.push({
-              bill_type: type,
-              billing_month: month,
-              amount: saved.cents / 100,
-              notes: "Copied from " + displayMonth(previous),
-              created_by: currentUser.id,
-              updated_by: currentUser.id
-            });
-          }
-
-          for (const key of ["malPhone", "myPhone"]) {
-            const item = BILL_PAYMENT_STATUS_ITEMS.find(entry => entry.key === key);
-            const current = currentStatus.rows.get(item.marker);
-            const currentMeta = billStatusParseNotes(current?.notes);
-            if (Number.isSafeInteger(Number(currentMeta.dueCents))) continue;
-
-            const previousRow = previousStatus.rows.get(item.marker);
-            const previousMeta = billStatusParseNotes(previousRow?.notes);
-            const previousDue = Number(previousMeta.dueCents);
-            if (!Number.isSafeInteger(previousDue) || previousDue < 0) continue;
-
-            statusPayloads.push({
-              bill_type: item.marker,
-              billing_month: month,
-              amount: 0,
-              notes: JSON.stringify({
-                ...currentMeta,
-                dueCents: previousDue,
-                paidCents: Number(currentMeta.paidCents) || 0,
-                paidOn: String(currentMeta.paidOn || "")
-              }),
-              created_by: current?.created_by ?? currentUser.id,
-              updated_by: currentUser.id
-            });
-          }
-        }
-
-        if (billPayloads.length) {
-          const { error } = await supabaseClient
-            .from("dhaftar_bills")
-            .upsert(billPayloads, { onConflict: "bill_type,billing_month" });
-          if (error) throw error;
-        }
-
-        if (statusPayloads.length) {
-          const { error } = await supabaseClient
-            .from("dhaftar_bills")
-            .upsert(statusPayloads, { onConflict: "bill_type,billing_month" });
-          if (error) throw error;
-        }
-
-        await Promise.all([
-          loadMonthlyBills(),
-          loadBillPaymentStatus(),
-          loadMonthlyClosingDashboard(),
-          loadHouseholdBalance()
-        ]);
-
-        const applied = billPayloads.length + statusPayloads.length;
+        const result=await supabaseClient.rpc("dhaftar_setup_month_v3",{p_month:month,p_copy:copyPrevious});
+        if(result.error)throw result.error;
+        const applied=Number(result.data);
+        const rentRate=await readActiveRentForSetup(month);
+        await Promise.all([loadMonthlyBills(),loadBillPaymentStatus(),loadMonthlyClosingDashboard(),loadHouseholdBalance()]);
         const rentText = rentRate ? " Rent inherited from the active rate." : " Rent rate still needs to be set.";
         const message = applied
           ? (copyPrevious ? "Previous month copied into " : "Smart setup applied to ") + displayMonth(month) + "." + rentText
@@ -7317,6 +7237,7 @@
 
       if (!adminUxInitialized) {
         adminUxInitialized = true;
+        RecurringPayments.bind({client:supabaseClient,userId:()=>currentUser?.id,today:quickToday});
 
         paymentElement("masterMonth").addEventListener("change", () => { void applyMasterAdminMonth(); });
         paymentElement("masterMonthPrevious").addEventListener("click", () => shiftAdminMonth(-1));
@@ -7365,6 +7286,7 @@
       await Promise.all([
         loadRecentActivity(),
         loadRecurringBillDefaults(),
+        RecurringPayments.refresh(),
         loadOutstandingCenter()
       ]);
       renderMonthSetupChecklist();

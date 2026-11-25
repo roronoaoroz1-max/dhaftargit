@@ -2037,6 +2037,7 @@
       color: var(--brand);
     }
   </style>
+  <link rel="stylesheet" href="notifications.css">
 </head>
 
 <body>
@@ -7232,8 +7233,10 @@
     async function initializeAdminUx() {
       if (!currentUser) return;
 
-      const month = monthlyBillMonth();
+      const requestedNoticeMonth=new URLSearchParams(location.search).get("noticeMonth");
+      const month = /^20\d{2}-(0[1-9]|1[0-2])$/.test(requestedNoticeMonth||"") && requestedNoticeMonth>="2026-01" ? requestedNoticeMonth+"-01" : monthlyBillMonth();
       setLegacyAdminPeriod(month);
+      if(requestedNoticeMonth && month===requestedNoticeMonth+"-01"){await applyMasterAdminMonth();adminScrollTo("billStatusSection");}
 
       if (!adminUxInitialized) {
         adminUxInitialized = true;
@@ -7294,5 +7297,7 @@
       renderAdminHome();
     }
   </script>
+  <script src="notifications.js"></script>
+  <script>if(typeof supabaseClient!=="undefined")DhaftarNotifications.bind(supabaseClient);</script>
 </body>
 </html>

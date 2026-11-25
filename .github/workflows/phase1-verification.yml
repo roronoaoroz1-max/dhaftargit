@@ -1,0 +1,53 @@
+name: Phase 1 isolated regression tests
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - 'database/phase1*.sql'
+      - 'tests/phase1*'
+      - 'transaction-requests.js'
+      - 'admin.html'
+      - 'amanah.html'
+      - 'stock.html'
+      - 'spending.html'
+      - '.github/workflows/phase1-verification.yml'
+permissions:
+  contents: read
+jobs:
+  phase1:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    services:
+      postgres:
+        image: postgres:15
+        env:
+          POSTGRES_USER: fixture
+          POSTGRES_PASSWORD: fixture-only
+          POSTGRES_DB: dhaftar_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U fixture -d dhaftar_test"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    env:
+      PGHOST: 127.0.0.1
+      PGPORT: 5432
+      PGUSER: fixture
+      PGPASSWORD: fixture-only
+      PGDATABASE: dhaftar_test
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+      - name: JavaScript request and syntax checks
+        run: node tests/phase1-requests.test.mjs
+      - name: Build isolated synthetic schema
+        run: psql -X -v ON_ERROR_STOP=1 -f tests/phase1-fixture.sql
+      - name: Apply migrations in order
+        run: |
+          set -eu
+          for migration in database/phase1a_transaction_reliability.sql database/phase1b_household_spending_reliability.sql database/phase1c_amanah_transaction_reliability.sql; do
+            psql -X -v ON_ERROR_STOP=1 -f "$migration"
+          done
+      - name: Run transactional regression tests
+        run: psql -X -v ON_ERROR_STOP=1 -f tests/phase1-database.test.sql

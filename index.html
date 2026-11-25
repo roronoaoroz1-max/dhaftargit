@@ -1334,6 +1334,7 @@
   </style>
   <link rel="stylesheet" href="notifications.css">
 <link rel="stylesheet" href="dhaftar-ux.css">
+<link rel="stylesheet" href="dhaftar-home.css">
 </head>
 
 <body>
@@ -1410,7 +1411,13 @@
 
     </section>
 
-    <section id="medicationUrgent" class="medication-reminder medication-urgent" aria-live="polite" hidden></section>
+    <section id="dxDashboard" class="dx-dashboard" hidden aria-label="Private personal dashboard">
+<div class="dx-dash-head"><h2>My dashboard</h2><button type="button" id="dxDashboardRefresh" class="dx-dash-button">Refresh</button></div>
+<div class="dx-dash-panel"><small>My net worth</small><div class="dx-worth" id="dxWorth">—</div><small>USD net worth: <span id="dxUsd">—</span></small><div class="dx-dash-grid"><div><small>Personal savings</small><strong id="dxSavings">—</strong></div><div><small>Total personal liabilities</small><strong id="dxDebt">—</strong></div></div><p id="dxDashboardStatus" role="status">Loading private balances…</p><a href="amanah.html#personalAssetsPanel">View personal assets and net worth</a></div>
+<div class="dx-dash-panel"><h3>Quick actions</h3><div class="dx-quick-grid"><a href="admin.html#paymentCard">Payment</a><a href="spending.html#entryForm">Expense</a><a href="stock.html#items">Purchase</a><a href="amanah.html#personalSavingsForm">Savings</a></div></div>
+<div class="dx-dash-panel"><div class="dx-dash-head"><h3>Needs attention</h3><small id="dxReminderCount"></small></div><div id="dxAttention"></div><a href="today.html">View all reminders</a></div>
+</section>
+<section id="medicationUrgent" class="medication-reminder medication-urgent" aria-live="polite" hidden></section>
 
     <div class="layout">
 
@@ -2694,5 +2701,7 @@
   <script>if(typeof supabaseClient!=="undefined")DhaftarNotifications.bind(supabaseClient);</script>
 <script src="dhaftar-ux.js"></script>
 <script>DhaftarUX.init();</script>
+<script src="dhaftar-home.js"></script>
+<script>DhaftarHome.bind(supabaseClient);</script>
 </body>
 </html>

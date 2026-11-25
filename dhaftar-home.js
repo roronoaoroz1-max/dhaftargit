@@ -1,0 +1,15 @@
+/* Private home dashboard; read-only existing RPCs. */
+(function(root){
+"use strict";
+let client,epoch=0,active=false,loading=false;
+const el=id=>document.getElementById(id);
+const money=(n,c)=>n!==null&&n!==undefined&&n!==""&&Number.isFinite(Number(n))?c+" "+Number(n).toLocaleString("en-GB",{minimumFractionDigits:2,maximumFractionDigits:2}):"Unavailable";
+function clear(){++epoch;active=false;loading=false;el("dxDashboard").hidden=true;for(const id of ["dxWorth","dxSavings","dxDebt","dxUsd"])el(id).textContent="—";el("dxAttention").replaceChildren();el("dxReminderCount").textContent="";el("dxDashboardStatus").textContent="Loading private balances…";}
+function renderTotals(rows){const m=rows.find(r=>r.currency==="MVR"),u=rows.find(r=>r.currency==="USD");el("dxWorth").textContent=money(m?.net_worth,"MVR");el("dxSavings").textContent=money(m?.savings,"MVR");el("dxDebt").textContent=money(m?.total_liabilities,"MVR");el("dxUsd").textContent=money(u?.net_worth,"USD");}
+function attentionRows(feed){const order={overdue:0,attention:1,today:2,upcoming:3};return (feed?.notifications||[]).filter(n=>!n.snoozed).sort((a,b)=>(order[a.urgency]??4)-(order[b.urgency]??4)||String(a.due_date||"").localeCompare(String(b.due_date||"")));}
+function renderAttention(feed){const box=el("dxAttention");box.replaceChildren();const list=attentionRows(feed);for(const n of list.slice(0,5)){const a=document.createElement("a");a.href="today.html";a.className="dx-attention-row";const t=document.createElement("strong");t.textContent=n.title;const d=document.createElement("small");d.textContent=root.DhaftarNotifications.urgency(n)+(n.due_date?" · "+n.due_date:"");a.append(t,d);box.append(a);}if(!list.length)box.textContent="No active reminders.";el("dxReminderCount").textContent=String(list.length)+" active";}
+async function refresh(){if(!active||loading)return;loading=true;const t=++epoch;try{const worth=await client.rpc("dhaftar_net_worth_v5");if(t!==epoch||!active)return;if(worth.error||!Array.isArray(worth.data))throw Error("Dashboard unavailable");renderTotals(worth.data);el("dxDashboardStatus").textContent="Latest recorded balances · currencies shown separately";}catch(e){if(t===epoch){for(const id of ["dxWorth","dxSavings","dxDebt","dxUsd"])el(id).textContent="—";el("dxDashboardStatus").textContent="Unable to refresh balances. Try again.";}}finally{if(t===epoch)loading=false;}}
+function access(ok){if(!ok){clear();return;}const feed=root.DhaftarNotifications.getFeed();if(!feed||!Array.isArray(feed.notifications)){clear();return;}renderAttention(feed);if(!active){active=true;el("dxDashboard").hidden=false;void refresh();}}
+function bind(c){client=c;el("dxDashboardRefresh").addEventListener("click",()=>{void refresh();void root.DhaftarNotifications.refresh();});root.addEventListener("dhaftar:notification-access",e=>access(e.detail===true));root.addEventListener("focus",()=>void refresh());access(root.DhaftarNotifications.hasAccess());}
+root.DhaftarHome=Object.freeze({bind,money,attentionRows});
+})(globalThis);

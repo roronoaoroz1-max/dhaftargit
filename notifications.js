@@ -10,7 +10,7 @@ function visible(rows,mode,cat){return rows.filter(n=>(cat==="all"||n.category==
 function urgency(n){return n.urgency==="overdue"?"Overdue":n.urgency==="today"?"Due today":n.urgency==="attention"?"Needs attention":"Upcoming";}
 function setStatus(t){if(notice)notice.textContent=t;}
 function access(value){root.dispatchEvent(new CustomEvent('dhaftar:notification-access',{detail:value}));}
-function clear(){access(false);++epoch;user=null;feed=null;writing=false;if(bell)bell.hidden=true;if(container){container.replaceChildren();setStatus("Sign in to view your private reminders.");const a=make("a","Sign in","notice-button");a.href="admin.html";container.append(a);}for(const id of ["noticeUnread","noticeAttention","noticeTotal"])if(el(id))el(id).textContent="—";}
+function clear(){++epoch;user=null;feed=null;writing=false;access(false);if(bell)bell.hidden=true;if(container){container.replaceChildren();setStatus("Sign in to view your private reminders.");const a=make("a","Sign in","notice-button");a.href="admin.html";container.append(a);}for(const id of ["noticeUnread","noticeAttention","noticeTotal"])if(el(id))el(id).textContent="—";}
 function count(){if(!bell)return;const n=Number(feed?.unread||0);bell.textContent="";bell.append(make("span","♧","notice-bell-glyph"));bell.firstChild.textContent="🔔";bell.append(make("span","Today"));if(feed&&n>0)bell.append(make("span",n>99?"99+":n,"notice-count"));bell.setAttribute("aria-label",feed?"Today, "+n+" unread reminders":"Open Today");}
 function render(){
  if(!feed)return;count();if(!container)return;
@@ -36,7 +36,7 @@ async function refresh(){
  try{
   const session=await client.auth.getSession();if(token!==epoch)return false;
   const u=session.data?.session?.user?.id;if(session.error||!u){clear();return false;}
-  if(user&&user!==u){feed=null;if(container)container.replaceChildren();}
+  if(user&&user!==u){feed=null;access(false);if(bell)bell.hidden=true;if(container)container.replaceChildren();}
   user=u;const r=await client.rpc("dhaftar_notifications_v6");if(token!==epoch||user!==u)return false;
   if(r.error)throw r.error;if(!r.data||!Array.isArray(r.data.notifications))throw Error("Invalid reminder response");
   feed=r.data;access(true);if(bell)bell.hidden=false;render();return true;
@@ -58,5 +58,5 @@ function bind(c){
  setInterval(()=>{if(!document.hidden&&!writing)void refresh();},60000);
  void refresh();
 }
-root.DhaftarNotifications=Object.freeze({bind,refresh,visible,urgency,hasAccess:()=>!!feed});
+root.DhaftarNotifications=Object.freeze({bind,refresh,visible,urgency,hasAccess:()=>!!feed,getFeed:()=>feed?JSON.parse(JSON.stringify(feed)):null});
 })(globalThis);

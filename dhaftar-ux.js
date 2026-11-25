@@ -20,7 +20,7 @@ function routeLink(href,label){const a=el("a",label,"dx-menu-link");a.href=href;
 function openMenu(title,rows){if(!authorized)return;dialog.replaceChildren();const h=el("div",undefined,"dx-menu-head");const heading=el("h2",title);heading.id="dxMenuTitle";const close=el("button","Close","dx-menu-link");close.type="button";close.addEventListener("click",()=>dialog.close());h.append(heading,close);dialog.append(h);for(const [href,label] of rows)dialog.append(routeLink(href,label));dialog.showModal();}
 function navItem(href,label,glyph){const a=el("a",undefined,"dx-nav-item");a.href=href;a.append(icon(glyph),el("span",label));if(current(href))a.setAttribute("aria-current","page");return a;}
 function action(label,glyph,fn){const b=el("button",undefined,"dx-nav-item");b.type="button";b.append(icon(glyph),el("span",label));b.addEventListener("click",fn);return b;}
-function setAuthorized(value){authorized=value;if(!nav)return;nav.hidden=!value;document.documentElement.classList.toggle("dx-nav-active",value);if(!value&&dialog.open)dialog.close();if(value)revealTarget();}
+function setAuthorized(value){const changed=authorized!==value;authorized=value;if(!nav)return;nav.hidden=!value;document.documentElement.classList.toggle("dx-nav-active",value);if(!value&&dialog.open)dialog.close();if(value&&changed)revealTarget();}
 function init(){
  if(nav)return;
  nav=el("nav",undefined,"dx-nav");nav.setAttribute("aria-label","Dhaftar main navigation");nav.hidden=true;

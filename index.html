@@ -2564,69 +2564,67 @@
     }
 
 
-    // Medication renewal repeats every three calendar months from 17 November 2026.
-    // The first renewal is 17 February 2027; the reminder begins five days earlier.
-    // Store only the next renewal date, not a purchase history.
+    // Medication reminders remain on the overview; writes require administrator access.
     const MEDICATION_RENEWAL_STORAGE_KEY = "dhaftar-dad-medication-next-date-v2";
-
-    function medicationDateKey(date) {
-      return date.getFullYear() + "-" + String(date.getMonth() + 1).padStart(2, "0") + "-" + String(date.getDate()).padStart(2, "0");
+    let medicationGeneration=0, medicationSaving=false;
+    function medicationValidDate(value) {
+      if (!/^\d{4}-\d{2}-\d{2}$/.test(value||"")) return false;
+      const d=new Date(value+"T00:00:00Z");
+      return Number.isFinite(d.getTime()) && d.toISOString().slice(0,10)===value;
     }
-
-    function medicationNextDate() {
-      try {
-        const saved = localStorage.getItem(MEDICATION_RENEWAL_STORAGE_KEY);
-        if (saved && /^\\d{4}-\\d{2}-\\d{2}$/.test(saved)) {
-          const [y, m, d] = saved.split("-").map(Number);
-          const parsed = new Date(y, m - 1, d);
-          if (medicationDateKey(parsed) === saved) return parsed;
-        }
-      } catch (_) {}
-      // First renewal: three months after the original 17 November 2026 start.
-      return new Date(2027, 1, 17);
+    function medicationLocalDue() {
+      try { const value=localStorage.getItem(MEDICATION_RENEWAL_STORAGE_KEY);return medicationValidDate(value)?value:null; } catch (_) {return null;}
     }
-
-    function renderDadMedicationReminder() {
-      const today = new Date();
-      today.setHours(0, 0, 0, 0);
-      const next = medicationNextDate();
-      const days = Math.round((next.getTime() - today.getTime()) / 86400000);
-      const renewalDate = next.toLocaleDateString("en-GB", {day:"numeric", month:"long", year:"numeric"});
-      const urgent = document.getElementById("medicationUrgent");
-      const regular = document.getElementById("medicationRegular");
-      urgent.hidden = days > 5;
-      regular.hidden = days <= 5;
-      document.getElementById("medicationRegularDetails").textContent =
-        "Next renewal: " + renewalDate + " · " + (days < 0 ? Math.abs(days) + " days overdue" : days + " days remaining") + " · Every 3 months after purchase";
-      if (days <= 5) {
-        const heading = document.createElement("strong");
-        heading.textContent = days < 0 ? "Dad’s medication renewal is overdue by " + Math.abs(days) + " days" :
-          days === 0 ? "Dad’s medication renewal is due today" :
-          "Dad’s medication renewal is due in " + days + (days === 1 ? " day" : " days");
-        const details = document.createElement("p");
-        details.textContent = "Scheduled renewal: " + renewalDate;
-        const button = document.createElement("button");
-        button.type = "button";
-        button.className = "medication-renew-button";
-        button.textContent = "Renew";
-        button.addEventListener("click", () => {
-          if (!window.confirm("Confirm Dad’s medication has been purchased today? The next renewal will be 3 months from today.")) return;
-          const purchased = new Date();
-          const renewal = new Date(purchased.getFullYear(), purchased.getMonth() + 3, 1);
-          // Clamp month-end dates (e.g. 31 January -> 30 April).
-          const lastDay = new Date(renewal.getFullYear(), renewal.getMonth() + 1, 0).getDate();
-          renewal.setDate(Math.min(purchased.getDate(), lastDay));
-          try {
-            localStorage.setItem(MEDICATION_RENEWAL_STORAGE_KEY, medicationDateKey(renewal));
-          } catch (_) {
-            window.alert("Could not save the new renewal date on this device. Please try again.");
-            return;
-          }
-          renderDadMedicationReminder();
-        });
-        urgent.replaceChildren(heading, details, button);
-      }
+    function medicationToday() {
+      const parts=new Intl.DateTimeFormat("en-CA",{timeZone:"Indian/Maldives",year:"numeric",month:"2-digit",day:"2-digit"}).formatToParts(new Date());
+      return ["year","month","day"].map(k=>parts.find(p=>p.type===k).value).join("-");
     }
+    function medicationDisplay(due,verified,warning="") {
+      const days=Math.round((Date.parse(due+"T00:00:00Z")-Date.parse(medicationToday()+"T00:00:00Z"))/86400000);
+      const date=new Date(due+"T00:00:00Z").toLocaleDateString("en-GB",{timeZone:"UTC",day:"numeric",month:"long",year:"numeric"});
+      const urgent=document.getElementById("medicationUrgent"),regular=document.getElementById("medicationRegular");
+      urgent.hidden=days>5;regular.hidden=days<=5;
+      document.getElementById("medicationRegularDetails").textContent="Next renewal: "+date+" · "+(days<0?Math.abs(days)+" days overdue":days+" days remaining")+" · Every 3 months after purchase"+(warning?" · "+warning:"");
+      urgent.replaceChildren();
+      if(days>5)return;
+      const title=document.createElement("strong");title.textContent=days<0?"Dad’s medication renewal is overdue by "+Math.abs(days)+" days":days===0?"Dad’s medication renewal is due today":"Dad’s medication renewal is due in "+days+" day(s)";
+      const details=document.createElement("p");details.textContent="Scheduled renewal: "+date+(warning?" · "+warning:"");
+      urgent.append(title,details);
+      if(!verified){const a=document.createElement("a");a.href="admin.html";a.textContent="Sign in to confirm renewal";urgent.append(a);return;}
+      const button=document.createElement("button");button.type="button";button.className="medication-renew-button";button.textContent="Renew";button.disabled=medicationSaving;
+      button.addEventListener("click",async()=>{
+        if(medicationSaving||!window.confirm("Confirm Dad’s medication has been purchased today? The next renewal will be 3 months from today."))return;
+        medicationSaving=true;button.disabled=true;
+        try{
+          const r=await supabaseClient.rpc("dhaftar_medication_renew_v3",{p_expected_due:due});
+          if(r.error)throw r.error;
+          if(!medicationValidDate(r.data))throw Error("Invalid renewal response");
+          try{localStorage.setItem(MEDICATION_RENEWAL_STORAGE_KEY,r.data);}catch(_){}
+          medicationSaving=false;await renderDadMedicationReminder();
+        }catch(e){details.textContent="Renewal not confirmed. Refresh and retry if needed. "+(e.message||"");}
+        finally{medicationSaving=false;button.disabled=false;}
+      });
+      urgent.append(button);
+    }
+    async function renderDadMedicationReminder() {
+      const token=++medicationGeneration,local=medicationLocalDue();
+      const fallback=local||"2027-02-17";
+      medicationDisplay(fallback,false,"Checking shared renewal date");
+      try{
+        const session=await supabaseClient.auth.getSession();
+        if(token!==medicationGeneration)return;
+        if(session.error||!session.data?.session){medicationDisplay(fallback,false,"Local date only; sign in to synchronize");return;}
+        const r=await supabaseClient.rpc("dhaftar_medication_init_v3",{p_local_due:local});
+        if(token!==medicationGeneration)return;
+        if(r.error||!medicationValidDate(r.data))throw r.error||Error("Invalid date");
+        // A conflicting saved device date is never silently discarded.
+        const conflict=local&&local!==r.data;
+        if(!conflict){try{localStorage.setItem(MEDICATION_RENEWAL_STORAGE_KEY,r.data);}catch(_){}}
+        medicationDisplay(r.data,true,conflict?"Shared date differs from saved device date ("+local+"). Review before renewing.":"Synced");
+      }catch(_){if(token===medicationGeneration)medicationDisplay(fallback,false,"Shared date unavailable; local date only");}
+    }
+    supabaseClient.auth.onAuthStateChange(event=>{if(event==="SIGNED_OUT"||event==="SIGNED_IN"){setTimeout(()=>void renderDadMedicationReminder(),0);}});
+    window.addEventListener("focus",()=>void renderDadMedicationReminder());
 
     setTheme(
       document.documentElement.dataset.theme ||

@@ -1,0 +1,16 @@
+import assert from "node:assert/strict";
+import vm from "node:vm";
+import {readFileSync} from "node:fs";
+const read=p=>readFileSync(new URL("../"+p,import.meta.url),"utf8");
+const html=read("amanah.html"),source=read("personal-assets.js");
+const ctx=vm.createContext({});vm.runInContext(source,ctx);
+assert.equal(ctx.PersonalAssets.amount("1.25"),1.25);
+assert.equal(ctx.PersonalAssets.amount("1.255"),null);
+assert.equal(ctx.PersonalAssets.amount(""),null);
+assert.equal(ctx.PersonalAssets.amount("0"),0);
+const ids=new Set([...html.matchAll(/\bid="([^"]+)"/g)].map(m=>m[1]));
+for(const m of source.matchAll(/\bel\("([^"]+)"\)/g))assert.ok(ids.has(m[1]),"Missing ID "+m[1]);
+for(const m of html.matchAll(/<script\b[^>]*>([\s\S]*?)<\/script>/gi))if(m[1].trim())new vm.Script(m[1]);
+assert.ok(html.includes('PersonalAssets.bind('));
+assert.ok(html.includes('PersonalAssets.refresh('));
+console.log("PASS: asset module, money validation and interface integration");

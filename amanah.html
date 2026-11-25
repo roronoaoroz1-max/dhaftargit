@@ -1626,6 +1626,53 @@
         </div>
       </section>
 
+      <section class="card personal-savings-card" aria-labelledby="personalAssetsTitle">
+        <details class="goal-panel" id="personalAssetsPanel">
+          <summary id="personalAssetsTitle">Personal assets &amp; net worth</summary>
+          <p class="balance-note">Your assets only. Dad's cash and loans to others are excluded; your own debts to Dad are included. MVR and USD are separate. Do not register savings, loans or accounts already tracked in Amanah again.</p>
+          <p id="assetStatus" role="status">Loading net worth…</p>
+          <div id="assetContent" hidden>
+            <div id="netWorthTotals" class="goal-grid"></div>
+            <h3>Asset and liability register</h3>
+            <label>Filter<select id="assetFilter"><option value="all">All active</option><option value="physical">Physical assets</option><option value="investment">Investments</option><option value="external_cash">Other cash</option><option value="external_liability">External debts</option><option value="retired">Retired / settled</option></select></label>
+            <div id="assetCards" class="goal-grid"></div>
+            <form id="assetCreateForm">
+              <h3>Add personal asset or external debt</h3>
+              <div class="savings-fields">
+                <label>Name<input id="assetName" required maxlength="100" placeholder="Motorcycle, shares, external loan…"></label>
+                <label>Type<select id="assetKind"><option value="physical">Physical asset</option><option value="investment">Investment</option><option value="external_cash">Other personal cash</option><option value="external_liability">External liability</option></select></label>
+                <label>Currency<select id="assetCurrency"><option>MVR</option><option>USD</option></select></label>
+                <label>Acquisition / start date<input id="assetDate" type="date" required></label>
+                <label>Original cost / principal<input id="assetCost" type="number" min="0" step="0.01" required></label>
+                <label>Current value / outstanding balance<input id="assetValue" type="number" min="0" step="0.01" required></label>
+                <label>Details (optional)<input id="assetNote" maxlength="500"></label>
+              </div>
+              <p class="balance-note">For shares, record total holding value and optionally share count in details. For external debts, use the remaining unpaid amount.</p>
+              <button type="submit">Add record</button>
+              <p id="assetCreateStatus" role="status"></p>
+            </form>
+            <form id="assetEventForm" hidden>
+              <h3 id="assetEventTitle">Record asset update</h3>
+              <div class="savings-fields">
+                <label>Action<select id="assetEventKind"><option value="valuation">Update value / balance</option><option value="maintenance">Record maintenance</option><option value="retirement">Retire / settle</option></select></label>
+                <label>Date<input id="assetEventDate" type="date" required></label>
+                <label id="assetEventAmountLabel">Amount<input id="assetEventAmount" type="number" min="0" step="0.01" required></label>
+                <label id="assetServiceLabel" hidden>Next service (optional)<input id="assetNextService" type="date"></label>
+                <label>Note / reason<input id="assetEventNote" maxlength="500"></label>
+              </div>
+              <button type="submit">Save update</button>
+              <button id="assetEventCancel" type="button" class="goal-secondary">Cancel</button>
+              <p id="assetEventStatus" role="status"></p>
+            </form>
+            <details><summary>Recent valuation, maintenance and retirement history</summary><div id="assetHistory"></div></details>
+            <h3>Net worth snapshots</h3>
+            <p class="balance-note">Save today's server-calculated balances to compare changes over time. This does not create a cash transaction.</p>
+            <form id="netSnapshotForm"><label>Note (optional)<input id="netSnapshotNote" maxlength="500"></label><button type="submit">Save snapshot</button><p id="netSnapshotStatus" role="status"></p></form>
+            <div id="netSnapshotHistory"></div>
+          </div>
+        </details>
+      </section>
+
       <!-- PRIVATE PERSONAL SAVINGS (separate from Dad's existing balances) -->
       <section class="card personal-savings-card" aria-labelledby="personalSavingsTitle">
         <div class="overview-heading">
@@ -2607,6 +2654,7 @@
   <script src="supabase-client.js"></script>
   <script src="transaction-requests.js"></script>
   <script src="amanah-goals.js"></script>
+  <script src="personal-assets.js"></script>
 
   <script>
     let currentUser = null;
@@ -3574,6 +3622,7 @@
       populateSelectors();
       renderAll();
       await AmanahGoals.refresh(currentUser?.id);
+      await PersonalAssets.refresh(currentUser?.id);
     }
 
 
@@ -5429,6 +5478,7 @@
     document.getElementById("personalSavingsForm").addEventListener("submit", submitPersonalSavings);
     document.getElementById("actualSharedBankBalance").addEventListener("input", renderSharedBankDifference);
     AmanahGoals.bind({client:supabaseClient,getUserId:()=>currentUser?.id,refreshAll:loadData,formatMoney:value=>formatMoney(value,"MVR")});
+    PersonalAssets.bind({client:supabaseClient,user:()=>currentUser?.id,money:formatMoney});
 
     document
       .getElementById(
@@ -5501,6 +5551,7 @@
       if (event !== "SIGNED_OUT") return;
       currentUser = null;
       currentProfile = null;
+      PersonalAssets.clear();
       repaymentQuickState.request++;
       repaymentQuickState.epoch++;
       repaymentQuickState.autoFilled = null;

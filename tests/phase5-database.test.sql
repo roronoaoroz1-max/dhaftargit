@@ -1,0 +1,41 @@
+begin;
+set local role authenticated;
+select set_config('request.jwt.claim.sub','10000000-0000-4000-8000-000000000001',true);
+do $$
+declare d date:=(now() at time zone 'Indian/Maldives')::date; me uuid:=gen_random_uuid(); dad uuid:=gen_random_uuid(); other uuid:=gen_random_uuid(); ownacc uuid:=gen_random_uuid(); dadacc uuid:=gen_random_uuid(); car uuid:=gen_random_uuid(); shares uuid:=gen_random_uuid(); debt uuid:=gen_random_uuid(); val uuid:=gen_random_uuid(); snap uuid:=gen_random_uuid(); t jsonb; before jsonb; g uuid:=gen_random_uuid();
+begin
+ insert into public.people(id,name,relationship) values(me,'Fixture self','Self'),(dad,'Fixture dad','Father'),(other,'Fixture other','Friend');
+ insert into public.accounts(id,account_name,owner_id,holder_id,account_type,currency,opening_balance) values(ownacc,'Own cash',me,me,'cash','MVR',1000),(dadacc,'Dad custody',dad,me,'custody','MVR',5000);
+ insert into public.loans(lender_id,borrower_id,source_account_id,principal_amount,currency,loan_date) values(me,other,ownacc,200,'MVR',d),(dad,other,dadacc,700,'MVR',d),(dad,me,dadacc,300,'MVR',d);
+ perform public.dhaftar_record_savings_v1(gen_random_uuid(),d,'deposit',400,null);
+ perform public.dhaftar_create_goal_v2(g,'Reserve',400,null);
+ perform public.dhaftar_allocate_goal_v2(gen_random_uuid(),g,100,null);
+ perform public.dhaftar_create_asset_v5(car,'Bike','physical','MVR',d-10,1000,900,null);
+ perform public.dhaftar_create_asset_v5(car,'Bike','physical','MVR',d-10,1000,900,null);
+ perform public.dhaftar_create_asset_v5(shares,'Shares','investment','USD',d-10,100,120,null);
+ perform public.dhaftar_create_asset_v5(debt,'External debt','external_liability','MVR',d-10,500,250,null);
+ perform public.dhaftar_record_asset_event_v5(val,car,'valuation',d,800,null,null);
+ perform public.dhaftar_record_asset_event_v5(val,car,'valuation',d,800,null,null);
+ perform public.dhaftar_record_asset_event_v5(gen_random_uuid(),car,'valuation',d-1,850,null,null);
+ perform public.dhaftar_record_asset_event_v5(gen_random_uuid(),car,'maintenance',d,50,d+30,'Service');
+ select x into t from jsonb_array_elements(public.dhaftar_net_worth_v5()) x where x->>'currency'='MVR';
+ if (t->>'savings')::numeric<>400 or (t->>'account_cash')::numeric<>800 or (t->>'receivables')::numeric<>200 or (t->>'loan_liabilities')::numeric<>300 or (t->>'physical_assets')::numeric<>800 or (t->>'external_liabilities')::numeric<>250 or (t->>'net_worth')::numeric<>1650 then raise exception 'MVR calculation incorrect: %',t;end if;
+ select x into t from jsonb_array_elements(public.dhaftar_net_worth_v5()) x where x->>'currency'='USD';
+ if (t->>'net_worth')::numeric<>120 then raise exception 'USD calculation incorrect';end if;
+ if (select count(*) from public.dhaftar_asset_events_v5 where asset_id=car)<>3 then raise exception 'Duplicate event';end if;
+ perform public.dhaftar_save_net_worth_v5(snap,'First');
+ select totals into before from public.dhaftar_net_worth_snapshots_v5 where id=snap;
+ perform public.dhaftar_record_asset_event_v5(gen_random_uuid(),car,'retirement',d,0,null,'Sold');
+ perform public.dhaftar_save_net_worth_v5(snap,'First');
+ if (select totals from public.dhaftar_net_worth_snapshots_v5 where id=snap) is distinct from before then raise exception 'Historical snapshot changed';end if;
+ select x into t from jsonb_array_elements(public.dhaftar_net_worth_v5()) x where x->>'currency'='MVR';
+ if (t->>'net_worth')::numeric<>850 then raise exception 'Retirement not reflected';end if;
+ begin perform public.dhaftar_record_asset_event_v5(gen_random_uuid(),car,'valuation',d,100,null,null);raise exception 'Retired asset accepted';exception when check_violation then null;end;
+ raise notice 'PASS: net worth, Dad separation, currency separation, allocations counted once, valuation order, retirement and snapshots';
+end $$;
+select set_config('request.jwt.claim.sub','10000000-0000-4000-8000-000000000002',true);
+do $$ begin
+ if exists(select 1 from public.dhaftar_personal_assets_v5) or exists(select 1 from public.dhaftar_asset_events_v5) or exists(select 1 from public.dhaftar_net_worth_snapshots_v5) then raise exception 'Private data exposed';end if;
+ begin perform public.dhaftar_net_worth_v5();raise exception 'Unauthorized access';exception when insufficient_privilege then null;end;
+end $$;
+rollback;

@@ -110,8 +110,15 @@ begin
  for r in select * from (values ('WiFi','__default_amount__wifi'),('TV','__default_amount__tv'),('Water',null),('Electricity',null)) x(target,source) loop
   v_source:=case when p_copy then r.target else r.source end;
   if v_source is null then continue;end if;
-  select amount into v_amount from public.dhaftar_bills where bill_type=v_source and billing_month=case when p_copy then v_previous else date '2026-01-01' end;
-  if not found then continue;end if;
+  if p_copy then
+   select amount into v_amount from public.dhaftar_bills where bill_type=v_source and billing_month=v_previous;
+   if not found then continue;end if;
+  else
+   select notes::jsonb into v_meta from public.dhaftar_bills where bill_type=v_source and billing_month=date '2026-01-01';
+   if not found or jsonb_typeof(v_meta->'cents') is distinct from 'number' then continue;end if;
+   v_amount:=(v_meta->>'cents')::numeric/100;
+  end if;
+  if v_amount<0 or v_amount>=1000000000000 or v_amount<>round(v_amount,2) then continue;end if;
   insert into public.dhaftar_bills(bill_type,billing_month,amount,notes,created_by,updated_by) values(r.target,p_month,v_amount,case when p_copy then 'Copied from previous month' else 'Smart Month Setup default' end,u,u) on conflict(bill_type,billing_month) do nothing;
   get diagnostics n=row_count;v_count:=v_count+n;
  end loop;
@@ -121,8 +128,9 @@ begin
    if not found or jsonb_typeof(v_meta->'dueCents') is distinct from 'number' then continue;end if;
    v_amount:=(v_meta->>'dueCents')::numeric/100;
   else
-   select amount into v_amount from public.dhaftar_bills where bill_type=r.source and billing_month=date '2026-01-01';
-   if not found then continue;end if;
+   select notes::jsonb into v_meta from public.dhaftar_bills where bill_type=r.source and billing_month=date '2026-01-01';
+   if not found or jsonb_typeof(v_meta->'cents') is distinct from 'number' then continue;end if;
+   v_amount:=(v_meta->>'cents')::numeric/100;
   end if;
   if v_amount<0 or v_amount>=1000000000000 or v_amount<>round(v_amount,2) then continue;end if;
   select coalesce(notes::jsonb,'{}'::jsonb) into v_old from public.dhaftar_bills where bill_type=r.target and billing_month=p_month for update;

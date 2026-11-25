@@ -16,7 +16,7 @@ run_pair(){
     if ((a!=0 || b!=0)); then cat "$tmp/left" "$tmp/right"; return 1; fi
   else
     if ! { ((a==0 && b!=0)) || ((b==0 && a!=0)); }; then cat "$tmp/left" "$tmp/right"; return 1; fi
-    grep -Eq 'Withdrawal exceeds available savings|Repayment exceeds latest combined outstanding balance|Repayment exceeds outstanding loan balance' "$tmp/left" "$tmp/right"
+    grep -Eq 'Withdrawal exceeds (available|unallocated) savings|Repayment exceeds latest combined outstanding balance|Repayment exceeds outstanding loan balance' "$tmp/left" "$tmp/right"
   fi
 }
 assert_sql(){ local result; result=$(psqlq "$1" | tail -n 1); [[ "$result" == t ]] || { echo "Assertion failed: $1"; return 1; }; }

@@ -1384,6 +1384,27 @@
     :root[data-theme="dark"] .borrower-ledger[open] > summary {
       border-color: rgba(240,198,76,0.22);
     }
+  
+    .goal-panel { margin-top:18px; padding:16px; border:1px solid var(--line); border-radius:16px; background:var(--surface-soft); }
+    .goal-panel summary { font-weight:750; cursor:pointer; color:var(--ink); }
+    .goal-panel .savings-fields { grid-template-columns:repeat(auto-fit,minmax(min(100%,155px),1fr)); }
+    .goal-panel form { margin:16px 0; }
+    .goal-panel h3 { margin:16px 0 8px; }
+    .goal-panel p { margin:8px 0; overflow-wrap:anywhere; }
+    .goal-panel .goal-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(min(100%,210px),1fr)); gap:10px; margin:12px 0; }
+    .goal-tile { min-width:0; border:1px solid var(--line); border-radius:12px; background:var(--surface); padding:14px; overflow-wrap:anywhere; }
+    .goal-tile strong { display:block; margin:5px 0; }
+    .goal-tile small { display:block; color:var(--muted); }
+    .goal-progress { height:8px; border-radius:8px; background:var(--line); overflow:hidden; margin:10px 0; }
+    .goal-progress span { display:block; height:100%; background:var(--success); }
+    .goal-panel .goal-table { width:100%; min-width:0; font-size:.82rem; border-collapse:collapse; }
+    .goal-panel .goal-table th,.goal-panel .goal-table td { padding:8px 5px; text-align:right; white-space:nowrap; }
+    .goal-panel .goal-table th:first-child,.goal-panel .goal-table td:first-child { text-align:left; }
+    .goal-table-wrap { overflow-x:auto; }
+    .goal-panel .goal-error { color:var(--danger); }
+    .goal-panel .goal-status { color:var(--success); }
+    .goal-panel .goal-secondary { border:1px solid var(--line); border-radius:10px; background:var(--surface); color:var(--ink); padding:8px 12px; cursor:pointer; }
+    .goal-panel button[type="submit"] { background:var(--brand-dark); color:var(--canvas); }
   </style>
 </head>
 
@@ -1636,11 +1657,59 @@
           <button id="personalSavingsSubmit" type="submit">Save savings transaction</button>
           <p id="personalSavingsMessage" role="status" aria-live="polite"></p>
         </form>
+        <details id="savingsGoalsPanel" class="goal-panel">
+          <summary>My savings goals and analytics</summary>
+          <p class="balance-note">Personal savings only. Goals reserve money without moving it out of your bank account. Release reserved funds before withdrawing them.</p>
+          <p id="goalDashboardStatus" role="status">Loading savings goals…</p>
+          <div id="goalDashboardContent" hidden>
+            <div id="goalSummary" class="goal-grid"></div>
+            <h3>My goals</h3>
+            <div id="goalCards" class="goal-grid"></div>
+            <form id="createGoalForm">
+              <h3>Create a savings goal</h3>
+              <div class="savings-fields">
+                <label>Goal name<input id="goalName" required maxlength="100" placeholder="e.g. Emergency fund"></label>
+                <label>Target (MVR)<input id="goalTarget" type="number" min="0.01" step="0.01" inputmode="decimal" required></label>
+                <label>Target date (optional)<input id="goalDate" type="date"></label>
+              </div>
+              <button type="submit">Create goal</button>
+              <p id="createGoalStatus" role="status"></p>
+            </form>
+            <form id="allocateGoalForm">
+              <h3>Allocate or release money</h3>
+              <div class="savings-fields">
+                <label>Goal<select id="allocationGoal" required></select></label>
+                <label>Action<select id="allocationDirection"><option value="allocate">Allocate savings</option><option value="release">Release to unallocated</option></select></label>
+                <label>Amount (MVR)<input id="allocationAmount" type="number" min="0.01" step="0.01" inputmode="decimal" required></label>
+                <label>Note (optional)<input id="allocationNote" maxlength="200"></label>
+              </div>
+              <p id="allocationHint" class="balance-note"></p>
+              <button type="submit">Save allocation</button>
+              <p id="allocationStatus" role="status"></p>
+            </form>
+            <details><summary>Recent allocation history (up to 20)</summary><div id="goalAllocationHistory"></div></details>
+            <h3>Monthly savings activity — last 12 months</h3>
+            <p class="balance-note">Deposits and withdrawals from your personal ledger only. Allocations are not withdrawals.</p>
+            <div id="goalMonthlySummary" class="goal-grid"></div>
+            <div class="goal-table-wrap"><table class="goal-table"><thead><tr><th>Month</th><th>Deposits</th><th>Withdrawals</th><th>Net</th></tr></thead><tbody id="goalMonthlyRows"></tbody></table></div>
+          </div>
+        </details>
         <div class="savings-reconciliation">
           <h3>Optional bank balance check</h3>
           <p class="balance-note">Compare your bank balance against Dad's cash held in custody plus your savings. Outstanding loans are excluded because they are not cash in the bank.</p>
           <label>Actual bank balance (MVR)<input id="actualSharedBankBalance" type="number" min="0" step="0.01" inputmode="decimal" placeholder="Enter current bank balance"></label>
           <p id="sharedBankDifference" role="status">Enter your bank balance to compare.</p>
+          <details class="goal-panel">
+            <summary>Save and review bank checks</summary>
+            <form id="bankCheckForm">
+              <p class="balance-note">Enter the actual bank balance above. Saving records a fresh server-calculated snapshot; it does not change any balance.</p>
+              <label>Note (optional)<input id="bankCheckNote" maxlength="200" placeholder="e.g. checked bank app"></label>
+              <button type="submit">Save bank check</button>
+              <p id="bankCheckStatus" role="status"></p>
+            </form>
+            <h3>Recent checks (up to 20)</h3>
+            <div id="bankCheckHistory"></div>
+          </details>
         </div>
         <div class="savings-activity">
           <h3>Recent savings transactions</h3>
@@ -2537,6 +2606,7 @@
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="supabase-client.js"></script>
   <script src="transaction-requests.js"></script>
+  <script src="amanah-goals.js"></script>
 
   <script>
     let currentUser = null;
@@ -3503,6 +3573,7 @@
 
       populateSelectors();
       renderAll();
+      await AmanahGoals.refresh(currentUser?.id);
     }
 
 
@@ -5357,6 +5428,7 @@
 
     document.getElementById("personalSavingsForm").addEventListener("submit", submitPersonalSavings);
     document.getElementById("actualSharedBankBalance").addEventListener("input", renderSharedBankDifference);
+    AmanahGoals.bind({client:supabaseClient,getUserId:()=>currentUser?.id,refreshAll:loadData,formatMoney:value=>formatMoney(value,"MVR")});
 
     document
       .getElementById(

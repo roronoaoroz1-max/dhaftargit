@@ -330,6 +330,7 @@
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="supabase-client.js"></script>
+  <script src="transaction-requests.js"></script>
   <script>
     const STOCK_CONFIG_MONTH = "2026-01-01";
     const STOCK_PREFIX = "__stock_item__";
@@ -698,55 +699,14 @@
 }
 
     // One UUID per purchase intent. Retrying a timed-out request reuses this UUID.
-    let pendingPurchase = null;
     let purchaseSaving = false;
 
     async function addDedicatedPurchase(item,{qty,amountCents,purchasedOn,note,requestId}) {
-      const open=activeCycle(item);
-
-      const { data:newPurchase,error:insertError }=await supabaseClient.from("stock_purchases")
-        .insert({
-          id:requestId,
-          stock_item_id:item.id,
-          purchased_on:purchasedOn,
-          quantity:qty,
-          amount:amountCents/100,
-          note:note || null,
-          created_by:currentUser.id
-        })
-        .select("id")
-        .single();
-
-      if (insertError) {
-        if (String(insertError.code)==="23505") {
-          // A previous attempt was committed even though its response was lost.
-          const {data:existing,error:lookupError}=await supabaseClient.from("stock_purchases")
-            .select("id,stock_item_id").eq("id",requestId).maybeSingle();
-          if (!lookupError && existing && existing.stock_item_id===item.id) {
-            await loadDedicatedItems();
-            return;
-          }
-        }
-        throw insertError;
-      }
-
-      if (open) {
-        const { error:updateError }=await supabaseClient.from("stock_purchases")
-          .update({
-            ended_reason:"restocked",
-            ended_on:purchasedOn
-          })
-          .eq("id",open.id)
-          .eq("stock_item_id",item.id);
-
-        if (updateError) {
-          // Preserve the purchase if the follow-up update fails: deleting it
-          // after a network error could erase a successfully committed purchase.
-          throw updateError;
-        }
-      }
-
-      await loadDedicatedItems();
+      const { error } = await supabaseClient.rpc("dhaftar_record_stock_purchase_v1", {
+        p_request_id:requestId,p_item_id:item.id,p_date:purchasedOn,
+        p_quantity:qty,p_amount:amountCents/100,p_note:note || null
+      });
+      if (error) throw error;
     }
 
     async function voidDuplicatePurchase(item,cycle,button) {
@@ -964,7 +924,7 @@ note.textContent=activeText + prediction + priceText;
 
     function openPurchase(id) {
       const item=items.find((x)=>x.id===id); if (!item) return;
-      purchaseTargetId=id; pendingPurchase=null; const a=itemAnalytics(item);
+      purchaseTargetId=id; const a=itemAnalytics(item);
       el("purchaseItemName").textContent=item.name + " · " + item.unit;
       el("purchaseQty").value=a.latest?.qty || "";
       el("purchaseAmount").value="";
@@ -1043,41 +1003,33 @@ note.textContent=activeText + prediction + priceText;
       const purchasedOn=el("purchaseDate").value;
       if (!qty || amountCents===null || !purchasedOn) { showMessage("Enter quantity, amount and purchase date.",true); return; }
       const note=el("purchaseNote").value.trim();
-      const signature=JSON.stringify([item.id,qty,amountCents,purchasedOn,note]);
-      if (!pendingPurchase || pendingPurchase.signature!==signature) {
-        pendingPurchase={signature,id:crypto.randomUUID()};
+      if (stockStorageMode !== "dedicated") {
+        showMessage("Safe purchase recording requires the dedicated Stock database. Existing records remain available.",true);
+        return;
       }
       purchaseSaving=true;
       const saveButton=el("purchaseForm").querySelector('button[type="submit"]');
       saveButton.disabled=true;
       saveButton.textContent="Saving purchase…";
+      let request=null, saved=false;
       try {
-        if (stockStorageMode==="dedicated") {
-          await addDedicatedPurchase(item,{
-            qty,
-            amountCents,
-            purchasedOn,
-            note,
-            requestId:pendingPurchase.id
-          });
-        } else {
-          const open=activeCycle(item);
-          if (open) {
-            open.endedReason="restocked";
-            open.endedOn=purchasedOn;
-          }
-          item.cycles.push({
-            id:uid(),purchasedOn,qty,amountCents,runOutOn:"",
-            endedReason:"",endedOn:"",note:el("purchaseNote").value.trim()
-          });
-          item.cycles.sort((a,b)=>a.purchasedOn.localeCompare(b.purchasedOn));
-          await saveLegacyItem(item);
-        }
-
-        pendingPurchase=null;
-        el("purchaseDialog").close(); showMessage(item.name + " purchase recorded.");
+        request=await DhaftarRequests.begin(currentUser.id,"stock-purchase",[item.id,qty,amountCents,purchasedOn,note]);
+        await addDedicatedPurchase(item,{qty,amountCents,purchasedOn,note,requestId:request.id});
+        saved=true;
+        DhaftarRequests.finish(request);
+        el("purchaseDialog").close();
+        await loadDedicatedItems();
+        showMessage(item.name + " purchase recorded.");
       } catch (error) {
-        showMessage((error.message || "Could not confirm purchase.") + " Check purchase history before entering a new purchase. Retry with the same details to avoid duplicates.",true);
+        if (!saved && request && DhaftarRequests.definiteRejection(error)) {
+          try { DhaftarRequests.finish(request); } catch (_) {}
+        }
+        if (saved) {
+          el("purchaseDialog").close();
+          showMessage("Purchase saved. Refresh Stock before recording another purchase.",true);
+        } else {
+          showMessage((error.message || "Could not confirm purchase.") + " Retry with the same details if the result is uncertain.",true);
+        }
       } finally {
         purchaseSaving=false;
         saveButton.disabled=false;

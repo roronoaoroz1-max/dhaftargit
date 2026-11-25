@@ -9,7 +9,8 @@ const make=(tag,t,cls)=>{const n=document.createElement(tag);if(t!==undefined)n.
 function visible(rows,mode,cat){return rows.filter(n=>(cat==="all"||n.category===cat)&&(mode==="snoozed"?n.snoozed:!n.snoozed&&(mode!=="unread"||!n.read_at)&&(mode!=="today"||["attention","overdue","today"].includes(n.urgency))));}
 function urgency(n){return n.urgency==="overdue"?"Overdue":n.urgency==="today"?"Due today":n.urgency==="attention"?"Needs attention":"Upcoming";}
 function setStatus(t){if(notice)notice.textContent=t;}
-function clear(){++epoch;user=null;feed=null;writing=false;if(bell)bell.hidden=true;if(container){container.replaceChildren();setStatus("Sign in to view your private reminders.");const a=make("a","Sign in","notice-button");a.href="admin.html";container.append(a);}for(const id of ["noticeUnread","noticeAttention","noticeTotal"])if(el(id))el(id).textContent="—";}
+function access(value){root.dispatchEvent(new CustomEvent('dhaftar:notification-access',{detail:value}));}
+function clear(){access(false);++epoch;user=null;feed=null;writing=false;if(bell)bell.hidden=true;if(container){container.replaceChildren();setStatus("Sign in to view your private reminders.");const a=make("a","Sign in","notice-button");a.href="admin.html";container.append(a);}for(const id of ["noticeUnread","noticeAttention","noticeTotal"])if(el(id))el(id).textContent="—";}
 function count(){if(!bell)return;const n=Number(feed?.unread||0);bell.textContent="";bell.append(make("span","♧","notice-bell-glyph"));bell.firstChild.textContent="🔔";bell.append(make("span","Today"));if(feed&&n>0)bell.append(make("span",n>99?"99+":n,"notice-count"));bell.setAttribute("aria-label",feed?"Today, "+n+" unread reminders":"Open Today");}
 function render(){
  if(!feed)return;count();if(!container)return;
@@ -38,8 +39,8 @@ async function refresh(){
   if(user&&user!==u){feed=null;if(container)container.replaceChildren();}
   user=u;const r=await client.rpc("dhaftar_notifications_v6");if(token!==epoch||user!==u)return false;
   if(r.error)throw r.error;if(!r.data||!Array.isArray(r.data.notifications))throw Error("Invalid reminder response");
-  feed=r.data;if(bell)bell.hidden=false;render();return true;
- }catch(e){if(token===epoch){feed=null;if(bell)bell.hidden=true;if(container){container.replaceChildren();for(const id of ["noticeUnread","noticeAttention","noticeTotal"])el(id).textContent="—";setStatus("Notifications unavailable. Sign in as administrator or refresh.");}}return false;}
+  feed=r.data;access(true);if(bell)bell.hidden=false;render();return true;
+ }catch(e){if(token===epoch){feed=null;access(false);if(bell)bell.hidden=true;if(container){container.replaceChildren();for(const id of ["noticeUnread","noticeAttention","noticeTotal"])el(id).textContent="—";setStatus("Notifications unavailable. Sign in as administrator or refresh.");}}return false;}
 }
 async function act(key,action,days=null){
  if(writing||!user||!feed)return;writing=true;const u=user;render();
@@ -57,5 +58,5 @@ function bind(c){
  setInterval(()=>{if(!document.hidden&&!writing)void refresh();},60000);
  void refresh();
 }
-root.DhaftarNotifications=Object.freeze({bind,refresh,visible,urgency});
+root.DhaftarNotifications=Object.freeze({bind,refresh,visible,urgency,hasAccess:()=>!!feed});
 })(globalThis);

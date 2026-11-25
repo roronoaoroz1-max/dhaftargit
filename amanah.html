@@ -3621,7 +3621,8 @@
 
       populateSelectors();
       renderAll();
-      await Promise.all([AmanahGoals.refresh(currentUser?.id),PersonalAssets.refresh(currentUser?.id)]);
+      await AmanahGoals.refresh(currentUser?.id);
+      await PersonalAssets.refresh(currentUser?.id);
     }
 
 

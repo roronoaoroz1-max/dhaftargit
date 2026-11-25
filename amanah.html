@@ -2536,6 +2536,7 @@
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="supabase-client.js"></script>
+  <script src="transaction-requests.js"></script>
 
   <script>
     let currentUser = null;
@@ -2781,6 +2782,7 @@
       combinedTotal: 0
     };
     let personalSavingsTransactions = [];
+    let personalSavingsBalance = 0;
     let savingsSubmitPending = false;
 
     const revealedBalanceKeys =
@@ -3451,7 +3453,7 @@
             .from("amanah_personal_savings_transactions")
             .select("id,transaction_date,transaction_type,amount,note,created_at")
             .order("created_at",{ascending:false})
-            .limit(1000),
+            .limit(10),
 
           supabaseClient
             .from(
@@ -3466,7 +3468,8 @@
                 ascending: false
               }
             )
-            .limit(40)
+            .limit(40),
+          supabaseClient.rpc("dhaftar_savings_balance_v1")
         ]);
 
       for (
@@ -3495,6 +3498,8 @@
       transactions =
         results[6].data || [];
       personalSavingsTransactions = results[5].data || [];
+      personalSavingsBalance = Number(results[7].data);
+      if (!Number.isFinite(personalSavingsBalance)) throw new Error("Invalid savings balance returned.");
 
       populateSelectors();
       renderAll();
@@ -4059,7 +4064,7 @@
       privateBalanceValues.dadTotal =
         custodyCash +
         remainingDadLoans;
-      privateBalanceValues.mySavings = personalSavingsTransactions.reduce((sum, tx) => sum + (tx.transaction_type === "deposit" ? 1 : -1) * Number(tx.amount || 0), 0);
+      privateBalanceValues.mySavings = personalSavingsBalance;
       privateBalanceValues.combinedTotal = privateBalanceValues.dadTotal + privateBalanceValues.mySavings;
 
       Object.keys(
@@ -4115,38 +4120,42 @@
 
     async function submitPersonalSavings(event) {
       event.preventDefault();
-      if (savingsSubmitPending) return;
+      if (savingsSubmitPending || !currentUser) return;
       const type = document.getElementById("personalSavingsType").value;
-      const amount = Number(document.getElementById("personalSavingsAmount").value);
+      const cents = quickMoneyCents(document.getElementById("personalSavingsAmount").value);
       const date = document.getElementById("personalSavingsDate").value;
       const note = document.getElementById("personalSavingsNote").value.trim();
       const status = document.getElementById("personalSavingsMessage");
-      if (!["deposit","withdrawal"].includes(type) || !Number.isFinite(amount) ||
-          amount <= 0 || Math.round(amount * 100) !== amount * 100 || !date) {
+      if (!["deposit","withdrawal"].includes(type) || !(cents > 0) || !date) {
         status.textContent = "Enter a valid amount (maximum 2 decimal places) and date.";
         return;
       }
-      if (type === "withdrawal" && Math.round(amount * 100) > Math.round(privateBalanceValues.mySavings * 100)) {
-        status.textContent = "Withdrawal cannot exceed your savings balance.";
-        return;
-      }
+      const amount = cents / 100;
       if (!window.confirm((type === "deposit" ? "Add " : "Withdraw ") + formatMoney(amount,"MVR") + " " + (type === "deposit" ? "to" : "from") + " your savings?")) return;
       savingsSubmitPending = true;
       const button = document.getElementById("personalSavingsSubmit");
       button.disabled = true;
+      let request = null, saved = false;
       status.textContent = "Saving…";
       try {
-        const { error } = await supabaseClient.from("amanah_personal_savings_transactions")
-          .insert({user_id:currentUser.id,transaction_date:date,transaction_type:type,amount,note:note || null});
+        request = await DhaftarRequests.begin(currentUser.id,"personal-savings",[date,type,cents,note]);
+        const { error } = await supabaseClient.rpc("dhaftar_record_savings_v1",{
+          p_request_id:request.id,p_date:date,p_type:type,p_amount:amount,p_note:note || null
+        });
         if (error) throw error;
+        saved = true;
+        DhaftarRequests.finish(request);
         document.getElementById("personalSavingsAmount").value = "";
         document.getElementById("personalSavingsNote").value = "";
         status.textContent = "Saved. Refreshing balances…";
         await loadData();
         status.textContent = "Savings transaction saved successfully.";
       } catch (error) {
-        status.textContent = "Could not complete refresh or save: " + (error.message || "Unknown error") +
-          ". Check the transaction list before trying again.";
+        if (!saved && request && DhaftarRequests.definiteRejection(error)) {
+          try { DhaftarRequests.finish(request); } catch (_) {}
+        }
+        status.textContent = saved ? "Savings saved. Reload to refresh balances before making another transaction." :
+          (error.message || "Could not confirm savings.") + " Retry with the same details if the result is uncertain.";
       } finally {
         savingsSubmitPending = false;
         button.disabled = false;

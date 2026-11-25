@@ -2992,6 +2992,7 @@
 
   <!-- Your project URL and publishable key -->
   <script src="supabase-client.js"></script>
+  <script src="transaction-requests.js"></script>
 
   <script>
     const MONTHS = [
@@ -3671,7 +3672,8 @@
       state.submitting = true;
       try {
       const month = householdMonth();
-      if (typeof monthIsClosed === "function" && await monthIsClosed(month)) {
+      const pendingPayment = DhaftarRequests.hasPending(currentUser.id,"household-payment");
+      if (!pendingPayment && typeof monthIsClosed === "function" && await monthIsClosed(month)) {
         showMessage(displayMonth(month) + " is closed. Unlock the month before adding another household payment.", true);
         return;
       }
@@ -3694,10 +3696,10 @@
       setButtonLoading(button, true, "Adding…");
       syncHouseholdQuickButtons();
       showMessage("");
-      let saved = false;
+      let saved = false, request = null;
       try {
         // An unchanged shortcut amount is rechecked before the insert.
-        if (state.autoFilled?.month === month && state.autoFilled.cents === cents) {
+        if (!pendingPayment && state.autoFilled?.month === month && state.autoFilled.cents === cents) {
           const fresh = await readHouseholdBalance(month);
           if (epoch !== state.epoch || currentUser?.id !== userId) return;
           state.cents = fresh;
@@ -3711,9 +3713,14 @@
           }
         }
         if (epoch !== state.epoch || currentUser?.id !== userId) return;
-        const { error } = await supabaseClient.from("dhaftar_payments").insert(payload);
+        request = await DhaftarRequests.begin(userId,"household-payment",[payload.payer_name,payload.payment_date,month,cents,payload.note]);
+        const { error } = await supabaseClient.rpc("dhaftar_record_household_payment_v1",{
+          p_request_id:request.id,p_payer:payload.payer_name,p_date:payload.payment_date,
+          p_month:month,p_amount:payload.amount,p_note:payload.note
+        });
         if (error) throw error;
         saved = true;
+        DhaftarRequests.finish(request);
         if (epoch !== state.epoch || currentUser?.id !== userId) return;
         amountInput.value = "";
         paymentElement("paymentNote").value = "";
@@ -3727,8 +3734,11 @@
           typeof loadOutstandingCenter === "function" ? loadOutstandingCenter() : Promise.resolve()
         ]);
       } catch (error) {
+        if (!saved && request && !pendingPayment && DhaftarRequests.definiteRejection(error)) {
+          try { DhaftarRequests.finish(request); } catch (_) {}
+        }
         if (epoch === state.epoch && currentUser?.id === userId) {
-          showMessage(saved ? "Payment saved. Refresh the page to update the balances." : (error.message || "Payment could not be added."), true);
+          showMessage(saved ? "Payment saved. Refresh the page to update the balances." : (error.message || "Payment could not be confirmed.") + " Retry with the original details if the result is uncertain.", true);
         }
       } finally {
         if (epoch === state.epoch) {
@@ -3739,6 +3749,8 @@
           if (saved) await loadHouseholdBalance();
         }
       }
+      } catch (error) {
+        showMessage(error.message || "Could not prepare payment.", true);
       } finally {
         state.submitting = false;
       }

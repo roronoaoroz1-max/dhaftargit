@@ -2536,6 +2536,7 @@
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="supabase-client.js"></script>
+  <script src="transaction-requests.js"></script>
 
   <script>
     let currentUser = null;
@@ -2781,6 +2782,7 @@
       combinedTotal: 0
     };
     let personalSavingsTransactions = [];
+    let personalSavingsBalance = 0;
     let savingsSubmitPending = false;
 
     const revealedBalanceKeys =
@@ -3451,7 +3453,7 @@
             .from("amanah_personal_savings_transactions")
             .select("id,transaction_date,transaction_type,amount,note,created_at")
             .order("created_at",{ascending:false})
-            .limit(1000),
+            .limit(10),
 
           supabaseClient
             .from(
@@ -3466,7 +3468,8 @@
                 ascending: false
               }
             )
-            .limit(40)
+            .limit(40),
+          supabaseClient.rpc("dhaftar_savings_balance_v1")
         ]);
 
       for (
@@ -3495,6 +3498,8 @@
       transactions =
         results[6].data || [];
       personalSavingsTransactions = results[5].data || [];
+      personalSavingsBalance = Number(results[7].data);
+      if (!Number.isFinite(personalSavingsBalance)) throw new Error("Invalid savings balance returned.");
 
       populateSelectors();
       renderAll();
@@ -3712,6 +3717,17 @@
         repaymentSelect.value =
           previous;
       }
+      if (currentUser && DhaftarRequests.hasPending(currentUser.id,"loan-repayment")) {
+        const existingKeys = new Set(buildPayableLoanGroups().map(g=>g.key));
+        for (const group of buildLedgerGroups()) {
+          if (existingKeys.has(group.key)) continue;
+          const option = document.createElement("option");
+          option.value = String(group.loans.slice().sort(compareLoanAge)[0].loan_id);
+          option.textContent = group.lender_name+" → "+group.borrower_name+" · "+group.currency+" · Retry previous repayment only";
+          repaymentSelect.appendChild(option);
+        }
+      }
+      if ([...repaymentSelect.options].some(option=>option.value===previous)) repaymentSelect.value=previous;
       if (repaymentSelect.value !== previous) repaymentDraftChanged(true);
       else updateRepaymentQuickHint();
     }
@@ -4059,7 +4075,7 @@
       privateBalanceValues.dadTotal =
         custodyCash +
         remainingDadLoans;
-      privateBalanceValues.mySavings = personalSavingsTransactions.reduce((sum, tx) => sum + (tx.transaction_type === "deposit" ? 1 : -1) * Number(tx.amount || 0), 0);
+      privateBalanceValues.mySavings = personalSavingsBalance;
       privateBalanceValues.combinedTotal = privateBalanceValues.dadTotal + privateBalanceValues.mySavings;
 
       Object.keys(
@@ -4115,38 +4131,44 @@
 
     async function submitPersonalSavings(event) {
       event.preventDefault();
-      if (savingsSubmitPending) return;
+      if (savingsSubmitPending || !currentUser) return;
       const type = document.getElementById("personalSavingsType").value;
-      const amount = Number(document.getElementById("personalSavingsAmount").value);
+      const rawAmount = document.getElementById("personalSavingsAmount").value;
+      const cents = quickMoneyCents(rawAmount);
       const date = document.getElementById("personalSavingsDate").value;
       const note = document.getElementById("personalSavingsNote").value.trim();
       const status = document.getElementById("personalSavingsMessage");
-      if (!["deposit","withdrawal"].includes(type) || !Number.isFinite(amount) ||
-          amount <= 0 || Math.round(amount * 100) !== amount * 100 || !date) {
+      if (!["deposit","withdrawal"].includes(type) || !(cents > 0) || Math.abs(Number(rawAmount)*100-cents)>0.00001 || !date) {
         status.textContent = "Enter a valid amount (maximum 2 decimal places) and date.";
         return;
       }
-      if (type === "withdrawal" && Math.round(amount * 100) > Math.round(privateBalanceValues.mySavings * 100)) {
-        status.textContent = "Withdrawal cannot exceed your savings balance.";
-        return;
-      }
+      const amount = cents / 100;
       if (!window.confirm((type === "deposit" ? "Add " : "Withdraw ") + formatMoney(amount,"MVR") + " " + (type === "deposit" ? "to" : "from") + " your savings?")) return;
       savingsSubmitPending = true;
       const button = document.getElementById("personalSavingsSubmit");
       button.disabled = true;
+      let request = null, saved = false, wasPending = true;
       status.textContent = "Saving…";
       try {
-        const { error } = await supabaseClient.from("amanah_personal_savings_transactions")
-          .insert({user_id:currentUser.id,transaction_date:date,transaction_type:type,amount,note:note || null});
+        wasPending = DhaftarRequests.hasPending(currentUser.id,"personal-savings");
+        request = await DhaftarRequests.begin(currentUser.id,"personal-savings",[date,type,cents,note]);
+        const { error } = await supabaseClient.rpc("dhaftar_record_savings_v1",{
+          p_request_id:request.id,p_date:date,p_type:type,p_amount:amount,p_note:note || null
+        });
         if (error) throw error;
+        saved = true;
+        DhaftarRequests.finish(request);
         document.getElementById("personalSavingsAmount").value = "";
         document.getElementById("personalSavingsNote").value = "";
         status.textContent = "Saved. Refreshing balances…";
         await loadData();
         status.textContent = "Savings transaction saved successfully.";
       } catch (error) {
-        status.textContent = "Could not complete refresh or save: " + (error.message || "Unknown error") +
-          ". Check the transaction list before trying again.";
+        if (!saved && request && !wasPending && DhaftarRequests.definiteRejection(error)) {
+          try { DhaftarRequests.finish(request); } catch (_) {}
+        }
+        status.textContent = saved ? "Savings saved. Reload to refresh balances before making another transaction." :
+          (error.message || "Could not confirm savings.") + " Retry with the same details if the result is uncertain.";
       } finally {
         savingsSubmitPending = false;
         button.disabled = false;
@@ -4982,137 +5004,44 @@
     }
 
 
+    let accountTransactionSaving = false;
     async function submitTransaction(event) {
       event.preventDefault();
-
-      const button =
-        document.getElementById(
-          "transactionButton"
-        );
-
-      setButtonLoading(
-        button,
-        true,
-        "Adding…"
-      );
-
-      showMessage("");
-
-      try {
-        const accountId =
-          document.getElementById(
-            "transactionAccount"
-          ).value;
-
-        const transactionType =
-          document.getElementById(
-            "transactionType"
-          ).value;
-
-        const amount =
-          Number(
-            document.getElementById(
-              "transactionAmount"
-            ).value
-          );
-
-        if (!accountId) {
-          throw new Error(
-            "Choose an account."
-          );
-        }
-
-        if (
-          !VALID_TRANSACTION_TYPES.has(
-            transactionType
-          )
-        ) {
-          throw new Error(
-            "Choose a supported transaction type."
-          );
-        }
-
-        if (
-          !Number.isFinite(amount) ||
-          amount <= 0
-        ) {
-          throw new Error(
-            "Enter a valid transaction amount."
-          );
-        }
-
-        const {
-          error
-        } =
-          await supabaseClient
-            .from(
-              "account_transactions"
-            )
-            .insert({
-              account_id:
-                accountId,
-
-              transaction_date:
-                document.getElementById(
-                  "transactionDate"
-                ).value,
-
-              transaction_type:
-                transactionType,
-
-              amount,
-
-              description:
-                clean(
-                  document.getElementById(
-                    "transactionDescription"
-                  ).value
-                ),
-
-              reference_number:
-                clean(
-                  document.getElementById(
-                    "transactionReference"
-                  ).value
-                )
-            });
-
-        if (error) {
-          throw error;
-        }
-
-        event.target.reset();
-
-        document.getElementById(
-          "transactionDate"
-        ).value =
-          localToday();
-
-        document.getElementById(
-          "transactionType"
-        ).value =
-          "deposit";
-
-        showMessage(
-          "Account transaction added successfully."
-        );
-
-        await loadData();
-
-      } catch (error) {
-        showMessage(
-          error.message ||
-          "Transaction could not be added.",
-          true
-        );
-
-      } finally {
-        setButtonLoading(
-          button,
-          false,
-          "Adding…"
-        );
+      if (accountTransactionSaving || !currentUser || !event.target.reportValidity()) return;
+      const value = id => document.getElementById(id).value;
+      const raw=value("transactionAmount"), cents=quickMoneyCents(raw);
+      const payload={
+        p_account:value("transactionAccount"),p_date:value("transactionDate"),
+        p_type:value("transactionType"),p_amount:cents/100,
+        p_description:clean(value("transactionDescription")),p_reference:clean(value("transactionReference"))
+      };
+      if (!payload.p_account || !payload.p_date || !VALID_TRANSACTION_TYPES.has(payload.p_type) ||
+          !(cents>0) || Math.abs(Number(raw)*100-cents)>0.00001) {
+        showMessage("Choose an account and valid date, type and amount.",true);return;
       }
+      accountTransactionSaving=true;
+      const button=document.getElementById("transactionButton");
+      setButtonLoading(button,true,"Adding…");
+      let request=null,saved=false,wasPending=true;
+      try {
+        const userId=currentUser.id;
+        wasPending=DhaftarRequests.hasPending(userId,"account-transaction");
+        request=await DhaftarRequests.begin(userId,"account-transaction",payload);
+        const {error}=await supabaseClient.rpc("dhaftar_record_account_transaction_v1",{p_request_id:request.id,...payload});
+        if(error)throw error;
+        saved=true;
+        DhaftarRequests.finish(request);
+        event.target.reset();
+        document.getElementById("transactionDate").value=localToday();
+        document.getElementById("transactionType").value="deposit";
+        await loadData();
+        showMessage("Account transaction added successfully.");
+      } catch(error) {
+        if(!saved&&request&&!wasPending&&DhaftarRequests.definiteRejection(error)) {
+          try {DhaftarRequests.finish(request);}catch(_){}
+        }
+        showMessage(saved?"Account transaction saved. Refresh balances before entering another.":(error.message||"Could not confirm transaction.")+" Retry with the same details if uncertain.",true);
+      } finally {accountTransactionSaving=false;setButtonLoading(button,false,"Adding…");}
     }
 
 
@@ -5326,123 +5255,47 @@
 
     async function submitRepayment(event) {
       event.preventDefault();
-      const state = repaymentQuickState;
-      if (state.saving || !currentUser || !event.target.reportValidity()) return;
-
-      const cents = quickMoneyCents(repaymentElement("repaymentAmount").value);
-      const seedLoanId = repaymentElement("repaymentLoan").value;
-      if (!(cents > 0) || !seedLoanId) {
-        showMessage("Choose a borrower / lender balance and enter a valid repayment amount.", true);
-        return;
+      const state=repaymentQuickState;
+      if(state.saving||!currentUser||!event.target.reportValidity())return;
+      const raw=repaymentElement("repaymentAmount").value,cents=quickMoneyCents(raw);
+      const seed=loanBalances.find(loan=>String(loan.loan_id)===repaymentElement("repaymentLoan").value);
+      const paymentDate=repaymentElement("repaymentDate").value;
+      if(!(cents>0)||Math.abs(Number(raw)*100-cents)>0.00001||!seed?.lender_id||!seed?.borrower_id||!paymentDate) {
+        showMessage("Choose a borrower / lender balance, date and valid repayment amount.",true);return;
       }
-
-      const epoch = state.epoch;
-      const userId = currentUser.id;
-      state.request++;
-      state.loading = false;
-      state.saving = true;
-      repaymentElement("repaymentFields").disabled = true;
-      const button = repaymentElement("repaymentButton");
-      setButtonLoading(button, true, "Adding…");
-      syncRepaymentQuickButton();
-      showMessage("");
-
-      let saved = false;
+      const payload={p_lender:seed.lender_id,p_borrower:seed.borrower_id,p_currency:normalize(seed.currency||"MVR"),
+        p_date:paymentDate,p_amount:cents/100,p_method:clean(repaymentElement("repaymentMethod").value),p_notes:clean(repaymentElement("repaymentNotes").value)};
+      const userId=currentUser.id,epoch=state.epoch;
+      state.request++;state.loading=false;state.saving=true;
+      repaymentElement("repaymentFields").disabled=true;
+      const button=repaymentElement("repaymentButton");
+      setButtonLoading(button,true,"Adding…");syncRepaymentQuickButton();showMessage("");
+      let request=null,saved=false,wasPending=true;
       try {
-        const refreshed = await readRepaymentGroup(seedLoanId);
-        if (epoch !== state.epoch || currentUser?.id !== userId) return;
-
-        loanBalances = refreshed.rows;
-        const group = refreshed.group;
-        const totalRemaining = group.totalCents;
-
-        if (cents > totalRemaining) {
-          if (state.autoFilled?.loanId === seedLoanId && state.autoFilled.cents === cents) {
-            const updated = Math.min(state.autoFilled.installmentCents, totalRemaining);
-            repaymentElement("repaymentAmount").value = (updated / 100).toFixed(2);
-            state.autoFilled.cents = updated;
-            installmentQuickStatus(
-              "Balance changed. Suggested amount updated to " +
-              formatMoney(updated / 100, group.currency) +
-              ". Review before saving.",
-              true
-            );
-          }
-          throw new Error(
-            "The repayment exceeds the latest combined balance of " +
-            formatMoney(totalRemaining / 100, group.currency) +
-            ". Review the amount before saving again."
-          );
+        wasPending=DhaftarRequests.hasPending(userId,"loan-repayment");
+        request=await DhaftarRequests.begin(userId,"loan-repayment",payload);
+        // The server locks the relevant loans and calculates the allocation using fresh balances.
+        // A retry checks its receipt before validating outstanding amounts again.
+        const {error}=await supabaseClient.rpc("dhaftar_record_group_repayment_v1",{p_request_id:request.id,...payload});
+        if(error)throw error;
+        saved=true;
+        DhaftarRequests.finish(request);
+        if(epoch!==state.epoch||currentUser?.id!==userId)return;
+        event.target.reset();repaymentElement("repaymentDate").value=quickToday();
+        state.autoFilled=null;
+        await loadData();
+        showMessage("Repayment saved successfully. Allocated to outstanding loans oldest first.");
+      } catch(error) {
+        if(!saved&&request&&!wasPending&&DhaftarRequests.definiteRejection(error)) {
+          try {DhaftarRequests.finish(request);}catch(_){}
         }
-
-        let unallocated = cents;
-        const paymentDate = repaymentElement("repaymentDate").value;
-        const paymentMethod = clean(repaymentElement("repaymentMethod").value);
-        const notes = clean(repaymentElement("repaymentNotes").value);
-        const payloads = [];
-        const allocations = [];
-
-        for (const loan of group.loans) {
-          if (!(unallocated > 0)) break;
-          const loanRemaining = quickMoneyCents(loan.remaining_amount) || 0;
-          if (!(loanRemaining > 0)) continue;
-
-          const allocation = Math.min(unallocated, loanRemaining);
-          payloads.push({
-            loan_id: loan.loan_id,
-            payment_date: paymentDate,
-            amount: allocation / 100,
-            payment_method: paymentMethod,
-            notes
-          });
-          allocations.push({
-            loanId: loan.loan_id,
-            cents: allocation
-          });
-          unallocated -= allocation;
-        }
-
-        if (unallocated !== 0 || !payloads.length) {
-          throw new Error("The repayment could not be fully allocated. Refresh and try again.");
-        }
-
-        const { error } = await supabaseClient.from("loan_payments").insert(payloads);
-        if (error) throw error;
-        saved = true;
-
-        if (epoch !== state.epoch || currentUser?.id !== userId) return;
-
-        event.target.reset();
-        repaymentElement("repaymentDate").value = quickToday();
-        state.autoFilled = null;
-        updateRepaymentQuickHint();
-
-        const allocationText =
-          allocations.length === 1
-            ? "Applied to 1 loan."
-            : "Automatically allocated across " + allocations.length + " loans, oldest first.";
-        showMessage("Repayment added successfully. " + allocationText);
-
-        // Refresh failures must never suggest repeating a committed payment.
-        const [refresh] = await Promise.allSettled([loadData()]);
-        if (refresh.status === "rejected" && epoch === state.epoch && currentUser?.id === userId) {
-          showMessage("Repayment saved. Balances could not refresh; reload the page before adding another repayment.", true);
-        }
-      } catch (error) {
-        if (epoch === state.epoch && currentUser?.id === userId) {
-          showMessage(
-            saved
-              ? "Repayment saved. Reload the page to update the balances."
-              : (error.message || "Repayment could not be added."),
-            true
-          );
+        if(epoch===state.epoch&&currentUser?.id===userId) {
+          showMessage(saved?"Repayment saved. Refresh to update balances.":(error.message||"Could not confirm repayment.")+" Retry with the same details if uncertain.",true);
         }
       } finally {
-        if (epoch === state.epoch) {
-          state.saving = false;
-          repaymentElement("repaymentFields").disabled = false;
-          setButtonLoading(button, false, "Adding…");
-          syncRepaymentQuickButton();
+        if(epoch===state.epoch) {
+          state.saving=false;repaymentElement("repaymentFields").disabled=false;
+          setButtonLoading(button,false,"Adding…");syncRepaymentQuickButton();
         }
       }
     }

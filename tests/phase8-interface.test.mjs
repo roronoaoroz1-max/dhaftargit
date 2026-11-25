@@ -1,0 +1,28 @@
+import assert from "node:assert/strict";
+import vm from "node:vm";
+import {readFileSync} from "node:fs";
+const read=p=>readFileSync(new URL("../"+p,import.meta.url),"utf8");
+const elements=new Map(),events={};function element(){return {hidden:true,textContent:"",children:[],replaceChildren(){this.children=[];this.textContent="";},append(...n){this.children.push(...n)},addEventListener(k,f){this[k]=f}}}
+const el=id=>{if(!elements.has(id))elements.set(id,element());return elements.get(id)};
+let feed=null, pending=[],calls=[];
+const ctx=vm.createContext({document:{getElementById:el,createElement:element},addEventListener:(k,f)=>events[k]=f,DhaftarNotifications:{hasAccess:()=>!!feed,getFeed:()=>feed,urgency:n=>n.urgency,refresh:()=>Promise.resolve()}});
+vm.runInContext(read("dhaftar-home.js"),ctx);
+const client={rpc(name){calls.push(name);return new Promise(resolve=>pending.push(resolve))}};
+ctx.DhaftarHome.bind(client);
+assert.equal(el("dxDashboard").hidden,true);assert.equal(calls.length,0);
+assert.equal(ctx.DhaftarHome.money(null,"MVR"),"Unavailable");assert.equal(ctx.DhaftarHome.money("", "MVR"),"Unavailable");assert.equal(ctx.DhaftarHome.money(0,"MVR"),"MVR 0.00");
+feed={notifications:[{title:"Upcoming",urgency:"upcoming"},{title:"Overdue",urgency:"overdue"},{title:"Snoozed",snoozed:true}]};
+events["dhaftar:notification-access"]({detail:true});
+assert.equal(el("dxDashboard").hidden,false);assert.equal(el("dxAttention").children[0].children[0].textContent,"Overdue");assert.equal(el("dxAttention").children.length,2);
+assert.deepEqual(calls,["dhaftar_net_worth_v5"]);
+feed=null;events["dhaftar:notification-access"]({detail:false});
+assert.equal(el("dxDashboard").hidden,true);assert.equal(el("dxAttention").children.length,0);assert.equal(el("dxReminderCount").textContent,"");
+feed={notifications:[]};events["dhaftar:notification-access"]({detail:true});
+pending.shift()({data:[{currency:"MVR",net_worth:99999}]});await new Promise(r=>setImmediate(r));assert.equal(el("dxWorth").textContent,"—");
+pending.shift()({data:[{currency:"MVR",net_worth:100,savings:40,total_liabilities:20},{currency:"USD",net_worth:5}]});await new Promise(r=>setImmediate(r));
+assert.equal(el("dxWorth").textContent,"MVR 100.00");assert.equal(el("dxUsd").textContent,"USD 5.00");
+feed={notifications:[{title:"New reminder",urgency:"today"}]};events["dhaftar:notification-access"]({detail:true});assert.equal(calls.length,2);assert.equal(el("dxAttention").children[0].children[0].textContent,"New reminder");
+feed=null;events["dhaftar:notification-access"]({detail:false});assert.equal(el("dxWorth").textContent,"—");assert.equal(el("dxUsd").textContent,"—");
+const html=read("index.html");assert.ok(html.includes('id="dxDashboard" class="dx-dashboard" hidden'));assert.ok(html.includes("DhaftarHome.bind(supabaseClient)"));
+for(const m of read("dhaftar-home.js").matchAll(/\bel\("([^"]+)"\)/g))assert.ok(html.includes('id="'+m[1]+'"'),m[1]);
+console.log("PASS: private dashboard, account-switch race, currency display, shared notifications and sign-out cleanup");

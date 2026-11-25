@@ -243,6 +243,10 @@
         </select>
       </div>
       <div id="history" class="history"></div>
+        <details style="margin-top:16px;padding:12px;border:1px solid var(--line);border-radius:13px;background:var(--surface-soft)">
+          <summary>Voided expenses (<span id="voidedCount">0</span>)</summary>
+          <div id="voidedHistory" style="display:grid;gap:8px;margin-top:12px"></div>
+        </details>
     </section>
   </main>
 </div>
@@ -258,10 +262,13 @@
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="supabase-client.js"></script>
+<script src="transaction-requests.js"></script>
 <script>
   const ENJOYMENT_CATEGORIES=["Eating out","Takeaway","Café / dessert","Entertainment","Outing","Special food","Other"];
   const MEDICAL_CATEGORIES=["Consultation","Injection / procedure","Lab / diagnostics","Pharmacy","Hospital / treatment","Transport","Other"];
-  let currentUser=null,currentProfile=null,currentType="enjoyment",entries=[];
+  let currentUser=null,currentProfile=null,currentType="enjoyment",entries=[],voidedEntries=[];
+  let entrySaving=false,loadVersion=0;
+  const voidingEntries=new Set();
 
   const el=(id)=>document.getElementById(id);
 
@@ -335,14 +342,25 @@
   }
 
   async function loadEntries(){
+    const version=++loadVersion;
     const month=el("monthPicker").value||currentMonth();
     const {start,end}=monthRange(month);
-    const {data,error}=await supabaseClient.from("dhaftar_spending_entries")
-      .select("id,spending_type,category,expense_date,amount,person_name,provider_name,activity_group,notes,created_at")
-      .gte("expense_date",start).lt("expense_date",end)
-      .order("expense_date",{ascending:false}).order("created_at",{ascending:false});
-    if(error)throw error;
-    entries=data||[];
+    const rows=[],pageSize=500;
+    for(let offset=0;;offset+=pageSize){
+      const {data,error}=await supabaseClient.from("dhaftar_spending_entries")
+        .select("id,spending_type,category,expense_date,amount,person_name,provider_name,activity_group,notes,created_at,voided_at,void_reason")
+        .gte("expense_date",start).lt("expense_date",end)
+        .order("expense_date",{ascending:false}).order("created_at",{ascending:false}).order("id",{ascending:false})
+        .range(offset,offset+pageSize-1);
+      if(version!==loadVersion)return;
+      if(error)throw error;
+      rows.push(...(data||[]));
+      if(!data||data.length<pageSize)break;
+    }
+    if(version!==loadVersion)return;
+    if(new Set(rows.map(row=>row.id)).size!==rows.length)throw new Error("Spending records changed during loading. Refresh this month.");
+    entries=rows.filter(row=>!row.voided_at);
+    voidedEntries=rows.filter(row=>row.voided_at);
     render();
   }
 
@@ -423,46 +441,80 @@
       }
       const side=document.createElement("div");side.className="history-side";
       const amount=document.createElement("strong");amount.textContent=money(row.amount);
-      const del=document.createElement("button");del.type="button";del.className="delete-small";del.textContent="Delete";
-      del.addEventListener("click",()=>deleteEntry(row));
+      const del=document.createElement("button");del.type="button";del.className="delete-small";del.textContent="Void";
+      del.disabled=voidingEntries.has(row.id);
+      del.addEventListener("click",()=>voidEntry(row,del));
       side.append(amount,del);item.append(main,side);container.appendChild(item);
     }
   }
 
-  function render(){renderMetrics();renderBreakdown();renderQuickInsights();renderHistory();}
+  function renderVoidedHistory(){
+    const container=el("voidedHistory");
+    container.replaceChildren();
+    el("voidedCount").textContent=String(voidedEntries.length);
+    if(!voidedEntries.length){
+      const empty=document.createElement("p");empty.className="history-meta";empty.textContent="No voided expenses in this month.";container.appendChild(empty);return;
+    }
+    for(const row of voidedEntries){
+      const item=document.createElement("div");item.className="history-row";
+      const main=document.createElement("div");
+      const title=document.createElement("div");title.className="history-title";title.textContent=row.category+" · "+money(row.amount);
+      const date=document.createElement("div");date.className="history-meta";date.textContent="Expense: "+displayDate(row.expense_date)+" · Voided: "+displayDate(row.voided_at.slice(0,10));
+      const reason=document.createElement("div");reason.className="history-note";reason.textContent="Reason: "+(row.void_reason||"Not recorded");
+      main.append(title,date,reason);item.appendChild(main);container.appendChild(item);
+    }
+  }
+  function render(){renderMetrics();renderBreakdown();renderQuickInsights();renderHistory();renderVoidedHistory();}
 
   async function saveEntry(event){
     event.preventDefault();
-    const amount=Number(el("amount").value);
-    const expenseDate=el("expenseDate").value;
-    if(!expenseDate||!Number.isFinite(amount)||amount<=0){showMessage("Enter a valid date and amount.",true);return;}
+    if(entrySaving||!currentUser)return;
+    const raw=el("amount").value.trim(),amount=Number(raw),cents=Math.round(amount*100),expenseDate=el("expenseDate").value;
+    if(!expenseDate||!raw||!Number.isSafeInteger(cents)||cents<=0||Math.abs(amount*100-cents)>0.00001){showMessage("Enter a valid date and amount with up to two decimals.",true);return;}
     const payload={
-      spending_type:currentType,
-      category:el("category").value,
-      expense_date:expenseDate,
-      amount:Math.round(amount*100)/100,
-      person_name:currentType==="medical"?(el("personName").value.trim()||null):null,
-      provider_name:el("providerName").value.trim()||null,
-      activity_group:el("activityGroup").value.trim()||null,
-      notes:el("notes").value.trim()||null,
-      created_by:currentUser.id
+      p_type:currentType,p_category:el("category").value,p_date:expenseDate,p_amount:cents/100,
+      p_person:currentType==="medical"?(el("personName").value.trim()||null):null,
+      p_provider:el("providerName").value.trim()||null,
+      p_group:el("activityGroup").value.trim()||null,p_notes:el("notes").value.trim()||null
     };
-    const {error}=await supabaseClient.from("dhaftar_spending_entries").insert(payload);
-    if(error){showMessage(error.message||"Could not save expense.",true);return;}
-    const savedType=currentType;
-    el("entryForm").reset();
-    el("expenseDate").value=localToday();
-    setMode(savedType);
-    showMessage("Expense saved.");
-    await loadEntries();
+    const userId=currentUser.id,form=el("entryForm"),button=form.querySelector('button[type="submit"]');
+    entrySaving=true;button.disabled=true;button.textContent="Saving…";
+    let request=null,saved=false,wasPending=true;
+    try{
+      wasPending=DhaftarRequests.hasPending(userId,"spending-entry");
+      request=await DhaftarRequests.begin(userId,"spending-entry",payload);
+      const {error}=await supabaseClient.rpc("dhaftar_record_spending_v1",{p_request_id:request.id,...payload});
+      if(error)throw error;
+      saved=true;
+      DhaftarRequests.finish(request);
+      form.reset();el("expenseDate").value=localToday();setMode(payload.p_type);
+      await loadEntries();showMessage("Expense saved.");
+    }catch(error){
+      if(!saved&&request&&!wasPending&&DhaftarRequests.definiteRejection(error)){
+        try{DhaftarRequests.finish(request);}catch(_){}
+      }
+      showMessage(saved?"Expense saved. Refresh before entering another expense.":(error.message||"Could not confirm expense.")+" Retry with the original details if uncertain.",true);
+    }finally{
+      entrySaving=false;button.disabled=false;button.textContent="Save expense";
+    }
   }
 
-  async function deleteEntry(row){
-    if(!confirm("Delete this "+row.category+" expense of "+money(row.amount)+"?"))return;
-    const {error}=await supabaseClient.from("dhaftar_spending_entries").delete().eq("id",row.id);
-    if(error){showMessage(error.message||"Could not delete expense.",true);return;}
-    showMessage("Expense deleted.");
-    await loadEntries();
+  async function voidEntry(row,button){
+    if(!currentUser||voidingEntries.has(row.id))return;
+    const reason=window.prompt("Reason for voiding this expense (required):");
+    if(reason===null)return;
+    if(!reason.trim()||reason.trim().length>500){showMessage("Enter a reason between 1 and 500 characters.",true);return;}
+    if(!confirm("Void "+row.category+" expense of "+money(row.amount)+"? The original record will be retained and excluded from totals."))return;
+    voidingEntries.add(row.id);button.disabled=true;
+    let saved=false;
+    try{
+      const {error}=await supabaseClient.rpc("dhaftar_void_spending_v1",{p_id:row.id,p_reason:reason.trim()});
+      if(error)throw error;
+      saved=true;
+      await loadEntries();showMessage("Expense voided. Original record preserved.");
+    }catch(error){
+      showMessage(saved?"Expense voided. Refresh to update totals.":(error.message||"Could not confirm void.")+" Refresh before retrying.",true);
+    }finally{voidingEntries.delete(row.id);button.disabled=false;}
   }
 
   function setThemeButton(){el("themeToggle").textContent=document.documentElement.dataset.theme==="dark"?"☀️":"🌙";}

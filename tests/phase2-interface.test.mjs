@@ -1,0 +1,15 @@
+import assert from "node:assert/strict";
+import {readFileSync} from "node:fs";
+import vm from "node:vm";
+const html=readFileSync(new URL("../amanah.html",import.meta.url),"utf8");
+const source=readFileSync(new URL("../amanah-goals.js",import.meta.url),"utf8");
+new vm.Script(source,{filename:"amanah-goals.js"});
+const ids=new Set([...html.matchAll(/\bid="([^"]+)"/g)].map(m=>m[1]));
+for(const m of source.matchAll(/\bel\("([^"]+)"\)/g))assert.ok(ids.has(m[1]),"Missing element "+m[1]);
+assert.ok(html.includes('src="amanah-goals.js"'));
+assert.ok(html.includes("AmanahGoals.bind("));
+assert.ok(html.includes("await AmanahGoals.refresh("));
+const ctx=vm.createContext({});vm.runInContext(source,ctx);
+assert.equal(typeof ctx.AmanahGoals.bind,"function");
+assert.equal(typeof ctx.AmanahGoals.refresh,"function");
+console.log("PASS: Phase 2 syntax, HTML IDs, script integration and module initialization");

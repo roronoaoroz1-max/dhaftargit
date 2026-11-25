@@ -189,6 +189,7 @@
       .item-actions { grid-template-columns:minmax(0,1fr); }
     }
   </style>
+  <link rel="stylesheet" href="notifications.css">
 </head>
 <body>
   <main class="app-shell">
@@ -1119,5 +1120,7 @@ note.textContent=activeText + prediction + priceText+(a.estimatedRemaining!==nul
     StockPlanning.bind({client:supabaseClient,items:()=>items,ready:()=>phase4Ready,user:()=>currentUser?.id,analytics:itemAnalytics,today:localToday,money,displayDate,allPurchases:()=>allStockPurchases,names:()=>stockNames,refresh:loadDedicatedItems,message:showMessage,purchaseBusy:()=>purchaseSaving});
     init();
   </script>
+  <script src="notifications.js"></script>
+  <script>if(typeof supabaseClient!=="undefined")DhaftarNotifications.bind(supabaseClient);</script>
 </body>
 </html>

@@ -2832,6 +2832,7 @@
       state.autoFilled = null;
       installmentQuickStatus("Checking the latest combined balance and installment…");
       syncRepaymentQuickButton();
+      window.DhaftarSections?.reveal(repaymentElement("repaymentForm"));
       repaymentElement("repaymentForm").scrollIntoView({ behavior: "smooth", block: "start" });
 
       try {
@@ -4130,6 +4131,7 @@
       document.getElementById("loanDate").value = localToday();
       document.getElementById("loanStatus").value = "active";
       document.getElementById("loanPrincipal").value = "";
+      window.DhaftarSections?.reveal(document.getElementById("loanForm"));
       document.getElementById("loanPrincipal").focus();
       document.getElementById("loanForm").scrollIntoView({ behavior: "smooth", block: "start" });
       showMessage("Borrow more prepared for " + group.lender_name + " → " + group.borrower_name + ".");
@@ -4158,6 +4160,7 @@
       select.value = payable.anchorLoanId;
       repaymentDraftChanged(true);
       repaymentElement("repaymentDate").value = quickToday();
+      window.DhaftarSections?.reveal(repaymentElement("repaymentForm"));
       repaymentElement("repaymentForm").scrollIntoView({ behavior: "smooth", block: "start" });
       repaymentElement("repaymentAmount").focus();
       showMessage("Repayment prepared for " + group.lender_name + " → " + group.borrower_name + ".");

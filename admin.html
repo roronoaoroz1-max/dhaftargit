@@ -2039,6 +2039,7 @@
   </style>
   <link rel="stylesheet" href="notifications.css">
 <link rel="stylesheet" href="dhaftar-ux.css">
+<link rel="stylesheet" href="dhaftar-sections.css">
 </head>
 
 <body>
@@ -6540,6 +6541,7 @@
     function adminScrollTo(targetId, open = true) {
       const target = paymentElement(targetId);
       if (!target) return;
+      window.DhaftarSections?.reveal(target);
 
       if (open && target.tagName === "DETAILS") target.open = true;
 
@@ -7302,5 +7304,7 @@
   <script>if(typeof supabaseClient!=="undefined")DhaftarNotifications.bind(supabaseClient);</script>
 <script src="dhaftar-ux.js"></script>
 <script>DhaftarUX.init();</script>
+<script src="dhaftar-sections.js"></script>
+<script>DhaftarSections.init();</script>
 </body>
 </html>

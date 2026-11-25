@@ -13,6 +13,7 @@ let nav,dialog,authorized=false;
 function revealTarget(){
  const id=location.hash.slice(1);if(!/^[A-Za-z][A-Za-z0-9_-]*$/.test(id))return;
  const target=document.getElementById(id);if(!target)return;
+ root.DhaftarSections?.reveal(target);
  for(let n=target;n;n=n.parentElement){if(n.tagName==="DETAILS")n.open=true;}
  if(target.getClientRects().length){target.scrollIntoView({block:"start",behavior:"auto"});}
 }

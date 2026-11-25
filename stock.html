@@ -913,7 +913,7 @@ note.textContent=activeText + prediction + priceText+(a.estimatedRemaining!==nul
       const container=el("items"); container.replaceChildren();
       if (!filtered.length) {
         const empty=document.createElement("div"); empty.className="empty";
-        empty.textContent=items.length ? "No items match this filter." : "No household items yet. Add your first item above.";
+        empty.textContent=items.length ? "No items match this filter." : "No household items yet. Use the Add item tab to register your first item.";
         container.appendChild(empty); return;
       }
       filtered.forEach((item)=>container.appendChild(itemCard(item)));
@@ -982,6 +982,7 @@ note.textContent=activeText + prediction + priceText+(a.estimatedRemaining!==nul
 
     el("newItemForm").reset();
     el("newItemPanel").open=false;
+    window.DhaftarSections?.select("items");
 
     showMessage(
       name + " added. Tracking will start with the next purchase."

@@ -237,6 +237,7 @@
         <div id="shoppingList" class="shopping-list"></div>
       </section>
 
+      <section class="card shopping-card"><div class="section-head"><div><h2>Shopping forecast</h2><p>One next purchase per item; estimates use last quantity and average unit price.</p></div><select id="forecastHorizon" aria-label="Forecast days"><option value="7">7 days</option><option value="14">14 days</option><option value="30">30 days</option></select></div><p id="forecastTotal"></p><div id="forecastRows" class="shopping-list"></div><div class="actions"><button class="button primary" id="openBulkPurchase" type="button">Record bulk purchase</button></div><details><summary>Voided purchase history (including archived items)</summary><div id="stockVoidHistory"></div></details></section>
       <details class="card new-item" id="newItemPanel">
         <summary>Add a household item</summary>
         <div class="new-body">
@@ -282,6 +283,8 @@
     </section>
   </main>
 
+  <dialog id="stockBulkDialog"><div class="dialog-body"><h2>Bulk purchase</h2><form id="stockBulkForm"><div class="form-grid"><div class="field"><label for="bulkDate">Date</label><input id="bulkDate" type="date" required></div><div class="field"><label for="bulkShop">Shop</label><input id="bulkShop" maxlength="100"></div></div><p>One line per item (up to 50).</p><div id="bulkLines"></div><p id="bulkTotal"></p><p id="bulkStatus" role="status"></p><div class="actions"><button class="button" type="button" id="addBulkLine">Add item</button><button class="button primary" type="submit">Save all purchases</button><button class="button" type="button" data-close-dialog="stockBulkDialog">Cancel</button></div></form></div></dialog>
+  <dialog id="stockPreferencesDialog"><div class="dialog-body"><h2>Restock preferences</h2><form id="stockPreferencesForm"><p id="stockPreferencesName"></p><div class="form-grid"><div class="field"><label for="preferredShop">Preferred shop</label><input id="preferredShop" maxlength="100"></div><div class="field"><label for="restockReminder">Reminder days before estimated restock</label><input id="restockReminder" type="number" min="0" max="30" required></div><div class="field"><label><input type="checkbox" id="manualLow"> Mark running low</label></div></div><p id="preferencesStatus" role="status"></p><div class="actions"><button class="button primary" type="submit">Save preferences</button><button class="button" type="button" data-close-dialog="stockPreferencesDialog">Cancel</button></div></form></div></dialog>
   <dialog id="purchaseDialog">
     <div class="dialog-body">
       <div class="dialog-head">
@@ -331,6 +334,7 @@
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="supabase-client.js"></script>
   <script src="transaction-requests.js"></script>
+  <script src="stock-planning.js"></script>
   <script>
     const STOCK_CONFIG_MONTH = "2026-01-01";
     const STOCK_PREFIX = "__stock_item__";
@@ -339,6 +343,7 @@
     let stockRows = new Map();
     let stockStorageMode = "checking";
     let items = [];
+    let phase4Ready=false, allStockPurchases=[], stockNames=new Map(), preferenceTarget=null, bulkSaving=false, preferenceSaving=false, stockLoadGeneration=0;
     let purchaseTargetId = null;
     let runoutTargetId = null;
 
@@ -417,7 +422,7 @@
         runOutOn:cycle?.runOutOn ? String(cycle.runOutOn) : "",
         endedReason:String(cycle?.endedReason || ""),
         endedOn:cycle?.endedOn ? String(cycle.endedOn) : "",
-        note:String(cycle?.note || "")
+        note:String(cycle?.note || ""), shop:String(cycle?.shop || "")
       };
     }
 
@@ -448,7 +453,7 @@
         runOutOn:row.run_out_on,
         endedReason:row.ended_reason,
         endedOn:row.ended_on,
-        note:row.note
+        note:row.note,shop:row.shop
       });
     }
 
@@ -563,10 +568,13 @@
         statusLabel="Buy now";
       } else if (daysLeft!==null) {
         if (daysLeft<=0) { statusKey="buy-now"; statusLabel="Buy now"; }
-        else if (daysLeft<=5) { statusKey="buy-soon"; statusLabel="Buy soon"; }
+        else if (daysLeft<=(item.reminderDays ?? 5)) { statusKey="buy-soon"; statusLabel="Buy soon"; }
         else { statusKey="okay"; statusLabel="Okay"; }
       }
 
+      if(item.manualLow){statusKey="buy-now";statusLabel="Marked low";}
+      const rate=predictionSource==="restock-rate"?restockDaily:predictionSource==="runout-rate"?runoutDaily:null;
+      const estimatedRemaining=active&&rate>0?Math.max(0,active.qty-Math.max(0,daysBetween(active.purchasedOn,localToday())||0)*rate):null;
       const intervalEvidence=recentIntervals.length;
       const confidence=intervalEvidence>=4 ? "High" : intervalEvidence>=2 ? "Medium" : "Low";
 
@@ -587,7 +595,7 @@
         daily:runoutDaily,typicalDays:typicalRunoutDays,
         predictedDays,predictedDate,daysLeft,predictionSource,
         intervalEvidence,statusKey,statusLabel,confidence,
-        avgUnitPrice,lastUnitPrice,priceTrend,latest
+        avgUnitPrice,lastUnitPrice,priceTrend,latest,estimatedRemaining
       };
     }
 
@@ -622,29 +630,23 @@
       return normalized;
     }
 
-    async function loadDedicatedItems() {
-      const [itemResult,purchaseResult]=await Promise.all([
-        supabaseClient.from("stock_items")
-          .select("id,name,category,unit,archived,created_by,created_at,updated_at")
-          .eq("archived",false)
-          .order("name",{ascending:true}),
-        supabaseClient.from("stock_purchases")
-          .select("id,stock_item_id,purchased_on,quantity,amount,note,run_out_on,ended_reason,ended_on,created_by,created_at,updated_at,voided_at")
-          .is("voided_at",null)
-          .order("purchased_on",{ascending:true})
-      ]);
-
-      if (itemResult.error) throw itemResult.error;
-      if (purchaseResult.error) throw purchaseResult.error;
-
-      items=(itemResult.data || [])
-        .map((row)=>normalizeDedicatedItem(row,purchaseResult.data || []))
-        .sort((a,b)=>a.name.localeCompare(b.name));
-
-      stockStorageMode="dedicated";
-      render();
+    async function stockReadAll(table,columns,key){
+      const rows=[];let last=null;
+      for(;;){let q=supabaseClient.from(table).select(columns).order(key,{ascending:true}).limit(500);if(last!==null)q=q.gt(key,last);const r=await q;if(r.error)throw r.error;const page=r.data||[];rows.push(...page);if(page.length<500)return rows;const next=page[page.length-1][key];if(next===last)throw Error("Pagination failed");last=next;}
     }
-
+    async function loadDedicatedItems(){
+      const token=++stockLoadGeneration;
+      const [itemRows,purchaseRows]=await Promise.all([stockReadAll("stock_items","*","id"),stockReadAll("stock_purchases","*","id")]);
+      let prefs=[],shops=[],ready=false;
+      try{[prefs,shops]=await Promise.all([stockReadAll("dhaftar_stock_preferences_v4","*","item_id"),stockReadAll("dhaftar_stock_purchase_shops_v4","*","purchase_id")]);ready=true;}catch(e){console.warn("Stock planning settings unavailable");}
+      if(token!==stockLoadGeneration)return;
+      const pm=new Map(prefs.map(r=>[r.item_id,r])),sm=new Map(shops.map(r=>[r.purchase_id,r.shop]));
+      stockNames=new Map(itemRows.map(r=>[r.id,r.name]));
+      allStockPurchases=purchaseRows.map(r=>({...r,shop:sm.get(r.id)||""})).sort((a,b)=>a.purchased_on.localeCompare(b.purchased_on)||a.created_at.localeCompare(b.created_at)||a.id.localeCompare(b.id));
+      const live=allStockPurchases.filter(r=>!r.voided_at);
+      items=itemRows.filter(r=>!r.archived).map(row=>{const p=pm.get(row.id);return {...normalizeDedicatedItem(row,live),preferredShop:p?.preferred_shop||"",reminderDays:p?.reminder_days??5,manualLow:p?.manual_low===true};}).sort((a,b)=>a.name.localeCompare(b.name));
+      phase4Ready=ready;stockStorageMode="dedicated";render();
+    }
     async function loadLegacyItems() {
       const { data,error }=await supabaseClient.from("dhaftar_bills")
         .select("bill_type,billing_month,amount,notes,created_by,updated_by")
@@ -654,7 +656,7 @@
       stockRows=new Map((data||[]).map((row)=>[row.bill_type,row]));
       items=(data||[]).map(normalizeLegacyItem).filter((item)=>!item.archived)
         .sort((a,b)=>a.name.localeCompare(b.name));
-      stockStorageMode="legacy";
+      phase4Ready=false;allStockPurchases=[];stockStorageMode="legacy";
       render();
     }
 
@@ -730,15 +732,7 @@
     }
 
     async function markDedicatedRunout(item,cycle,date) {
-      const { error }=await supabaseClient.from("stock_purchases")
-        .update({
-          run_out_on:date,
-          ended_reason:null,
-          ended_on:null
-        })
-        .eq("id",cycle.id)
-        .eq("stock_item_id",item.id);
-
+      const {error}=await supabaseClient.rpc("dhaftar_mark_runout_v4",{p_item:item.id,p_purchase:cycle.id,p_date:date});
       if (error) throw error;
       await loadDedicatedItems();
     }
@@ -759,7 +753,8 @@
       el("metricTracked").textContent=String(items.length);
       const month=localToday().slice(0,7);
       let spent=0;
-      for(const item of items) for(const cycle of item.cycles) if(cycle.purchasedOn.slice(0,7)===month) spent+=cycle.amountCents;
+      if(stockStorageMode==="dedicated"){for(const p of allStockPurchases)if(!p.voided_at&&p.purchased_on.slice(0,7)===month)spent+=Math.round(Number(p.amount)*100);}
+      else for(const item of items) for(const cycle of item.cycles) if(cycle.purchasedOn.slice(0,7)===month) spent+=cycle.amountCents;
       el("metricSpend").textContent=money(spent);
     }
 
@@ -783,7 +778,7 @@
         const main=document.createElement("div");
         const title=document.createElement("strong"); title.textContent=item.name;
         const sub=document.createElement("span");
-        sub.textContent=a.statusKey==="buy-now"
+        sub.textContent=item.manualLow?"Manually marked low":a.statusKey==="buy-now"
           ? (a.active ? "Usual restock time reached" : "Marked completely out")
           : "Likely restock in " + a.daysLeft + (a.daysLeft===1 ? " day" : " days");
         main.append(title,sub);
@@ -854,7 +849,7 @@ const priceText=item.cycles.length
   ? " " + a.priceTrend + "."
   : "";
 
-note.textContent=activeText + prediction + priceText;
+note.textContent=activeText + prediction + priceText+(a.estimatedRemaining!==null?" Estimated remaining: ~"+Number(a.estimatedRemaining.toFixed(2))+" "+item.unit+" (not measured).":"")+(item.preferredShop?" Preferred shop: "+item.preferredShop+".":"");
 
       const actions=document.createElement("div"); actions.className="item-actions";
       const purchase=document.createElement("button"); purchase.className="button primary"; purchase.type="button"; purchase.textContent="Record purchase";
@@ -862,6 +857,7 @@ note.textContent=activeText + prediction + priceText;
       const ranout=document.createElement("button"); ranout.className="button"; ranout.type="button"; ranout.textContent="Ran out completely";
       ranout.disabled=!a.active; ranout.addEventListener("click",()=>openRunout(item.id));
       actions.append(purchase,ranout);
+      if(phase4Ready){const b=document.createElement("button");b.type="button";b.className="button";b.textContent="Restock settings";b.addEventListener("click",()=>StockPlanning.openPreferences(item));actions.append(b);}
       main.append(top,badge,stats,note,actions);
 
       const details=document.createElement("details"); details.className="item-details";
@@ -881,7 +877,7 @@ note.textContent=activeText + prediction + priceText;
           } else if (cycle.endedReason==="restocked") ending=" · restocked while low";
           else ending=" · current stock";
           left.textContent=displayDate(cycle.purchasedOn) + " · " + cycle.qty + " " + item.unit + ending + (cycle.note ? " · " + cycle.note : "");
-          const right=document.createElement("strong"); right.textContent=money(cycle.amountCents);
+          const right=document.createElement("strong"); right.textContent=money(cycle.amountCents)+(cycle.qty>0?" · "+money(cycle.amountCents/cycle.qty)+"/"+item.unit:"")+(cycle.shop?" · "+cycle.shop:"");
           row.append(left,right);
           if (stockStorageMode==="dedicated") {
             const voidButton=document.createElement("button");
@@ -920,7 +916,7 @@ note.textContent=activeText + prediction + priceText;
       filtered.forEach((item)=>container.appendChild(itemCard(item)));
     }
 
-    function render() { renderMetrics(); renderShopping(); renderItems(); }
+    function render() { renderMetrics(); renderShopping(); renderItems(); StockPlanning.render(); }
 
     function openPurchase(id) {
       const item=items.find((x)=>x.id===id); if (!item) return;
@@ -997,7 +993,7 @@ note.textContent=activeText + prediction + priceText;
 
     async function recordPurchase(event) {
       event.preventDefault();
-      if (purchaseSaving) return;
+      if (purchaseSaving || StockPlanning.busy()) return;
       const item=items.find((x)=>x.id===purchaseTargetId); if (!item) return;
       const qty=numberValue(el("purchaseQty").value), amountCents=centsFromInput(el("purchaseAmount").value);
       const purchasedOn=el("purchaseDate").value;
@@ -1011,8 +1007,9 @@ note.textContent=activeText + prediction + priceText;
       const saveButton=el("purchaseForm").querySelector('button[type="submit"]');
       saveButton.disabled=true;
       saveButton.textContent="Saving purchase…";
-      let request=null, saved=false;
+      let request=null, saved=false, prior=true;
       try {
+        prior=DhaftarRequests.hasPending(currentUser.id,"stock-purchase");
         request=await DhaftarRequests.begin(currentUser.id,"stock-purchase",[item.id,qty,amountCents,purchasedOn,note]);
         await addDedicatedPurchase(item,{qty,amountCents,purchasedOn,note,requestId:request.id});
         saved=true;
@@ -1021,7 +1018,7 @@ note.textContent=activeText + prediction + priceText;
         await loadDedicatedItems();
         showMessage(item.name + " purchase recorded.");
       } catch (error) {
-        if (!saved && request && DhaftarRequests.definiteRejection(error)) {
+        if (!saved && request && !prior && DhaftarRequests.definiteRejection(error)) {
           try { DhaftarRequests.finish(request); } catch (_) {}
         }
         if (saved) {
@@ -1119,6 +1116,7 @@ note.textContent=activeText + prediction + priceText;
     document.querySelectorAll("[data-close-dialog]").forEach((button)=>{
       button.addEventListener("click",()=>el(button.dataset.closeDialog).close());
     });
+    StockPlanning.bind({client:supabaseClient,items:()=>items,ready:()=>phase4Ready,user:()=>currentUser?.id,analytics:itemAnalytics,today:localToday,money,displayDate,allPurchases:()=>allStockPurchases,names:()=>stockNames,refresh:loadDedicatedItems,message:showMessage,purchaseBusy:()=>purchaseSaving});
     init();
   </script>
 </body>

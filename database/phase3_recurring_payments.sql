@@ -62,7 +62,7 @@ create policy payment_owner_insert on public.dhaftar_recurring_payments_v3 for i
 
 create function public.dhaftar_next_due_v3(p_due date,p_months integer,p_day integer) returns date
 language sql immutable security invoker set search_path='' as $$
- select (m + (least(p_day,extract(day from (m+interval '1 month-1 day'))::integer)-1))::date
+ select (m + (least(p_day,extract(day from (m+interval '1 month'-interval '1 day'))::integer)-1))::date
  from (select (date_trunc('month',p_due::timestamp)+make_interval(months=>p_months))::date m) s
 $$;
 create function public.dhaftar_create_schedule_v3(p_id uuid,p_title text,p_amount numeric,p_currency text,p_months integer,p_due date,p_remind integer) returns uuid
@@ -124,10 +124,11 @@ begin
    select amount into v_amount from public.dhaftar_bills where bill_type=r.source and billing_month=date '2026-01-01';
    if not found then continue;end if;
   end if;
-  if v_amount<0 or v_amount<>round(v_amount,2) then continue;end if;
+  if v_amount<0 or v_amount>=1000000000000 or v_amount<>round(v_amount,2) then continue;end if;
   select coalesce(notes::jsonb,'{}'::jsonb) into v_old from public.dhaftar_bills where bill_type=r.target and billing_month=p_month for update;
   if found then
-   if jsonb_typeof(v_old->'dueCents')='number' then continue;end if;
+   if jsonb_typeof(v_old) is distinct from 'object' then raise exception 'Invalid existing phone payment metadata; review before setup' using errcode='22023';end if;
+   if v_old ? 'dueCents' and v_old->'dueCents'<>'null'::jsonb then continue;end if;
    update public.dhaftar_bills set notes=(v_old||jsonb_build_object('dueCents',v_amount*100))::text,updated_by=u where bill_type=r.target and billing_month=p_month;
   else
    insert into public.dhaftar_bills(bill_type,billing_month,amount,notes,created_by,updated_by) values(r.target,p_month,0,jsonb_build_object('dueCents',v_amount*100,'paidCents',0,'paidOn','')::text,u,u);

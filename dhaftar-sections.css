@@ -1,0 +1,6 @@
+/* Shared module tabs; no changes to accounting or forms. */
+.dx-section-nav{display:flex;flex-wrap:wrap;gap:7px;margin:14px 0 18px;padding:6px;border:1px solid var(--dx-line);border-radius:14px;background:var(--dx-surface)}
+.dx-section-nav button{flex:1 1 auto;min-height:44px;padding:9px 12px;border:1px solid transparent;border-radius:10px;color:var(--dx-muted);background:transparent;font:700 13px system-ui,sans-serif;cursor:pointer}
+.dx-section-nav button[aria-pressed=true]{background:var(--dx-soft);color:var(--dx-brand);border-color:var(--dx-line)}.dx-section-nav button:focus-visible{outline:2px solid var(--dx-brand);outline-offset:2px}
+.dx-section-hidden{display:none!important}
+@media print{.dx-section-nav{display:none!important}.dx-section-hidden{display:revert!important}}

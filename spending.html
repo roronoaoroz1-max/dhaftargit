@@ -122,6 +122,7 @@
   <link rel="stylesheet" href="notifications.css">
 <link rel="stylesheet" href="dhaftar-ux.css">
 <link rel="stylesheet" href="dhaftar-sections.css">
+<link rel="stylesheet" href="dhaftar-smart.css">
 </head>
 <body>
 <div class="wrap">
@@ -489,6 +490,7 @@
       const {error}=await supabaseClient.rpc("dhaftar_record_spending_v1",{p_request_id:request.id,...payload});
       if(error)throw error;
       saved=true;
+      window.DhaftarSmart?.saved("entryForm");
       DhaftarRequests.finish(request);
       form.reset();el("expenseDate").value=localToday();setMode(payload.p_type);
       await loadEntries();showMessage("Expense saved.");
@@ -562,5 +564,7 @@
 <script>DhaftarUX.init();</script>
 <script src="dhaftar-sections.js"></script>
 <script>DhaftarSections.init();</script>
+<script src="dhaftar-smart.js"></script>
+<script>DhaftarSmart.bind(supabaseClient);</script>
 </body>
 </html>

@@ -31,6 +31,8 @@ function render(){
  if(!rows.length)container.append(make("p","No reminders in this view.","notice-empty"));
  setStatus("Updated for "+feed.today+" · Reminders resolve when their source is completed.");
 }
+let passiveTimer=null;
+function scheduleRefresh(){if(passiveTimer!==null)return;passiveTimer=setTimeout(()=>{passiveTimer=null;if(!document.hidden&&!writing)void refresh();},150);}
 async function refresh(){
  if(!client)return false;const token=++epoch;
  try{
@@ -53,7 +55,7 @@ function bind(c){
  if(!container){bell=make("a",undefined,"dhaftar-notice-bell");bell.href="today.html";bell.hidden=true;document.body.append(bell);count();}
  else{el("noticeFilter").addEventListener("change",e=>{filter=e.target.value;render();});el("noticeCategory").addEventListener("change",e=>{category=e.target.value;render();});el("noticeRefresh").addEventListener("click",()=>void refresh());el("noticeReadAll").addEventListener("click",()=>void act(null,"read-all"));}
  client.auth.onAuthStateChange(event=>{if(event==="SIGNED_OUT"){clear();}else if(event==="SIGNED_IN"||event==="TOKEN_REFRESHED"){setTimeout(()=>void refresh(),0);}});
- root.addEventListener("focus",()=>void refresh());root.addEventListener("pageshow",()=>void refresh());document.addEventListener("visibilitychange",()=>{if(!document.hidden)void refresh();});
+ root.addEventListener("focus",scheduleRefresh);root.addEventListener("pageshow",scheduleRefresh);document.addEventListener("visibilitychange",()=>{if(!document.hidden)scheduleRefresh();});
  // Only while the page is visible; no push/background monitoring.
  setInterval(()=>{if(!document.hidden&&!writing)void refresh();},60000);
  void refresh();

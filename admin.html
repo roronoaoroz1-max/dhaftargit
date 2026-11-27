@@ -3754,7 +3754,7 @@
         });
         if (error) throw error;
         saved = true;
-        window.DhaftarSmart?.saved("paymentForm");
+        window.DhaftarSmart?.saved("paymentForm",userId);
         DhaftarRequests.finish(request);
         if (epoch !== state.epoch || currentUser?.id !== userId) return;
         amountInput.value = "";

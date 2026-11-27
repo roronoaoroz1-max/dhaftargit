@@ -191,6 +191,7 @@
   </style>
   <link rel="stylesheet" href="notifications.css">
 <link rel="stylesheet" href="dhaftar-ux.css">
+<link rel="stylesheet" href="dhaftar-sections.css">
 </head>
 <body>
   <main class="app-shell">
@@ -912,7 +913,7 @@ note.textContent=activeText + prediction + priceText+(a.estimatedRemaining!==nul
       const container=el("items"); container.replaceChildren();
       if (!filtered.length) {
         const empty=document.createElement("div"); empty.className="empty";
-        empty.textContent=items.length ? "No items match this filter." : "No household items yet. Add your first item above.";
+        empty.textContent=items.length ? "No items match this filter." : "No household items yet. Use the Add item tab to register your first item.";
         container.appendChild(empty); return;
       }
       filtered.forEach((item)=>container.appendChild(itemCard(item)));
@@ -981,6 +982,7 @@ note.textContent=activeText + prediction + priceText+(a.estimatedRemaining!==nul
 
     el("newItemForm").reset();
     el("newItemPanel").open=false;
+    window.DhaftarSections?.select("items");
 
     showMessage(
       name + " added. Tracking will start with the next purchase."
@@ -1125,5 +1127,7 @@ note.textContent=activeText + prediction + priceText+(a.estimatedRemaining!==nul
   <script>if(typeof supabaseClient!=="undefined")DhaftarNotifications.bind(supabaseClient);</script>
 <script src="dhaftar-ux.js"></script>
 <script>DhaftarUX.init();</script>
+<script src="dhaftar-sections.js"></script>
+<script>DhaftarSections.init();</script>
 </body>
 </html>

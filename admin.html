@@ -2040,6 +2040,7 @@
   <link rel="stylesheet" href="notifications.css">
 <link rel="stylesheet" href="dhaftar-ux.css">
 <link rel="stylesheet" href="dhaftar-sections.css">
+<link rel="stylesheet" href="dhaftar-smart.css">
 </head>
 
 <body>
@@ -3753,6 +3754,7 @@
         });
         if (error) throw error;
         saved = true;
+        window.DhaftarSmart?.saved("paymentForm",userId);
         DhaftarRequests.finish(request);
         if (epoch !== state.epoch || currentUser?.id !== userId) return;
         amountInput.value = "";
@@ -7306,5 +7308,7 @@
 <script>DhaftarUX.init();</script>
 <script src="dhaftar-sections.js"></script>
 <script>DhaftarSections.init();</script>
+<script src="dhaftar-smart.js"></script>
+<script>DhaftarSmart.bind(supabaseClient);</script>
 </body>
 </html>

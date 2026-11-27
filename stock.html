@@ -192,6 +192,7 @@
   <link rel="stylesheet" href="notifications.css">
 <link rel="stylesheet" href="dhaftar-ux.css">
 <link rel="stylesheet" href="dhaftar-sections.css">
+<link rel="stylesheet" href="dhaftar-smart.css">
 </head>
 <body>
   <main class="app-shell">
@@ -980,6 +981,7 @@ note.textContent=activeText + prediction + priceText+(a.estimatedRemaining!==nul
       await saveLegacyItem(item);
     }
 
+    window.DhaftarSmart?.saved("newItemForm");
     el("newItemForm").reset();
     el("newItemPanel").open=false;
     window.DhaftarSections?.select("items");
@@ -1129,5 +1131,7 @@ note.textContent=activeText + prediction + priceText+(a.estimatedRemaining!==nul
 <script>DhaftarUX.init();</script>
 <script src="dhaftar-sections.js"></script>
 <script>DhaftarSections.init();</script>
+<script src="dhaftar-smart.js"></script>
+<script>DhaftarSmart.bind(supabaseClient);</script>
 </body>
 </html>
